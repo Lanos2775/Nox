@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Nox</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nox">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+
+<!-- Firebase (đồng bộ dữ liệu giữa các thiết bị) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h1 class="brand">Nox</h1>
+      <div class="sidebar-header-right">
+        <button class="diary-quick-btn" id="diary-quick-open" title="Nhật ký nhanh">📔</button>
+        <button class="bell-pill-btn" id="quick-reminder-toggle" title="Bật/tắt nhắc từ nhanh">🔔</button>
+        <button class="settings-gear-btn" id="settings-open" title="Cài đặt">⚙️</button>
+      </div>
+    </div>
+
+    <nav class="main-tabs">
+      <button class="main-tab-btn active" data-tab="flashcard">Thẻ</button>
+      <button class="main-tab-btn" data-tab="writing">Viết</button>
+      <button class="main-tab-btn" data-tab="quiz">Quizz</button>
+      <button class="main-tab-btn" data-tab="warehouse">Kho</button>
+    </nav>
+
+    <button class="mobile-panel-toggle hidden" id="mobile-panel-toggle">▾ Hiện tuỳ chọn</button>
+
+    <!-- ---- Sidebar: Flashcard controls ---- -->
+    <div class="sidebar-panel" data-panel="flashcard">
+      <div class="stat-grid">
+        <div class="stat-box"><span class="stat-num" id="fc-stat-total">0</span><span class="stat-label">Tổng thẻ</span></div>
+        <div class="stat-box stat-learning"><span class="stat-num" id="fc-stat-learning">0</span><span class="stat-label">Đang học</span></div>
+        <div class="stat-box stat-known"><span class="stat-num" id="fc-stat-known">0</span><span class="stat-label">Đã biết</span></div>
+        <div class="stat-box stat-difficult"><span class="stat-num" id="fc-stat-difficult">0</span><span class="stat-label">Khó</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">Quản lý thẻ</div>
+        <input type="text" id="fc-search" class="text-input" placeholder="Tìm thẻ ...">
+        <div class="btn-row-2">
+          <button class="pill-btn active" data-filter="all">Tất cả</button>
+          <button class="pill-btn" data-filter="learning">Đang học</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="pill-btn" data-filter="known">Đã biết</button>
+          <button class="pill-btn" data-filter="difficult">Khó</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="pill-btn-outline" id="fc-sort-az">Sắp xếp A-Z</button>
+          <button class="pill-btn-outline" id="fc-shuffle">Xáo trộn</button>
+        </div>
+        <button class="block-btn" id="fc-reset-status">Đặt lại trạng thái</button>
+        <button class="block-btn primary" id="fc-choose-list">Chọn danh sách</button>
+      </div>
+    </div>
+
+    <!-- ---- Sidebar: Writing controls ---- -->
+    <div class="sidebar-panel hidden" data-panel="writing">
+      <div class="stat-grid">
+        <div class="stat-box"><span class="stat-num" id="wr-stat-total">0</span><span class="stat-label">Tổng câu</span></div>
+        <div class="stat-box stat-learning"><span class="stat-num" id="wr-stat-undone">0</span><span class="stat-label">Chưa làm</span></div>
+        <div class="stat-box stat-known"><span class="stat-num" id="wr-stat-correct">0</span><span class="stat-label">Làm đúng</span></div>
+        <div class="stat-box stat-difficult"><span class="stat-num" id="wr-stat-wrong">0</span><span class="stat-label">Làm sai</span></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="section-label">Quản lý câu</div>
+        <div class="btn-row-2">
+          <button class="pill-btn" data-wfilter="all">Tất cả</button>
+          <button class="pill-btn active" data-wfilter="undone">Chưa làm</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="pill-btn" data-wfilter="correct">Làm đúng</button>
+          <button class="pill-btn" data-wfilter="wrong">Làm sai</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="pill-btn-outline" id="wr-sort-az">Sắp xếp A-Z</button>
+          <button class="pill-btn-outline" id="wr-shuffle">Xáo trộn</button>
+        </div>
+        <button class="block-btn" id="wr-reset-status">Đặt lại trạng thái</button>
+        <button class="block-btn primary" id="wr-choose-list">Chọn danh sách</button>
+      </div>
+    </div>
+
+    <!-- ---- Sidebar: Quiz setup ---- -->
+    <div class="sidebar-panel hidden" data-panel="quiz">
+      <div class="panel-section" id="quiz-setup-panel">
+        <div class="section-label">Nguồn</div>
+        <div class="btn-row-2">
+          <button class="pill-btn active" data-source="flashcard">Thẻ</button>
+          <button class="pill-btn" data-source="dictionary">Từ điển</button>
+        </div>
+        <button class="block-btn" id="quiz-choose-list">Chọn danh sách</button>
+
+        <div class="section-label">Độ khó</div>
+        <div class="btn-row-2">
+          <button class="quiz-diff-btn active" data-difficulty="all"><span class="dot dot-all"></span>Tất cả</button>
+          <button class="quiz-diff-btn" data-difficulty="new"><span class="dot dot-learning"></span>Đang học</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="quiz-diff-btn" data-difficulty="known"><span class="dot dot-known"></span>Đã biết</button>
+          <button class="quiz-diff-btn" data-difficulty="difficult"><span class="dot dot-difficult"></span>Khó</button>
+        </div>
+
+        <div class="section-label">Số câu</div>
+        <div class="btn-row-2">
+          <button class="pill-btn" data-countmode="untilWrong">Chơi đến khi sai</button>
+          <button class="pill-btn active" data-countmode="custom">Tùy chỉnh số câu</button>
+        </div>
+
+        <div class="section-label">Số lượng câu</div>
+        <div class="qty-input-row" id="quiz-count-row">
+          <input type="range" id="quiz-count-input" min="1" max="10" value="10" step="1">
+          <span class="qty-suffix" id="quiz-count-val">10 câu</span>
+        </div>
+
+        <div class="section-label">Ngôn ngữ</div>
+        <div class="btn-row-3">
+          <button class="pill-btn active" data-lang="random">Ngẫu nhiên</button>
+          <button class="pill-btn" data-lang="e-v">E - V</button>
+          <button class="pill-btn" data-lang="v-e">V - E</button>
+        </div>
+
+        <div class="section-label">Thời gian</div>
+        <div class="btn-row-2">
+          <button class="pill-btn active" data-timemode="infinite">Vô hạn</button>
+          <button class="pill-btn" data-timemode="countdown">Tùy chỉnh đếm ngược</button>
+        </div>
+        <div class="qty-input-row hidden" id="quiz-countdown-row">
+          <input type="range" id="quiz-countdown-input" min="3" max="60" value="10" step="1">
+          <span class="qty-suffix" id="quiz-countdown-val">10s / câu</span>
+        </div>
+
+        <div class="section-label">Chế độ nghe</div>
+        <div class="btn-row-2">
+          <button class="pill-btn active" data-listenmode="off">Tắt</button>
+          <button class="pill-btn" data-listenmode="on">Bật (E→V)</button>
+        </div>
+        <div class="qty-input-row hidden" id="quiz-listen-count-row">
+          <input type="number" id="quiz-listen-count-input" class="text-input" value="3" min="1" max="10">
+          <span class="qty-suffix">lần nghe tối đa</span>
+        </div>
+      </div>
+      <button class="block-btn primary big" id="quiz-start-btn">Bắt đầu</button>
+    </div>
+
+    <!-- ---- Sidebar: Warehouse list grid ---- -->
+    <div class="sidebar-panel hidden" data-panel="warehouse">
+      <div class="wh-lists-title-row">
+        <span class="section-label" id="wh-lists-title">Thẻ</span>
+        <div class="diary-dd-wrap">
+          <button class="wh-sort-btn" id="wh-sort-btn" title="Sắp xếp danh sách">⇅</button>
+          <div class="diary-dropdown-menu hidden" id="wh-sort-menu">
+            <button type="button" data-sort="date">Theo ngày</button>
+            <button type="button" data-sort="name">Theo tên</button>
+          </div>
+        </div>
+      </div>
+      <div class="wh-list-grid" id="wh-list-grid"></div>
+      <div class="btn-row-3">
+        <button class="icon-btn-sq" id="wh-add-list" title="Thêm danh sách">＋</button>
+        <button class="icon-btn-sq" id="wh-rename-list" title="Chỉnh sửa danh sách">✎</button>
+        <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách">🗑</button>
+      </div>
+      <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <main class="main-content">
+
+    <!-- ---- Flashcard main ---- -->
+    <section class="tab-content" data-content="flashcard">
+      <div class="active-list-label" id="fc-active-label">Danh sách: —</div>
+      <div class="flashcard-stage">
+        <button class="nav-arrow" id="fc-prev" data-no-click-sound>‹</button>
+        <div class="flashcard" id="fc-card">
+          <span class="card-status-pill" id="fc-card-status">Đang học</span>
+          <p class="card-text" id="fc-card-text">Chọn danh sách để bắt đầu</p>
+          <p class="card-hint">Nhấp hoặc nhấn Space để lật thẻ</p>
+        </div>
+        <button class="nav-arrow" id="fc-next" data-no-click-sound>›</button>
+      </div>
+      <div class="flashcard-counter" id="fc-counter">0 / 0</div>
+      <div class="flashcard-controls">
+        <button class="status-btn status-difficult" id="fc-mark-difficult">Khó</button>
+        <button class="status-btn status-learning" id="fc-mark-learning">Đang học</button>
+        <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
+        <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
+        <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
+        <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊</button>
+      </div>
+
+      <div class="quick-translate-bar" id="quick-translate-bar-2">
+        <input type="text" id="qt2-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
+        <button class="qt-swap-btn" id="qt2-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
+        <div class="qt-box qt-result-box" id="qt2-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
+        <button class="qt-play-btn" id="qt2-play" title="Phát âm từ tiếng Anh">🔊</button>
+        <button class="qt-save-btn" id="qt2-save" title="Lưu nhanh vào Từ điển">🔖</button>
+      </div>
+    </section>
+
+    <!-- ---- Writing main ---- -->
+    <section class="tab-content hidden" data-content="writing">
+      <div class="active-list-label" id="wr-active-label">Danh sách: —</div>
+      <div class="writing-card">
+        <div class="writing-prompt" id="wr-prompt">Chọn danh sách để bắt đầu</div>
+      </div>
+      <div class="writing-feedback-block">
+        <div class="feedback-header">
+          <span>Phản hồi trực tiếp</span>
+        </div>
+        <div class="feedback-grid" id="wr-feedback-grid"></div>
+      </div>
+      <textarea class="writing-answer-input" id="wr-answer-input" placeholder="Nhập câu trả lời tiếng anh tại đây ..."></textarea>
+      <div class="writing-btn-grid">
+        <button class="pill-btn-outline" id="wr-show-char">Hiện chữ tiếp theo (Tab)</button>
+        <button class="pill-btn-outline" id="wr-show-word">Hiện từ tiếp theo</button>
+        <button class="pill-btn-outline" id="wr-hide-preview-toggle" title="Ẩn số lượng từ/chữ cái chưa gõ tới">Ẩn xem trước</button>
+      </div>
+      <div class="btn-row-2">
+        <button class="block-btn" id="wr-translate">Dịch</button>
+        <button class="block-btn" id="wr-answer">Đáp án</button>
+      </div>
+
+      <div class="quick-translate-bar hidden" id="quick-translate-bar">
+        <input type="text" id="qt-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
+        <button class="qt-swap-btn" id="qt-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
+        <div class="qt-box qt-result-box" id="qt-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
+        <button class="qt-play-btn" id="qt-play" title="Phát âm từ tiếng Anh">🔊</button>
+        <button class="qt-save-btn" id="qt-save" title="Lưu nhanh vào Từ điển">🔖</button>
+      </div>
+    </section>
+
+    <!-- ---- Quiz main ---- -->
+    <section class="tab-content hidden" data-content="quiz">
+      <div class="quiz-topbar hidden" id="quiz-topbar">
+        <button class="quiz-exit-btn" id="quiz-exit">Thoát</button>
+        <span class="quiz-pill quiz-pill-danger">Sai <span id="quiz-wrong-count">0</span>/<span id="quiz-total-count">10</span></span>
+        <span class="quiz-pill">Câu <span id="quiz-current-q">1</span>/<span id="quiz-total-q">10</span></span>
+        <span class="quiz-pill quiz-pill-success">Đúng <span id="quiz-correct-count">0</span>/<span id="quiz-total-count2">10</span></span>
+        <span class="quiz-timer">⏱ <span id="quiz-timer-val">0s</span> <button id="quiz-pause" class="timer-pause-btn">⏸</button></span>
+      </div>
+
+      <div class="quiz-empty" id="quiz-empty-state">Thiết lập câu hỏi ở thanh bên trái rồi nhấn "Bắt đầu"</div>
+
+      <div class="quiz-question-block hidden" id="quiz-question-block">
+        <div class="quiz-listen-hint hidden" id="quiz-listen-hint">
+          <span class="quiz-listen-icon">🔊</span>
+          <span id="quiz-listen-label">Nhấn Space để nghe</span>
+          <span class="quiz-listen-count" id="quiz-listen-remaining"></span>
+        </div>
+        <div class="quiz-question-text" id="quiz-question-text">Câu hỏi ...</div>
+        <div class="quiz-choice-grid">
+          <button class="quiz-choice-btn" data-choice="0" data-no-click-sound><span class="choice-letter">A</span><span class="choice-text"></span></button>
+          <button class="quiz-choice-btn" data-choice="1" data-no-click-sound><span class="choice-letter">B</span><span class="choice-text"></span></button>
+          <button class="quiz-choice-btn" data-choice="2" data-no-click-sound><span class="choice-letter">C</span><span class="choice-text"></span></button>
+          <button class="quiz-choice-btn" data-choice="3" data-no-click-sound><span class="choice-letter">D</span><span class="choice-text"></span></button>
+        </div>
+      </div>
+
+      <div class="quiz-result-block hidden" id="quiz-result-block">
+        <div class="quiz-result-title">Hoàn thành!</div>
+        <div class="quiz-result-score" id="quiz-result-score">0 / 0</div>
+        <div class="btn-row-2">
+          <button class="block-btn primary" id="quiz-restart">Chơi lại</button>
+          <button class="block-btn" id="quiz-result-exit">Thoát</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---- Warehouse (Kho) main ---- -->
+    <section class="tab-content hidden" data-content="warehouse">
+      <div class="wh-topbar">
+        <span class="wh-topbar-label">Kho</span>
+        <button class="wh-cat-btn active" data-wh-cat="flashcard">Thẻ</button>
+        <button class="wh-cat-btn" data-wh-cat="writing">Viết</button>
+        <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
+        <button class="wh-cat-btn" data-wh-cat="diary">Nhật Ký</button>
+      </div>
+
+      <div class="wh-list-title" id="wh-current-list-title">Danh sách 1</div>
+
+      <div class="wh-table-wrap" id="wh-table-wrap">
+        <div class="wh-table-header" id="wh-table-header">
+          <span></span>
+          <span>Tiếng Anh</span>
+          <span>Phiên âm</span>
+          <span>Loại từ</span>
+          <span></span>
+          <span>Tiếng Việt</span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="wh-table" id="wh-table"></div>
+      </div>
+
+      <div class="wh-diary-preview hidden" id="wh-diary-preview">
+        <div class="wh-diary-preview-content" id="wh-diary-preview-content"></div>
+        <button class="block-btn primary" id="wh-diary-open-editor">✎ Mở để viết</button>
+      </div>
+
+      <div class="wh-toolbar" id="wh-toolbar">
+        <div class="wh-toolbar-right">
+          <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
+          <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
+          <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊 Đọc tự động</button>
+          <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
+          <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
+          <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
+        </div>
+      </div>
+
+      <div class="wh-legend" id="wh-legend">
+        <div class="legend-item"><span class="dot dot-learning"></span><span id="wh-legend-1">Đang học</span></div>
+        <div class="legend-item"><span class="dot dot-known"></span><span id="wh-legend-2">Đã biết</span></div>
+        <div class="legend-item"><span class="dot dot-difficult"></span><span id="wh-legend-3">Khó</span></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ POPUP: Chọn danh sách ============ -->
+<div class="overlay hidden" id="list-picker-overlay">
+  <div class="popup-panel">
+    <div class="popup-header">
+      <span id="list-picker-title">Danh sách</span>
+      <button class="popup-close" id="list-picker-close">✕</button>
+    </div>
+    <div class="popup-list" id="list-picker-body"></div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Thêm vào (Kho) ============ -->
+<div class="overlay hidden" id="wh-add-overlay">
+  <div class="modal-panel">
+    <div class="popup-header">
+      <span>Thêm vào <span id="wh-add-list-name"></span></span>
+      <button class="popup-close" id="wh-add-close">✕</button>
+    </div>
+    <textarea class="modal-textarea" id="wh-add-textarea" placeholder="Nhập câu hoặc nhiều câu ở đây ...&#10;( Câu Tiếng Anh - Câu Tiếng Việt )"></textarea>
+    <div class="btn-row-2">
+      <button class="pill-btn primary flex-1" id="wh-add-confirm">Chuyển</button>
+      <button class="pill-btn-outline flex-1" id="wh-add-clear">Xóa</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Sửa một mục (Kho) ============ -->
+<div class="overlay hidden" id="wh-edit-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Sửa mục</span>
+      <button class="popup-close" id="wh-edit-close">✕</button>
+    </div>
+    <input type="text" class="text-input" id="wh-edit-en" placeholder="Câu Tiếng Anh">
+    <input type="text" class="text-input" id="wh-edit-vi" placeholder="Câu Tiếng Việt" style="margin-top:10px;">
+    <button class="block-btn primary" id="wh-edit-save" style="margin-top:14px;">Lưu</button>
+  </div>
+</div>
+
+<!-- ============ MODAL: Xuất / Nhập File (Kho) ============ -->
+<div class="overlay hidden" id="wh-export-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Xuất File</span>
+      <button class="popup-close" id="wh-export-close">✕</button>
+    </div>
+    <div class="btn-row-3">
+      <button class="pill-btn-outline" id="wh-export-json">JSON</button>
+      <button class="pill-btn-outline" id="wh-export-txt">TXT</button>
+      <button class="pill-btn-outline" id="wh-export-copy">Copy</button>
+    </div>
+    <label class="radio-row"><input type="radio" name="wh-export-scope" value="all" checked> Toàn bộ danh sách</label>
+    <label class="radio-row"><input type="radio" name="wh-export-scope" value="current"> Chỉ danh sách đang được mở</label>
+    <input type="file" id="wh-import-file" accept=".json,.txt" style="display:none;">
+    <button class="block-btn" id="wh-import-btn" style="margin-top:12px;">Tải File lên</button>
+  </div>
+</div>
+
+<!-- ============ GENERIC PROMPT MODAL ============ -->
+<div class="overlay hidden" id="generic-prompt-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span id="generic-prompt-title">Nhập</span>
+      <button class="popup-close" id="generic-prompt-cancel-x">✕</button>
+    </div>
+    <input type="text" class="text-input" id="generic-prompt-input">
+    <div class="btn-row-2" style="margin-top:14px;">
+      <button class="pill-btn primary flex-1" id="generic-prompt-ok">OK</button>
+      <button class="pill-btn-outline flex-1" id="generic-prompt-cancel">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ GENERIC CONFIRM MODAL ============ -->
+<div class="overlay hidden" id="generic-confirm-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header"><span>Xác nhận</span></div>
+    <p class="confirm-message" id="generic-confirm-message"></p>
+    <div class="btn-row-2">
+      <button class="pill-btn primary flex-1" id="generic-confirm-ok">Đồng ý</button>
+      <button class="pill-btn-outline flex-1" id="generic-confirm-cancel">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DIARY (NHẬT KÝ) POPUP ============ -->
+<div class="overlay hidden" id="diary-popup-overlay">
+  <div class="diary-popup-panel">
+    <div class="diary-toolbar">
+      <div class="diary-toolbar-left">
+        <div class="diary-dd-wrap">
+          <button class="diary-tool-btn diary-fontsize-btn" id="dy-fontsize-btn" title="Cỡ chữ">Vừa ▾</button>
+          <div class="diary-dropdown-menu hidden" id="dy-fontsize-menu">
+            <button type="button" data-size="2">Nhỏ</button>
+            <button type="button" data-size="3">Vừa</button>
+            <button type="button" data-size="5">Lớn</button>
+            <button type="button" data-size="7">Rất lớn</button>
+          </div>
+        </div>
+
+        <div class="diary-dd-wrap">
+          <button class="diary-tool-btn diary-color-btn" id="dy-color-btn" title="Màu chữ">A</button>
+          <input type="color" id="dy-color-input" class="diary-color-input" value="#7c3aed">
+        </div>
+
+        <button class="diary-tool-btn diary-highlight-btn" id="dy-highlight-btn" title="Highlight (Ctrl+Shift+H)">H</button>
+        <button class="diary-tool-btn" id="dy-bold-btn" title="In đậm (Ctrl+B)"><b>B</b></button>
+        <button class="diary-tool-btn" id="dy-italic-btn" title="In nghiêng (Ctrl+I)"><i>I</i></button>
+        <button class="diary-tool-btn" id="dy-underline-btn" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+
+        <div class="diary-dd-wrap">
+          <button class="diary-tool-btn" id="dy-align-btn" title="Căn lề & danh sách">≡ ▾</button>
+          <div class="diary-dropdown-menu hidden" id="dy-align-menu">
+            <button type="button" data-cmd="justifyLeft">⯇ Căn trái <kbd>Ctrl+Shift+L</kbd></button>
+            <button type="button" data-cmd="justifyCenter">☰ Căn giữa <kbd>Ctrl+Shift+E</kbd></button>
+            <button type="button" data-cmd="justifyRight">⯈ Căn phải <kbd>Ctrl+Shift+R</kbd></button>
+            <button type="button" data-cmd="insertOrderedList">1. Danh sách đánh số <kbd>Ctrl+Shift+7</kbd></button>
+            <button type="button" data-cmd="insertUnorderedList">• Danh sách dấu chấm <kbd>Ctrl+Shift+8</kbd></button>
+          </div>
+        </div>
+
+        <button class="diary-tool-btn" id="dy-box-btn" title="Đóng khung nét đứt (Ctrl+Shift+D) — bôi đen chữ trước">▭</button>
+      </div>
+
+      <div class="diary-toolbar-right">
+        <button class="diary-tool-btn" id="dy-undo-btn" title="Quay lại 1 bước (Ctrl+Z)">←</button>
+        <button class="diary-tool-btn" id="dy-redo-btn" title="Tiến lên 1 bước (Ctrl+Y)">→</button>
+        <button class="diary-tool-btn" id="dy-mode-btn" title="Chuyển chỉnh sửa / xem (Ctrl+Shift+M)">✎</button>
+        <select id="dy-note-select" class="diary-note-select" title="Đổi ghi chú"></select>
+        <button class="diary-close-btn" id="dy-close-btn" title="Đóng (Esc)">✕</button>
+      </div>
+    </div>
+
+    <div class="diary-content" id="dy-content" contenteditable="true" spellcheck="false"
+         data-placeholder="Viết gì đó ..."></div>
+  </div>
+</div>
+
+<!-- ============ REMINDER (NHẮC TỪ) POPUP ============ -->
+<div class="reminder-popup hidden" id="reminder-popup">
+  <div class="reminder-popup-header">
+    <span id="reminder-popup-source">Nhắc từ vựng</span>
+    <button class="popup-close" id="reminder-popup-close">✕</button>
+  </div>
+  <div class="reminder-popup-en" id="reminder-popup-en"></div>
+  <div class="reminder-popup-vi" id="reminder-popup-vi"></div>
+  <div class="reminder-popup-bar"><div class="reminder-popup-bar-fill" id="reminder-popup-bar-fill"></div></div>
+</div>
+
+<!-- ============ Bong bóng chat (thông báo kiểu Messenger, chỉ dùng trên điện thoại) ============ -->
+<div class="chat-bubble-notify hidden" id="chat-bubble-notify">
+  <div class="chat-bubble-avatar">N</div>
+  <div class="chat-bubble-content">
+    <div class="chat-bubble-name">Nox nhắc từ</div>
+    <div class="chat-bubble-en" id="chat-bubble-en"></div>
+    <div class="chat-bubble-vi" id="chat-bubble-vi"></div>
+  </div>
+</div>
+
+<!-- ============ TOAST ============ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ============ POPUP: Dịch nhanh ============ -->
+<div class="overlay hidden" id="translate-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Dịch nhanh</span>
+      <button class="popup-close" id="translate-close">✕</button>
+    </div>
+    <div class="translate-block">
+      <div class="translate-label">Tiếng Việt</div>
+      <div class="translate-text" id="translate-src"></div>
+    </div>
+    <div class="translate-block">
+      <div class="translate-label">Tiếng Anh</div>
+      <div class="translate-text" id="translate-result">Đang dịch ...</div>
+    </div>
+    <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="block-btn" style="display:block;text-align:center;margin-top:12px;text-decoration:none;">Mở Google Translate</a>
+  </div>
+</div>
+
+<!-- ============ POPUP: Cài đặt ============ -->
+<div class="overlay hidden" id="settings-overlay">
+  <div class="modal-panel settings-modal">
+    <div class="popup-header">
+      <span class="settings-title-row">Cài đặt <button class="version-info-btn" id="version-info-btn" title="Phiên bản & cập nhật">?</button></span>
+      <button class="popup-close" id="settings-close">✕</button>
+    </div>
+
+    <div class="settings-body">
+      <div class="settings-section">
+        <div class="section-label">Đồng bộ giữa thiết bị</div>
+        <div class="settings-sync-status">
+          <span class="settings-sync-dot sync-off" id="settings-sync-dot"></span>
+          <span id="settings-sync-label">Chưa kết nối</span>
+        </div>
+        <div class="btn-row-2" id="settings-sync-connect-row">
+          <input type="text" id="settings-sync-code-input" class="text-input" placeholder="Nhập mã đồng bộ (tối thiểu 8 ký tự) ...">
+          <button class="pill-btn primary" id="settings-sync-connect">Kết nối</button>
+        </div>
+        <button class="pill-btn-outline" id="settings-sync-generate" style="margin-top:8px;">🎲 Tạo mã ngẫu nhiên</button>
+        <div class="settings-notify-hint">Mã càng dài & khó đoán, đồng bộ càng an toàn — nên dùng mã tạo ngẫu nhiên thay vì tự nghĩ mã đơn giản.</div>
+        <button class="pill-btn-outline hidden" id="settings-sync-disconnect">Ngắt kết nối</button>
+        <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn">🗄️ Đổi database (chuyển acc)</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Màu giao diện</div>
+        <div class="theme-level-control" id="theme-level-control" title="Màu giao diện">
+          <button class="theme-dot theme-dot-1" data-level="1" title="Trắng"></button>
+          <button class="theme-dot theme-dot-2" data-level="2" title="Ngả vàng"></button>
+          <button class="theme-dot theme-dot-3" data-level="3" title="Hồng"></button>
+          <button class="theme-dot theme-dot-4" data-level="4" title="Đen"></button>
+          <button class="theme-dot theme-dot-5" data-level="5" title="Đêm ấm"></button>
+          <button class="theme-dot theme-dot-6" data-level="6" title="Đêm xanh rêu"></button>
+          <button class="theme-dot theme-dot-7" data-level="7" title="Xanh biển"></button>
+          <button class="theme-dot theme-dot-8" data-level="8" title="Bạc hà"></button>
+          <button class="theme-dot theme-dot-9" data-level="9" title="Cam đào"></button>
+          <button class="theme-dot theme-dot-10" data-level="10" title="Tím than"></button>
+          <button class="theme-dot theme-dot-11" data-level="11" title="Đỏ rượu vang"></button>
+          <button class="theme-dot theme-dot-12" data-level="12" title="Tử đằng"></button>
+          <button class="theme-dot theme-dot-13" data-level="13" title="Xám khói"></button>
+          <button class="theme-dot theme-dot-14" data-level="14" title="Chanh"></button>
+          <button class="theme-dot theme-dot-15" data-level="15" title="Ngọc lam"></button>
+          <button class="theme-dot theme-dot-16" data-level="16" title="Hồng đất"></button>
+          <button class="theme-dot theme-dot-17" data-level="17" title="Xanh lục rừng"></button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Thông báo trên máy tính</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-desktop-notify">
+          <span>Hiện Desktop Notification (nổi trên mọi tab/ứng dụng khác)</span>
+        </label>
+        <div class="settings-notify-hint" id="settings-notify-hint"></div>
+      </div>
+
+      <div class="settings-section hidden" id="settings-section-mobile-notify">
+        <div class="section-label">Thông báo trên điện thoại</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-mobile-notify">
+          <span>Hiện bong bóng chat nhắc từ (kiểu Messenger)</span>
+        </label>
+        <div class="settings-notify-hint" id="settings-mobile-notify-hint">Chỉ hiện khi tab/app Nox còn đang mở (không đè lên được app khác — giới hạn của trình duyệt).</div>
+      </div>
+
+      <div class="settings-section hidden" id="settings-section-background-run">
+        <div class="section-label">Chạy nền (thử nghiệm)</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-background-run">
+          <span>Cho phép nhắc từ tiếp tục khi mở app khác</span>
+        </label>
+        <div class="settings-notify-hint">
+          Hoạt động kiểu "cố gắng hết sức": chạy tốt nếu bạn chỉ lướt app khác một lát và không tắt màn hình lâu.
+          Trình duyệt di động sẽ tự treo tab nếu bạn tắt màn hình lâu hoặc rời app quá lâu — lúc đó chạy nền sẽ dừng, đây là giới hạn của web/PWA, không phải lỗi.
+          Sau khi hết số chu kỳ đã đặt, chạy nền sẽ <b>tự động tắt</b>.
+        </div>
+        <div class="settings-bg-options hidden" id="settings-bg-options">
+          <label class="settings-slider-row">
+            <span>Số chu kỳ lặp</span>
+            <input type="range" id="settings-bg-cycles" min="1" max="20" value="1">
+            <span class="settings-slider-val" id="settings-bg-cycles-val">1</span>
+          </label>
+          <label class="settings-slider-row">
+            <span>Cách nhau (phút)</span>
+            <input type="range" id="settings-bg-interval" min="1" max="60" value="5">
+            <span class="settings-slider-val" id="settings-bg-interval-val">5</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Nhắc từ</div>
+        <label class="settings-slider-row">
+          <span>Popup hiện tối thiểu</span>
+          <input type="range" id="settings-reminder-min-display" min="5" max="60" value="10">
+          <span class="settings-slider-val" id="settings-reminder-min-display-val">10s</span>
+        </label>
+        <label class="settings-slider-row">
+          <span>Số lần đọc tối đa</span>
+          <input type="range" id="settings-reminder-max-reads" min="1" max="10" value="2">
+          <span class="settings-slider-val" id="settings-reminder-max-reads-val">2 lần</span>
+        </label>
+
+        <div class="settings-subsection">
+          <label class="settings-checkbox-row">
+            <input type="checkbox" id="settings-reminder-autooff">
+            <span>Tự động tắt thông báo nhắc từ</span>
+          </label>
+          <div class="settings-suboptions hidden" id="settings-reminder-autooff-options">
+            <div class="btn-row-2">
+              <button class="pill-btn active" data-autooff-mode="cycles">Theo chu kỳ</button>
+              <button class="pill-btn" data-autooff-mode="time">Theo thời gian</button>
+            </div>
+            <label class="settings-slider-row" id="settings-reminder-autooff-cycles-row">
+              <span>Số chu kỳ</span>
+              <input type="range" id="settings-reminder-autooff-cycles" min="1" max="10" value="1">
+              <span class="settings-slider-val" id="settings-reminder-autooff-cycles-val">1</span>
+            </label>
+            <label class="settings-slider-row hidden" id="settings-reminder-autooff-minutes-row">
+              <span>Sau (phút)</span>
+              <input type="range" id="settings-reminder-autooff-minutes" min="1" max="60" value="5">
+              <span class="settings-slider-val" id="settings-reminder-autooff-minutes-val">5</span>
+            </label>
+            <div class="settings-notify-hint">1 chu kỳ = đọc hết một lượt tất cả các danh sách đang bật 🔔 nhắc từ.</div>
+          </div>
+        </div>
+
+        <div class="settings-subsection">
+          <label class="settings-checkbox-row">
+            <input type="checkbox" id="settings-reminder-autoon">
+            <span>Tự động bật lại thông báo nhắc từ</span>
+          </label>
+          <div class="settings-suboptions hidden" id="settings-reminder-autoon-options">
+            <div class="btn-row-2">
+              <button class="pill-btn active" data-autoon-mode="countdown">Đếm ngược</button>
+              <button class="pill-btn" data-autoon-mode="clock">Giờ thực</button>
+            </div>
+            <label class="settings-slider-row" id="settings-reminder-autoon-minutes-row">
+              <span>Sau (phút)</span>
+              <input type="range" id="settings-reminder-autoon-minutes" min="1" max="60" value="5">
+              <span class="settings-slider-val" id="settings-reminder-autoon-minutes-val">5</span>
+            </label>
+            <div class="settings-time-row hidden" id="settings-reminder-autoon-clock-row">
+              <span>Bật lúc</span>
+              <input type="time" id="settings-reminder-autoon-clock" class="text-input" value="17:00">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Thẻ (Flashcard)</div>
+        <label class="settings-slider-row">
+          <span>Thời gian Auto play</span>
+          <input type="range" id="settings-fc-flip-duration" min="5" max="60" value="10">
+          <span class="settings-slider-val" id="settings-fc-flip-duration-val">10s</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Âm thanh</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-sfx-enabled">
+          <span>Hiệu ứng âm khi bấm nút / làm đúng / làm sai / chuyển thẻ</span>
+        </label>
+        <label class="settings-slider-row">
+          <span>Âm lượng hiệu ứng</span>
+          <input type="range" id="settings-sfx-volume" min="0" max="150" value="100">
+          <span class="settings-slider-val" id="settings-sfx-volume-val">100%</span>
+        </label>
+        <label class="settings-slider-row">
+          <span>Âm lượng lật thẻ</span>
+          <input type="range" id="settings-flip-volume" min="0" max="150" value="100">
+          <span class="settings-slider-val" id="settings-flip-volume-val">100%</span>
+        </label>
+        <label class="settings-slider-row">
+          <span>Âm lượng giọng đọc</span>
+          <input type="range" id="settings-tts-volume" min="0" max="100" value="100">
+          <span class="settings-slider-val" id="settings-tts-volume-val">100%</span>
+        </label>
+        <div class="settings-notify-hint">Kéo quá 100% để to hơn mức mặc định. Riêng "Âm lượng giọng đọc" bị giới hạn tối đa 100% do trình duyệt quy định, không thể đẩy to hơn được.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ POPUP: Đổi database ============ -->
+<div class="overlay hidden" id="db-config-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span class="settings-title-row">Đổi database <button class="version-info-btn" id="db-config-help-btn" title="Hướng dẫn tạo database mới & lấy config">?</button></span>
+      <button class="popup-close" id="db-config-close">✕</button>
+    </div>
+    <div class="settings-notify-hint" style="margin-bottom:10px;">Dán config Firebase của một project khác vào đây để chuyển đồng bộ sang đó (hữu ích khi đổi tài khoản).</div>
+    <textarea id="settings-db-config-input" class="text-input db-config-textarea" placeholder='Dán config Firebase dạng JSON, ví dụ:&#10;{&quot;apiKey&quot;:&quot;...&quot;,&quot;databaseURL&quot;:&quot;...&quot;,&quot;projectId&quot;:&quot;...&quot;}'></textarea>
+    <div class="btn-row-2">
+      <button class="pill-btn primary" id="db-config-apply">Áp dụng</button>
+      <button class="pill-btn-outline" id="db-config-reset">Về mặc định</button>
+    </div>
+    <div class="settings-notify-hint" id="db-config-status-hint"></div>
+  </div>
+</div>
+
+
+<!-- ============ POPUP: Phiên bản & Cập nhật ============ -->
+<div class="overlay hidden" id="version-info-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Phiên bản & Cập nhật</span>
+      <button class="popup-close" id="version-info-close">✕</button>
+    </div>
+    <div class="version-info-body" id="version-info-body"></div>
+  </div>
+</div>
+
+<!-- ============ POPUP: Hướng dẫn tạo database mới ============ -->
+<div class="overlay hidden" id="db-config-help-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Hướng dẫn tạo database mới</span>
+      <button class="popup-close" id="db-config-help-close">✕</button>
+    </div>
+    <div class="version-info-body">
+      <ol class="db-help-steps">
+        <li>Vào <a href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a>, đăng nhập bằng tài khoản Google muốn dùng.</li>
+        <li>Nhấn <b>Add project</b>, đặt tên rồi tạo dự án (có thể tắt Google Analytics cho nhanh).</li>
+        <li>Vào <b>Build → Realtime Database → Create Database</b>, chọn khu vực gần bạn, chọn <b>Test mode</b> để bắt đầu nhanh.</li>
+        <li>Vào biểu tượng ⚙ <b>Project settings → General</b>, kéo xuống mục <b>Your apps</b>, nhấn biểu tượng Web <b>&lt;/&gt;</b> để thêm 1 Web App.</li>
+        <li>Đặt tên rồi nhấn <b>Register app</b> — Firebase sẽ hiện đoạn code chứa object <code>firebaseConfig</code>.</li>
+        <li>Copy toàn bộ nội dung trong dấu <code>{ }</code> đó, dán vào ô "Đổi database" trong Nox rồi nhấn <b>Áp dụng</b>.</li>
+      </ol>
+      <p class="settings-notify-hint">Lưu ý: cần để Realtime Database ở chế độ cho phép đọc/ghi (Test mode, hoặc tự chỉnh Rules) thì Nox mới đồng bộ được. Nhấn "Về mặc định" bất cứ lúc nào để quay lại database gốc của Nox.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+<script src="script.js"></script>
+</body>
+</html>
