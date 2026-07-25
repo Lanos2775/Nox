@@ -985,14 +985,14 @@ input,textarea{font-family:inherit;}
 .diary-content.dy-freewrite-mode{cursor:text;}
 .dy-float-box{
   position:absolute;
-  min-width:36px;min-height:22px;
-  padding:5px 8px 5px 22px;
-  outline:none;
-  cursor:text;
+  min-width:40px;min-height:26px;
   border-radius:6px;
   border:1.5px dashed transparent;
+  transition:border-color .15s ease,background .15s ease;
 }
-.dy-float-box:hover,.dy-float-box:focus{border-color:var(--border-soft);background:var(--accent-soft);}
+.dy-float-box:hover,.dy-float-box:has(.dy-float-text:focus){border-color:var(--border-soft);background:var(--accent-soft);}
+/* bật chế độ Viết tự do -> đánh dấu hiện toàn bộ khung đang có trên trang cho dễ thấy */
+.diary-content.dy-freewrite-mode .dy-float-box{border-color:var(--accent);background:var(--accent-soft);}
 .dy-float-handle{
   position:absolute;
   left:2px;top:6px;
@@ -1003,8 +1003,16 @@ input,textarea{font-family:inherit;}
   user-select:none;
   opacity:0;
 }
-.dy-float-box:hover .dy-float-handle,.dy-float-box:focus .dy-float-handle{opacity:1;}
+.dy-float-box:hover .dy-float-handle,
+.dy-float-box:has(.dy-float-text:focus) .dy-float-handle,
+.diary-content.dy-freewrite-mode .dy-float-handle{opacity:1;}
 .dy-float-handle:active{cursor:grabbing;}
+.dy-float-text{
+  padding:5px 8px 5px 22px;
+  outline:none;
+  cursor:text;
+  min-width:20px;min-height:1.4em;
+}
 
 /* ============ REMINDER (NHẮC TỪ) POPUP ============ */
 .reminder-popup{

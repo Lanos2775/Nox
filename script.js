@@ -2654,6 +2654,7 @@ function saveDiaryContent() {
   if (!diaryCurrentListId) return;
   const list = getCategory("diary").find((l) => l.id === diaryCurrentListId);
   if (!list) return;
+  cleanupEmptyFloatBoxes();
   list.content = document.getElementById("dy-content").innerHTML;
   saveState();
 }
@@ -3238,6 +3239,14 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.4",
+    changes: [
+      "Fix lỗi Viết tự do: bấm vào trang hiện ô nhưng không gõ được chữ (do cấu trúc ô cũ không có chỗ hợp lệ để đặt con trỏ)",
+      "Viết tự do: bật công cụ lên sẽ tự đánh dấu (viền + nền màu) toàn bộ khung đang có trên trang cho dễ nhận biết",
+      "Fix lỗi ô Viết tự do trống (chưa gõ gì) vẫn bị lưu lại và hiện lại mỗi lần mở nhật ký — giờ luôn được dọn sạch trước khi lưu",
+    ],
+  },
+  {
     version: "2.3",
     changes: [
       "Bỏ 4 công cụ vẽ hình vừa thêm ở Nhật ký nhanh, thay bằng 1 công cụ duy nhất: \"Viết tự do\" (✥)",
@@ -3594,6 +3603,24 @@ document.getElementById("dy-box-btn").addEventListener("click", () => {
    cũng viết được ngay tại đó (không theo dòng chữ có sẵn), và có
    thể kéo di chuyển đoạn vừa viết đi khắp trang bằng tay cầm ⠿.
    ============================================================ */
+function cleanupEmptyFloatBoxes() {
+  const content = document.getElementById("dy-content");
+  if (!content) return;
+  content.querySelectorAll(".dy-float-box").forEach((box) => {
+    const textEl = box.querySelector(".dy-float-text");
+    let isEmpty;
+    if (textEl) {
+      isEmpty = textEl.textContent.trim() === "" && !textEl.querySelector("img,svg");
+    } else {
+      // định dạng cũ (trước khi fix lỗi không gõ được chữ) — không có .dy-float-text riêng
+      const clone = box.cloneNode(true);
+      clone.querySelectorAll(".dy-float-handle").forEach((h) => h.remove());
+      isEmpty = clone.textContent.trim() === "" && !clone.querySelector("img,svg");
+    }
+    if (isEmpty) box.remove();
+  });
+}
+
 (function setupDiaryFreeWrite() {
   const content = document.getElementById("dy-content");
   const toggleBtn = document.getElementById("dy-freewrite-btn");
@@ -3602,15 +3629,11 @@ document.getElementById("dy-box-btn").addEventListener("click", () => {
   function setFreeWriteMode(on) {
     freeWriteMode = on;
     toggleBtn.classList.toggle("active-state", on);
+    // bật lên -> đánh dấu hiện toàn bộ khung viết tự do đang có trên trang cho dễ thấy
     content.classList.toggle("dy-freewrite-mode", on);
+    if (!on) cleanupEmptyFloatBoxes();
   }
   toggleBtn.addEventListener("click", () => setFreeWriteMode(!freeWriteMode));
-
-  function isBoxEmpty(box) {
-    const clone = box.cloneNode(true);
-    clone.querySelectorAll(".dy-float-handle").forEach((h) => h.remove());
-    return clone.textContent.trim() === "" && !clone.querySelector("img,svg");
-  }
 
   function createFloatBox(clientX, clientY) {
     const rect = content.getBoundingClientRect();
@@ -3618,36 +3641,45 @@ document.getElementById("dy-box-btn").addEventListener("click", () => {
     const y = clientY - rect.top + content.scrollTop;
     const box = document.createElement("div");
     box.className = "dy-float-box";
-    box.contentEditable = "true";
+    box.contentEditable = "false"; // bản thân khung không nằm trong luồng soạn thảo chính
     box.style.left = Math.max(0, x) + "px";
     box.style.top = Math.max(0, y) + "px";
+
     const handle = document.createElement("span");
     handle.className = "dy-float-handle";
-    handle.contentEditable = "false";
     handle.textContent = "⠿";
+
+    const textEl = document.createElement("div");
+    textEl.className = "dy-float-text";
+    textEl.contentEditable = "true"; // vùng gõ chữ thật sự, tách riêng để luôn đặt được con trỏ
+
     box.appendChild(handle);
+    box.appendChild(textEl);
     content.appendChild(box);
-    box.focus();
+    textEl.focus();
     return box;
   }
 
-  /* bấm vào trang khi đang bật chế độ -> tạo (hoặc focus lại) ô viết tự do tại đó */
+  /* bấm vào trang khi đang bật chế độ -> tạo ô viết tự do mới tại đó */
   content.addEventListener("mousedown", (e) => {
     if (!freeWriteMode) return;
-    if (e.target.closest(".dy-float-handle")) return; // để tay kéo xử lý riêng
-    if (e.target.closest(".dy-float-box")) return; // bấm vào ô đã có sẵn -> sửa tiếp bình thường
+    if (e.target.closest(".dy-float-box")) return; // bấm vào ô đã có sẵn (kể cả tay cầm) -> để xử lý riêng, không tạo chồng ô mới
     e.preventDefault();
     createFloatBox(e.clientX, e.clientY);
-    scheduleDiaryAutosave();
   });
 
-  /* dọn ô trống khi bấm ra ngoài mà chưa viết gì */
+  /* dọn ô trống ngay khi rời khỏi nó mà chưa viết gì */
   content.addEventListener("focusout", (e) => {
-    const box = e.target.closest ? e.target.closest(".dy-float-box") : null;
-    if (box && isBoxEmpty(box)) {
+    const textEl = e.target.closest ? e.target.closest(".dy-float-text") : null;
+    if (!textEl) return;
+    const box = textEl.closest(".dy-float-box");
+    if (box && textEl.textContent.trim() === "" && !textEl.querySelector("img,svg")) {
       box.remove();
-      scheduleDiaryAutosave();
     }
+    scheduleDiaryAutosave();
+  });
+  content.addEventListener("input", (e) => {
+    if (e.target.closest && e.target.closest(".dy-float-text")) scheduleDiaryAutosave();
   });
 
   /* kéo di chuyển bằng tay cầm ⠿ — dùng event delegation nên vẫn hoạt động
