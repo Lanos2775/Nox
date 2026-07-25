@@ -811,11 +811,15 @@ input,textarea{font-family:inherit;}
 }
 .wh-diary-preview-content{
   flex:1;font-size:.9rem;line-height:1.7;color:var(--text);
-  max-height:340px;overflow-y:auto;
+  max-height:340px;overflow-y:auto;overflow-x:hidden;
   font-family:Georgia,"Times New Roman","Liberation Serif",serif;
+  position:relative;
 }
 .wh-diary-preview-content p{margin:0 0 10px;}
 .wh-diary-empty{color:var(--text-muted);font-style:italic;font-size:.85rem;font-family:inherit;}
+/* xem trước ở Kho là chỉ để đọc — khoá tương tác & không cho khung "Viết tự do" tràn ra ngoài */
+.wh-diary-preview-content .dy-float-box{pointer-events:none;max-width:calc(100% - 20px);}
+.wh-diary-preview-content .dy-float-text{pointer-events:none;}
 
 .dot-learning{background:var(--learning);}
 .dot-known{background:var(--known);}

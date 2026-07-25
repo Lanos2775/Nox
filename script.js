@@ -939,15 +939,22 @@ function fcSlideCard(action, opts) {
 })();
 
 function isTypingTarget() {
-  const tag = document.activeElement && document.activeElement.tagName;
-  return tag === "INPUT" || tag === "TEXTAREA";
+  const el = document.activeElement;
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (el.isContentEditable) return true;
+  return false;
+}
+function anyOverlayOpen() {
+  return !!document.querySelector(".overlay:not(.hidden)");
 }
 function flashcardTabVisible() {
   const el = document.querySelector('.tab-content[data-content="flashcard"]');
   return el && !el.classList.contains("hidden");
 }
 document.addEventListener("keydown", (e) => {
-  if (!flashcardTabVisible() || isTypingTarget()) return;
+  if (!flashcardTabVisible() || isTypingTarget() || anyOverlayOpen()) return;
   if (e.code === "Space") {
     e.preventDefault();
     flipFcCard();
@@ -3238,6 +3245,13 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.5",
+    changes: [
+      "Fix lỗi khung \"Viết tự do\" tràn lung tung ra ngoài khi xem trước nhật ký ở tab Kho — giờ luôn nằm gọn trong khung xem trước, chỉ đọc không sửa được ở đó",
+      "Fix lỗi phím tắt A/D (chuyển thẻ trước/sau) vẫn hoạt động ngầm khi đang gõ chữ trong popup Nhật ký (hoặc bất kỳ popup nào khác đang mở)",
+    ],
+  },
   {
     version: "2.4",
     changes: [
