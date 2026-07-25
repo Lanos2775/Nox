@@ -785,7 +785,7 @@ function getSfxVolume() {
   return Math.max(0, v) / 100; // có thể >1 (đẩy to hơn 100%) — compressor sẽ chống vỡ tiếng
 }
 function playClickSound() {
-  sfxTone(950, 650, 0.05, "square", 0.35, getSfxVolume());
+  sfxTone(680, 420, 0.08, "sine", 0.22, getSfxVolume());
 }
 function playCorrectSound() {
   const vol = getSfxVolume();
@@ -3238,6 +3238,22 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.3",
+    changes: [
+      "Bỏ 4 công cụ vẽ hình vừa thêm ở Nhật ký nhanh, thay bằng 1 công cụ duy nhất: \"Viết tự do\" (✥)",
+      "Viết tự do: bật lên rồi bấm vào bất kỳ đâu trên trang nhật ký là viết được ngay tại đó, không theo dòng có sẵn, kéo tay cầm ⠿ để di chuyển đoạn vừa viết đi bất kỳ đâu",
+    ],
+  },
+  {
+    version: "2.2",
+    changes: [
+      "Âm thanh khi bấm nút giờ êm hơn, đỡ chát tai (đổi từ sóng vuông sang sóng sine mềm)",
+      "Bỏ nút Highlight trong Nhật ký nhanh",
+      "Fix lỗi rung nhẹ + xuất hiện thanh cuộn ngang khi chuyển về thẻ trước ở tab Thẻ",
+      "Thêm công cụ vẽ hình vuông, tròn, đường thẳng, mũi tên trong Nhật ký nhanh — chọn công cụ rồi kéo thả trực tiếp trên nội dung",
+    ],
+  },
+  {
     version: "2.1",
     changes: [
       "Thêm hiệu ứng âm khi bấm nút, làm đúng, làm sai và chuyển thẻ",
@@ -3569,12 +3585,110 @@ function toggleInlineSpanClass(className, emptyMessage) {
   sel.removeAllRanges();
   scheduleDiaryAutosave();
 }
-document.getElementById("dy-highlight-btn").addEventListener("click", () => {
-  toggleInlineSpanClass("diary-highlight", "Hãy bôi đen đoạn chữ cần highlight trước.");
-});
 document.getElementById("dy-box-btn").addEventListener("click", () => {
   toggleInlineSpanClass("diary-boxed", "Hãy bôi đen đoạn chữ cần đóng khung trước.");
 });
+
+/* ============================================================
+   VIẾT TỰ DO — bật lên thì bấm vào bất kỳ đâu trên trang nhật ký
+   cũng viết được ngay tại đó (không theo dòng chữ có sẵn), và có
+   thể kéo di chuyển đoạn vừa viết đi khắp trang bằng tay cầm ⠿.
+   ============================================================ */
+(function setupDiaryFreeWrite() {
+  const content = document.getElementById("dy-content");
+  const toggleBtn = document.getElementById("dy-freewrite-btn");
+  let freeWriteMode = false;
+
+  function setFreeWriteMode(on) {
+    freeWriteMode = on;
+    toggleBtn.classList.toggle("active-state", on);
+    content.classList.toggle("dy-freewrite-mode", on);
+  }
+  toggleBtn.addEventListener("click", () => setFreeWriteMode(!freeWriteMode));
+
+  function isBoxEmpty(box) {
+    const clone = box.cloneNode(true);
+    clone.querySelectorAll(".dy-float-handle").forEach((h) => h.remove());
+    return clone.textContent.trim() === "" && !clone.querySelector("img,svg");
+  }
+
+  function createFloatBox(clientX, clientY) {
+    const rect = content.getBoundingClientRect();
+    const x = clientX - rect.left + content.scrollLeft;
+    const y = clientY - rect.top + content.scrollTop;
+    const box = document.createElement("div");
+    box.className = "dy-float-box";
+    box.contentEditable = "true";
+    box.style.left = Math.max(0, x) + "px";
+    box.style.top = Math.max(0, y) + "px";
+    const handle = document.createElement("span");
+    handle.className = "dy-float-handle";
+    handle.contentEditable = "false";
+    handle.textContent = "⠿";
+    box.appendChild(handle);
+    content.appendChild(box);
+    box.focus();
+    return box;
+  }
+
+  /* bấm vào trang khi đang bật chế độ -> tạo (hoặc focus lại) ô viết tự do tại đó */
+  content.addEventListener("mousedown", (e) => {
+    if (!freeWriteMode) return;
+    if (e.target.closest(".dy-float-handle")) return; // để tay kéo xử lý riêng
+    if (e.target.closest(".dy-float-box")) return; // bấm vào ô đã có sẵn -> sửa tiếp bình thường
+    e.preventDefault();
+    createFloatBox(e.clientX, e.clientY);
+    scheduleDiaryAutosave();
+  });
+
+  /* dọn ô trống khi bấm ra ngoài mà chưa viết gì */
+  content.addEventListener("focusout", (e) => {
+    const box = e.target.closest ? e.target.closest(".dy-float-box") : null;
+    if (box && isBoxEmpty(box)) {
+      box.remove();
+      scheduleDiaryAutosave();
+    }
+  });
+
+  /* kéo di chuyển bằng tay cầm ⠿ — dùng event delegation nên vẫn hoạt động
+     với cả những ô đã được load sẵn từ nội dung đã lưu trước đó */
+  let dragBox = null, dragStartX = 0, dragStartY = 0, dragBoxLeft = 0, dragBoxTop = 0;
+  function beginDrag(box, clientX, clientY) {
+    dragBox = box;
+    dragStartX = clientX;
+    dragStartY = clientY;
+    dragBoxLeft = parseFloat(box.style.left) || 0;
+    dragBoxTop = parseFloat(box.style.top) || 0;
+  }
+  function moveDrag(clientX, clientY) {
+    if (!dragBox) return;
+    dragBox.style.left = Math.max(0, dragBoxLeft + (clientX - dragStartX)) + "px";
+    dragBox.style.top = Math.max(0, dragBoxTop + (clientY - dragStartY)) + "px";
+  }
+  function endDrag() {
+    if (!dragBox) return;
+    dragBox = null;
+    scheduleDiaryAutosave();
+  }
+  content.addEventListener("mousedown", (e) => {
+    const handle = e.target.closest(".dy-float-handle");
+    if (!handle) return;
+    e.preventDefault();
+    beginDrag(handle.closest(".dy-float-box"), e.clientX, e.clientY);
+  });
+  document.addEventListener("mousemove", (e) => moveDrag(e.clientX, e.clientY));
+  document.addEventListener("mouseup", endDrag);
+  content.addEventListener("touchstart", (e) => {
+    const handle = e.target.closest(".dy-float-handle");
+    if (!handle || e.touches.length !== 1) return;
+    beginDrag(handle.closest(".dy-float-box"), e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!dragBox || e.touches.length !== 1) return;
+    moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: true });
+  document.addEventListener("touchend", endDrag);
+})();
 
 /* edit / view mode toggle */
 document.getElementById("dy-mode-btn").addEventListener("click", () => {
@@ -3600,7 +3714,6 @@ document.getElementById("dy-content").addEventListener("keydown", (e) => {
   else if (!e.shiftKey && key === "u") { e.preventDefault(); diaryExec("underline"); }
   else if (!e.shiftKey && key === "z") { e.preventDefault(); diaryExec("undo"); }
   else if (!e.shiftKey && key === "y") { e.preventDefault(); diaryExec("redo"); }
-  else if (e.shiftKey && key === "h") { e.preventDefault(); document.getElementById("dy-highlight-btn").click(); }
   else if (e.shiftKey && key === "d") { e.preventDefault(); document.getElementById("dy-box-btn").click(); }
   else if (e.shiftKey && key === "l") { e.preventDefault(); diaryExec("justifyLeft"); }
   else if (e.shiftKey && key === "e") { e.preventDefault(); diaryExec("justifyCenter"); }

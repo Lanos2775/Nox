@@ -25,13 +25,14 @@
    on <body style="...">. This :root block is simply level 1 (lightest). */
 
 *{box-sizing:border-box;}
-html,body{height:100%;}
+html,body{height:100%;overflow-x:hidden;}
 body{
   margin:0;
   font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
   transition:background .2s ease,color .2s ease;
+  width:100%;
 }
 button{font-family:inherit;cursor:pointer;}
 input,textarea{font-family:inherit;}
@@ -918,11 +919,11 @@ input,textarea{font-family:inherit;}
 }
 .diary-tool-btn:hover{background:var(--accent-soft);}
 .diary-tool-btn.active-state{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
-.diary-highlight-btn{color:#a88400;}
 .diary-color-btn{position:relative;}
 .diary-color-input{
   position:absolute;width:34px;height:34px;opacity:0;pointer-events:none;
 }
+.diary-toolbar-sep{width:1.5px;align-self:stretch;background:var(--border-soft);margin:2px 2px;}
 
 .diary-dd-wrap{position:relative;}
 .diary-dropdown-menu{
@@ -963,6 +964,7 @@ input,textarea{font-family:inherit;}
 
 .diary-content{
   flex:1;overflow-y:auto;
+  position:relative;
   padding:28px 40px;
   font-family:Georgia,"Times New Roman","Liberation Serif",serif;
   font-size:1rem;line-height:1.8;color:var(--text);
@@ -980,12 +982,29 @@ input,textarea{font-family:inherit;}
   border-radius:4px;
   padding:0 5px;
 }
-.diary-highlight{
-  background:#fff59d;
-  border-radius:2px;
-  padding:0 1px;
+.diary-content.dy-freewrite-mode{cursor:text;}
+.dy-float-box{
+  position:absolute;
+  min-width:36px;min-height:22px;
+  padding:5px 8px 5px 22px;
+  outline:none;
+  cursor:text;
+  border-radius:6px;
+  border:1.5px dashed transparent;
 }
-body[data-theme-level="4"] .diary-highlight{color:#111114;}
+.dy-float-box:hover,.dy-float-box:focus{border-color:var(--border-soft);background:var(--accent-soft);}
+.dy-float-handle{
+  position:absolute;
+  left:2px;top:6px;
+  cursor:grab;
+  color:var(--text-muted);
+  font-size:.72rem;
+  line-height:1;
+  user-select:none;
+  opacity:0;
+}
+.dy-float-box:hover .dy-float-handle,.dy-float-box:focus .dy-float-handle{opacity:1;}
+.dy-float-handle:active{cursor:grabbing;}
 
 /* ============ REMINDER (NHẮC TỪ) POPUP ============ */
 .reminder-popup{
