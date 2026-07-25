@@ -807,19 +807,28 @@ input,textarea{font-family:inherit;}
   border:1.5px solid var(--border);border-radius:var(--radius-md);
   padding:20px;margin-bottom:16px;
   display:flex;flex-direction:column;gap:14px;
-  min-height:180px;
+  min-height:calc(100vh - 260px);
 }
 .wh-diary-preview-content{
-  flex:1;font-size:.9rem;line-height:1.7;color:var(--text);
-  max-height:340px;overflow-y:auto;overflow-x:hidden;
+  flex:1;min-height:0;
+  font-size:.9rem;line-height:1.7;color:var(--text);
+  overflow-y:auto;overflow-x:hidden;
   font-family:Georgia,"Times New Roman","Liberation Serif",serif;
   position:relative;
 }
 .wh-diary-preview-content p{margin:0 0 10px;}
 .wh-diary-empty{color:var(--text-muted);font-style:italic;font-size:.85rem;font-family:inherit;}
 /* xem trước ở Kho là chỉ để đọc — khoá tương tác & không cho khung "Viết tự do" tràn ra ngoài */
-.wh-diary-preview-content .dy-float-box{pointer-events:none;max-width:calc(100% - 20px);}
-.wh-diary-preview-content .dy-float-text{pointer-events:none;}
+.wh-diary-preview-content .dy-float-box{
+  position:static !important;
+  display:inline-block;
+  vertical-align:middle;
+  margin:2px 4px;
+  max-width:100%;
+  pointer-events:none;
+}
+.wh-diary-preview-content .dy-float-handle{display:none;}
+.wh-diary-preview-content .dy-float-text{pointer-events:none;padding:2px 4px;}
 
 .dot-learning{background:var(--learning);}
 .dot-known{background:var(--known);}

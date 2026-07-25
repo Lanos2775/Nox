@@ -3246,6 +3246,13 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.6",
+    changes: [
+      "Fix tiếp lỗi xem trước nhật ký ở Kho: khung \"Viết tự do\" giờ quay về nằm gọn theo dòng chữ bình thường khi xem trước, không còn kéo giãn vùng cuộn / hiện thanh cuộn kỳ lạ",
+      "Khung xem nhật ký ở Kho giờ kéo dài hết chiều cao trang thay vì bị giới hạn ngắn, thừa nhiều khoảng trống bên dưới như trước",
+    ],
+  },
+  {
     version: "2.5",
     changes: [
       "Fix lỗi khung \"Viết tự do\" tràn lung tung ra ngoài khi xem trước nhật ký ở tab Kho — giờ luôn nằm gọn trong khung xem trước, chỉ đọc không sửa được ở đó",
