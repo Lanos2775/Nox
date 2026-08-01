@@ -305,8 +305,8 @@
         <div class="wh-table-header" id="wh-table-header">
           <span></span>
           <span>Tiếng Anh</span>
-          <span>Phiên âm</span>
-          <span>Loại từ</span>
+          <span class="wh-col-ipa">Phiên âm</span>
+          <span class="wh-col-pos">Loại từ</span>
           <span></span>
           <span>Tiếng Việt</span>
           <span></span>
@@ -354,15 +354,27 @@
 
 <!-- ============ MODAL: Thêm vào (Kho) ============ -->
 <div class="overlay hidden" id="wh-add-overlay">
-  <div class="modal-panel">
+  <div class="modal-panel wh-add-modal">
     <div class="popup-header">
       <span>Thêm vào <span id="wh-add-list-name"></span></span>
       <button class="popup-close" id="wh-add-close">✕</button>
     </div>
-    <textarea class="modal-textarea" id="wh-add-textarea" placeholder="Nhập câu hoặc nhiều câu ở đây ...&#10;( Câu Tiếng Anh - Câu Tiếng Việt )"></textarea>
-    <div class="btn-row-2">
-      <button class="pill-btn primary flex-1" id="wh-add-confirm">Chuyển</button>
-      <button class="pill-btn-outline flex-1" id="wh-add-clear">Xóa</button>
+
+    <div id="wh-add-input-view">
+      <textarea class="modal-textarea" id="wh-add-textarea" placeholder="Nhập câu hoặc nhiều câu ở đây ...&#10;( Câu Tiếng Anh - Câu Tiếng Việt )&#10;&#10;Riêng danh sách Từ điển: có thể dán cả đoạn định dạng • từ /phiên âm/ [loại từ]: nghĩa"></textarea>
+      <div class="btn-row-2">
+        <button class="pill-btn primary flex-1" id="wh-add-confirm">Chuyển</button>
+        <button class="pill-btn-outline flex-1" id="wh-add-clear">Xóa</button>
+      </div>
+    </div>
+
+    <div id="wh-add-preview-view" class="hidden">
+      <div class="wh-preview-hint" id="wh-preview-hint">Xem trước — có thể chỉnh sửa từng ô trước khi thêm vào danh sách.</div>
+      <div class="wh-preview-list" id="wh-preview-list"></div>
+      <div class="btn-row-2">
+        <button class="pill-btn primary flex-1" id="wh-add-ok">OK — Thêm vào danh sách</button>
+        <button class="pill-btn-outline flex-1" id="wh-add-back">← Quay lại</button>
+      </div>
     </div>
   </div>
 </div>

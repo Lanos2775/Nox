@@ -1408,6 +1408,128 @@ async function fetchIPA(word) {
     return "";
   }
 }
+/* ================= Parser dán nhanh cho Từ điển ================= *
+ * Hỗ trợ dạng: • word /phiên âm/ [loại từ]: nghĩa [loại từ 2]: nghĩa 2 ...
+ * - "•" tách các mục
+ * - "<>" tách 2 từ trái nghĩa/đối lập trong cùng 1 mục thành 2 mục riêng
+ * - "-->" giới thiệu cụm/từ phái sinh (vd: -->perfectly: hết chỗ nói...)
+ *   "~" trong cụm sẽ được thay bằng từ gốc (vd: "be ~" -> "be patient")
+ * ================================================================= */
+function extractPosMeanings(text) {
+  const posList = [];
+  const meaningParts = [];
+  let note = "";
+  const t = (text || "").trim();
+  if (!t) return { posList, meaningParts, note };
+  const regex = /\[([^\]]+)\]\s*:?/g;
+  const matches = [...t.matchAll(regex)];
+  if (!matches.length) {
+    meaningParts.push(t.replace(/^:\s*/, "").trim());
+    return { posList, meaningParts, note };
+  }
+  if (matches[0].index > 0) {
+    const prefix = t.slice(0, matches[0].index).trim();
+    if (prefix && /[A-Za-zÀ-ỹ0-9]/.test(prefix)) note = prefix;
+  }
+  matches.forEach((m, i) => {
+    const pos = m[1].trim();
+    posList.push(pos);
+    const startIdx = m.index + m[0].length;
+    const endIdx = i + 1 < matches.length ? matches[i + 1].index : t.length;
+    const meaning = t.slice(startIdx, endIdx).trim().replace(/[;,]\s*$/, "");
+    if (meaning) meaningParts.push(`[${pos}] ${meaning}`);
+  });
+  return { posList, meaningParts, note };
+}
+
+function parseDictionaryEntryHalf(half, results) {
+  const chunks = half.split("-->").map((s) => s.trim()).filter(Boolean);
+  const mainChunk = chunks[0] || "";
+  const arrowChunks = chunks.slice(1);
+  if (!mainChunk) return;
+
+  let headword = "";
+  let ipa = "";
+  let rest = "";
+  const withIpa = mainChunk.match(/^([A-Za-zÀ-ỹ][A-Za-zÀ-ỹ'’-]*)\s*\/([^/]+)\/\s*(.*)$/);
+  if (withIpa) {
+    headword = withIpa[1].trim();
+    ipa = withIpa[2].trim();
+    rest = withIpa[3].trim();
+  } else {
+    const withBracket = mainChunk.match(/^([A-Za-zÀ-ỹ][A-Za-zÀ-ỹ'’-]*)\s*(\[.*)$/);
+    if (withBracket) {
+      headword = withBracket[1].trim();
+      rest = withBracket[2].trim();
+    } else {
+      const firstColon = mainChunk.indexOf(":");
+      if (firstColon !== -1) {
+        headword = mainChunk.slice(0, firstColon).trim();
+        rest = mainChunk.slice(firstColon + 1).trim();
+      } else {
+        headword = mainChunk.trim();
+      }
+    }
+  }
+  if (!headword) return;
+
+  let { posList, meaningParts, note } = extractPosMeanings(rest);
+  const extraNotes = note ? [note] : [];
+
+  arrowChunks.forEach((chunk) => {
+    const bracketIdx = chunk.indexOf("[");
+    const colonIdx = chunk.indexOf(":");
+    if (colonIdx !== -1 && (bracketIdx === -1 || colonIdx < bracketIdx)) {
+      const phraseRaw = chunk.slice(0, colonIdx).trim();
+      const remainder = chunk.slice(colonIdx + 1).trim();
+      const phrase = phraseRaw.includes("~") ? phraseRaw.replace(/~/g, headword) : phraseRaw;
+      const subBracket = remainder.indexOf("[");
+      const meaningText = (subBracket === -1 ? remainder : remainder.slice(0, subBracket)).trim();
+      const continuation = subBracket === -1 ? "" : remainder.slice(subBracket).trim();
+      if (meaningText && phrase) {
+        results.push({ en: phrase, ipa: "", pos: "", vi: meaningText });
+      }
+      if (continuation) {
+        const extra = extractPosMeanings(continuation);
+        posList = posList.concat(extra.posList);
+        meaningParts = meaningParts.concat(extra.meaningParts);
+      }
+    } else if (chunk) {
+      extraNotes.push(chunk);
+    }
+  });
+
+  let vi = meaningParts.join(" ");
+  if (extraNotes.length) vi = (vi ? vi + " " : "") + `(${extraNotes.join("; ")})`;
+
+  results.push({ en: headword, ipa, pos: posList.join(", "), vi: vi.trim() });
+}
+
+function parseDictionaryBlob(raw) {
+  const text = raw.replace(/\r/g, " ").replace(/\n/g, " ").replace(/\s+/g, " ").replace(/\.\s*$/, "").trim();
+  const segments = text.split("•").map((s) => s.trim()).filter(Boolean);
+  const results = [];
+  segments.forEach((seg) => {
+    seg.split("<>").map((s) => s.trim()).filter(Boolean).forEach((half) => parseDictionaryEntryHalf(half, results));
+  });
+  return results.filter((r) => r.en && r.vi);
+}
+
+function parseSimpleLines(raw) {
+  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  const results = [];
+  lines.forEach((line) => {
+    const sep = line.includes("-->") ? "-->" : line.includes("\t") ? "\t" : "-";
+    const idx = line.indexOf(sep);
+    if (idx === -1) return;
+    const en = line.slice(0, idx).trim();
+    const vi = line.slice(idx + sep.length).trim();
+    if (!en || !vi) return;
+    results.push({ en, ipa: "", pos: "", vi });
+  });
+  return results;
+}
+
 function playAudio(word, lang = "en-US") {
   const w = (word || "").trim();
   if (!w) return;
@@ -2044,6 +2166,7 @@ function renderWarehouseTab() {
   });
 
   const isDiary = wh.cat === "diary";
+  document.getElementById("wh-table-wrap").classList.toggle("compact-cols", wh.cat !== "dictionary");
   document.getElementById("wh-table-wrap").classList.toggle("hidden", isDiary);
   document.getElementById("wh-diary-preview").classList.toggle("hidden", !isDiary);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isDiary);
@@ -2173,21 +2296,24 @@ function renderWhTable() {
 
     table.appendChild(row);
 
-    // Fetch IPA and POS asynchronously
-    Promise.all([
-      Promise.resolve(item.ipa || ""),
-      item.ipa ? Promise.resolve("") : fetchIPA(item.en),
-      fetchPartOfSpeech(item.en)
-    ]).then(([storedIPA, fetchedIPA, posList]) => {
-      const ipa = storedIPA || fetchedIPA;
-      const ipaEl = document.getElementById(`wh-ipa-${item.id}`);
-      const posEl = document.getElementById(`wh-pos-${item.id}`);
-      if (ipa && ipaEl) ipaEl.textContent = ipa;
-      if (posList.length && posEl) {
-        posEl.textContent = posList.map(posAbbrev).join(" · ");
-        posEl.title = posList.join(", ");
-      }
-    }).catch(() => {});
+    // Cột Phiên âm / Loại từ chỉ áp dụng cho tab Từ điển
+    if (wh.cat === "dictionary") {
+      const storedPos = (item.pos || "").split(",").map((s) => s.trim()).filter(Boolean);
+      Promise.all([
+        Promise.resolve(item.ipa || ""),
+        item.ipa ? Promise.resolve("") : fetchIPA(item.en),
+        storedPos.length ? Promise.resolve(storedPos) : fetchPartOfSpeech(item.en)
+      ]).then(([storedIPA, fetchedIPA, posList]) => {
+        const ipa = storedIPA || fetchedIPA;
+        const ipaEl = document.getElementById(`wh-ipa-${item.id}`);
+        const posEl = document.getElementById(`wh-pos-${item.id}`);
+        if (ipa && ipaEl) ipaEl.textContent = ipa;
+        if (posList.length && posEl) {
+          posEl.textContent = posList.map(posAbbrev).join(" · ");
+          posEl.title = posList.join(", ");
+        }
+      }).catch(() => {});
+    }
   });
   const known = list.items.filter((i) => i.status === "known").length;
   const pct = Math.round((known / list.items.length) * 100);
@@ -2251,11 +2377,25 @@ document.getElementById("wh-reset-status").addEventListener("click", () => {
 
 /* ---- Thêm vào (bulk add) modal ---- */
 const whAddOverlay = document.getElementById("wh-add-overlay");
+const whAddInputView = document.getElementById("wh-add-input-view");
+const whAddPreviewView = document.getElementById("wh-add-preview-view");
+let whPreviewItems = [];
+
+function whShowInputView() {
+  whAddPreviewView.classList.add("hidden");
+  whAddInputView.classList.remove("hidden");
+}
+function whShowPreviewView() {
+  whAddInputView.classList.add("hidden");
+  whAddPreviewView.classList.remove("hidden");
+}
+
 document.getElementById("wh-add-items").addEventListener("click", () => {
   const list = whActiveList();
   if (!list) return;
   document.getElementById("wh-add-list-name").textContent = "— " + list.name;
   document.getElementById("wh-add-textarea").value = "";
+  whShowInputView();
   whAddOverlay.classList.remove("hidden");
 });
 document.getElementById("wh-add-close").addEventListener("click", () => whAddOverlay.classList.add("hidden"));
@@ -2263,26 +2403,82 @@ whAddOverlay.addEventListener("click", (e) => { if (e.target === whAddOverlay) w
 document.getElementById("wh-add-clear").addEventListener("click", () => {
   document.getElementById("wh-add-textarea").value = "";
 });
+
 document.getElementById("wh-add-confirm").addEventListener("click", () => {
   const list = whActiveList();
   if (!list) return;
   const raw = document.getElementById("wh-add-textarea").value;
-  const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
+  if (!raw.trim()) { showToast("Chưa có nội dung để chuyển."); return; }
+  whPreviewItems = wh.cat === "dictionary" ? parseDictionaryBlob(raw) : parseSimpleLines(raw);
+  if (!whPreviewItems.length) {
+    showToast(
+      wh.cat === "dictionary"
+        ? 'Không nhận diện được mục nào. Dùng định dạng: "• từ /phiên âm/ [loại từ]: nghĩa"'
+        : 'Không nhận diện được dòng nào. Dùng định dạng: "Câu Tiếng Anh - Câu Tiếng Việt" mỗi dòng.'
+    );
+    return;
+  }
+  renderWhPreview();
+  whShowPreviewView();
+});
+
+function renderWhPreview() {
+  const box = document.getElementById("wh-preview-list");
+  box.innerHTML = "";
+  const isDict = wh.cat === "dictionary";
+  document.getElementById("wh-preview-hint").textContent =
+    `Xem trước ${whPreviewItems.length} mục — có thể chỉnh sửa từng ô, xoá mục không cần, rồi nhấn OK để thêm vào danh sách.`;
+  if (!whPreviewItems.length) {
+    box.innerHTML = `<div class="wh-preview-empty">Không có mục nào để xem trước.</div>`;
+    return;
+  }
+  whPreviewItems.forEach((it, idx) => {
+    const row = document.createElement("div");
+    row.className = "wh-preview-row" + (isDict ? "" : " simple");
+    row.dataset.idx = idx;
+    row.innerHTML = isDict
+      ? `<input class="wh-preview-en" value="${escapeHtml(it.en)}" placeholder="Từ tiếng Anh">
+         <input class="wh-preview-ipa" value="${escapeHtml(it.ipa)}" placeholder="Phiên âm">
+         <input class="wh-preview-pos" value="${escapeHtml(it.pos)}" placeholder="Loại từ">
+         <textarea class="wh-preview-vi" placeholder="Nghĩa tiếng Việt">${escapeHtml(it.vi)}</textarea>
+         <button class="wh-preview-remove" title="Bỏ mục này">🗑</button>`
+      : `<input class="wh-preview-en" value="${escapeHtml(it.en)}" placeholder="Tiếng Anh">
+         <textarea class="wh-preview-vi" placeholder="Tiếng Việt">${escapeHtml(it.vi)}</textarea>
+         <button class="wh-preview-remove" title="Bỏ mục này">🗑</button>`;
+    row.querySelector(".wh-preview-remove").addEventListener("click", () => {
+      whPreviewItems.splice(idx, 1);
+      renderWhPreview();
+    });
+    box.appendChild(row);
+  });
+}
+
+document.getElementById("wh-add-back").addEventListener("click", () => whShowInputView());
+
+document.getElementById("wh-add-ok").addEventListener("click", () => {
+  const list = whActiveList();
+  if (!list) return;
+  const isDict = wh.cat === "dictionary";
+  const rows = document.querySelectorAll("#wh-preview-list .wh-preview-row");
   let added = 0;
-  lines.forEach((line) => {
-    const sep = line.includes("-->") ? "-->" : line.includes("\t") ? "\t" : "-";
-    const idx = line.indexOf(sep);
-    if (idx === -1) return;
-    const en = line.slice(0, idx).trim();
-    const vi = line.slice(idx + sep.length).trim();
+  rows.forEach((row) => {
+    const en = row.querySelector(".wh-preview-en").value.trim();
+    const vi = row.querySelector(".wh-preview-vi").value.trim();
     if (!en || !vi) return;
-    list.items.push({ id: uid(), en, vi, status: "new" });
+    const item = { id: uid(), en, vi, status: "new" };
+    if (isDict) {
+      const ipa = row.querySelector(".wh-preview-ipa").value.trim();
+      const pos = row.querySelector(".wh-preview-pos").value.trim();
+      if (ipa) item.ipa = ipa;
+      if (pos) item.pos = pos;
+    }
+    list.items.push(item);
     added++;
   });
   saveState();
   whAddOverlay.classList.add("hidden");
   renderWarehouseTab();
-  if (!added) showToast('Không nhận diện được dòng nào. Dùng định dạng: "Câu Tiếng Anh - Câu Tiếng Việt" mỗi dòng.');
+  if (!added) showToast("Không có mục hợp lệ nào được thêm (thiếu Tiếng Anh hoặc Tiếng Việt).");
   else showToast(`Đã thêm ${added} mục.`);
 });
 
@@ -3245,6 +3441,15 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.7",
+    changes: [
+      "Popup \"Thêm vào\" ở Kho giờ to bằng ~75% màn hình, dễ nhìn và dễ nhập hơn",
+      "Thêm bước Xem trước sau khi nhấn \"Chuyển\": có thể sửa từng ô (Tiếng Anh / Phiên âm / Loại từ / Tiếng Việt) hoặc xoá bớt mục trước khi nhấn OK để thêm vào danh sách",
+      "Viết lại bộ tách dữ liệu dán vào cho danh sách Từ điển: nhận diện đúng định dạng \"• từ /phiên âm/ [loại từ]: nghĩa\", tự tách các mục trái nghĩa nối bằng \"<>\" và các cụm/từ phái sinh nối bằng \"-->\" thành từng mục riêng",
+      "Cột Phiên âm và Loại từ trong bảng ở Kho giờ chỉ hiện ở tab Từ điển, ẩn ở tab Thẻ và Viết",
+    ],
+  },
   {
     version: "2.6",
     changes: [
