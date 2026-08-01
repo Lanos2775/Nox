@@ -239,17 +239,18 @@
         <button class="pill-btn-outline" id="wr-hide-preview-toggle" title="Ẩn số lượng từ/chữ cái chưa gõ tới">Ẩn xem trước</button>
       </div>
       <div class="btn-row-2">
-        <button class="block-btn" id="wr-translate">Dịch</button>
+        <button class="block-btn" id="wr-quicksave-toggle" title="Khi bật: làm đúng câu (đúng thật, không tính lượt đã trượt) sẽ hiện các từ trong câu bên dưới để bấm tra nhanh">Lưu nhanh từ</button>
         <button class="block-btn" id="wr-answer">Đáp án</button>
       </div>
 
-      <div class="quick-translate-bar hidden" id="quick-translate-bar">
+      <div class="quick-translate-bar" id="quick-translate-bar">
         <input type="text" id="qt-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
         <button class="qt-swap-btn" id="qt-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
         <div class="qt-box qt-result-box" id="qt-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
         <button class="qt-play-btn" id="qt-play" title="Phát âm từ tiếng Anh">🔊</button>
         <button class="qt-save-btn" id="qt-save" title="Lưu nhanh vào Từ điển">🔖</button>
       </div>
+      <div class="wr-quicksave-words hidden" id="wr-quicksave-words"></div>
     </section>
 
     <!-- ---- Quiz main ---- -->
@@ -386,8 +387,13 @@
       <span>Sửa mục</span>
       <button class="popup-close" id="wh-edit-close">✕</button>
     </div>
-    <input type="text" class="text-input" id="wh-edit-en" placeholder="Câu Tiếng Anh">
+    <input type="text" class="text-input" id="wh-edit-en" placeholder="Câu Tiếng Anh (dùng &quot;/&quot; giữa từ đồng nghĩa, vd: I love/like her)">
     <input type="text" class="text-input" id="wh-edit-vi" placeholder="Câu Tiếng Việt" style="margin-top:10px;">
+    <div id="wh-edit-alts-section" class="hidden">
+      <div class="wh-edit-alts-label">Đáp án khác (cấu trúc câu khác) — cũng dùng được "/"</div>
+      <div id="wh-edit-alts-list"></div>
+      <button type="button" class="pill-btn-outline" id="wh-edit-alts-add" style="margin-top:8px;width:100%;">+ Thêm đáp án khác</button>
+    </div>
     <button class="block-btn primary" id="wh-edit-save" style="margin-top:14px;">Lưu</button>
   </div>
 </div>
@@ -693,6 +699,18 @@
           <span>Thời gian Auto play</span>
           <input type="range" id="settings-fc-flip-duration" min="5" max="60" value="10">
           <span class="settings-slider-val" id="settings-fc-flip-duration-val">10s</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Thanh dịch nhanh</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-qt-clear-refocus">
+          <span>Xoá bản dịch cũ khi bấm ra ngoài rồi bấm lại vào thanh dịch</span>
+        </label>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-qt-autodetect">
+          <span>Tự động nhận diện Anh / Việt khi gõ (dựa vào dấu tiếng Việt)</span>
         </label>
       </div>
 

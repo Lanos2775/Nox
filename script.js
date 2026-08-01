@@ -32,7 +32,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10 },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false },
     bubblePos: null,
   };
 }
@@ -90,6 +90,8 @@ function loadState() {
     if (parsed.settings.fcFlipDuration === undefined) parsed.settings.fcFlipDuration = 10;
     if (parsed.settings.sfxEnabled === undefined) parsed.settings.sfxEnabled = true;
     if (parsed.settings.sfxVolume === undefined) parsed.settings.sfxVolume = 100;
+    if (parsed.settings.qtClearOnRefocus === undefined) parsed.settings.qtClearOnRefocus = false;
+    if (parsed.settings.qtAutoDetectLang === undefined) parsed.settings.qtAutoDetectLang = false;
     return parsed;
   } catch (e) {
     return defaultState();
@@ -1051,10 +1053,14 @@ const wr = {
   queue: [],
   index: 0,
   checked: false, // has current question been checked via Enter/Đáp án?
-  hidePreview: false, // "Ẩn xem trước" mode: don't reveal letter/word-count structure
+  hidePreview: true, // "Ẩn xem trước" mode: don't reveal letter/word-count structure (mặc định bật)
   charHintCount: 0,
   wordHintCount: 0,
   flashTimeout: null,
+  roundFailed: false, // đã trượt lượt này (Enter sai hoặc dùng quá gợi ý) — không cho lật lại thành đúng
+  trackedAnswer: "", // đáp án (trong các đáp án được chấp nhận) đang gần giống nhất với những gì đang gõ
+  quickSaveEnabled: false, // "Lưu nhanh từ": hiện các từ trong câu vừa làm đúng để tra nhanh
+  lastCorrectItem: null,
 };
 
 const PUNCT_REGEX = /[.,!?;:"'()…“”‘’\-]/g;
@@ -1063,6 +1069,73 @@ function stripPunct(str) {
 }
 function normalizeAnswer(str) {
   return stripPunct(str).replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/* ================= Nhiều đáp án cho Viết ================= *
+ * "/" trong 1 đáp án = các từ thay thế lẫn nhau tại đúng vị trí đó
+ * (vd "I love/like her" chấp nhận cả "I love her" và "I like her").
+ * item.enAlts = mảng các đáp án phụ (cấu trúc câu khác hẳn), mỗi đáp án
+ * cũng dùng được "/" bên trong.
+ * =========================================================== */
+function expandSlashAnswer(str) {
+  const tokens = (str || "").trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return [""];
+  let combos = [[]];
+  tokens.forEach((tok) => {
+    const opts = tok.split("/").map((s) => s.trim()).filter(Boolean);
+    const useOpts = opts.length ? opts : [tok];
+    const next = [];
+    combos.forEach((c) => {
+      useOpts.forEach((o) => next.push([...c, o]));
+    });
+    combos = next.length ? next.slice(0, 64) : combos; // giới hạn an toàn
+  });
+  return combos.map((c) => c.join(" "));
+}
+
+function allAcceptedAnswers(item) {
+  const list = [];
+  expandSlashAnswer(item.en || "").forEach((a) => list.push({ text: a, primary: true }));
+  (item.enAlts || []).forEach((alt) => {
+    expandSlashAnswer(alt).forEach((a) => list.push({ text: a, primary: false }));
+  });
+  return list;
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+// Chọn đáp án (trong tất cả đáp án được chấp nhận) đang gần giống nhất với
+// những gì đang gõ, để tô màu/gợi ý bám theo đáp án đó thay vì luôn cố định.
+function wrUpdateTrackedAnswer(item, typedRaw) {
+  const candidates = allAcceptedAnswers(item);
+  if (!candidates.length) { wr.trackedAnswer = item.en || ""; return; }
+  const typedKey = stripPunct(typedRaw || "").toLowerCase();
+  let best = candidates[0];
+  let bestDist = Infinity;
+  candidates.forEach((c) => {
+    const key = stripPunct(c.text).toLowerCase();
+    const dist = levenshtein(typedKey, key);
+    if (dist < bestDist || (dist === bestDist && c.primary && !best.primary)) {
+      bestDist = dist;
+      best = c;
+    }
+  });
+  wr.trackedAnswer = best.text;
 }
 function wrCharHintLimit() {
   return wr.hidePreview ? 5 : 3;
@@ -1126,7 +1199,10 @@ function resetWrQuestionState() {
   wr.checked = false;
   wr.charHintCount = 0;
   wr.wordHintCount = 0;
+  wr.roundFailed = false;
+  wr.trackedAnswer = "";
   document.getElementById("wr-answer-input").value = "";
+  wrHideQuickSaveWords();
 }
 
 function wrGoNext() {
@@ -1153,12 +1229,14 @@ function renderWrFeedback() {
   const grid = document.getElementById("wr-feedback-grid");
   grid.innerHTML = "";
   if (!item) return;
-  const answer = item.en;
   const typedRaw = document.getElementById("wr-answer-input").value;
+  wrUpdateTrackedAnswer(item, typedRaw);
+  const answer = wr.trackedAnswer || item.en;
   const typedClean = stripPunct(typedRaw);
   let tPtr = 0;
   let anyMissing = false;
   let lastReached = true; // whether the previous position had visible info (governs punctuation visibility)
+  let wordPoisoned = false; // 1 chữ sai trong từ (hoặc trong hidePreview: trong cả câu) -> mọi chữ sau đó vẫn hiện sai
 
   for (let i = 0; i < answer.length; i++) {
     const ch = answer[i];
@@ -1172,6 +1250,7 @@ function renderWrFeedback() {
       }
       if (hasTypedHere && typedClean[tPtr] === " ") tPtr++;
       lastReached = hasTypedHere;
+      if (!wr.hidePreview) wordPoisoned = false; // ranh giới từ mới ở chế độ thường mới được "gột sạch"
       continue;
     }
 
@@ -1194,7 +1273,9 @@ function renderWrFeedback() {
       const span = document.createElement("span");
       span.className = "feedback-char";
       span.textContent = typedCh;
-      span.classList.add(typedCh.toLowerCase() === ch.toLowerCase() ? "correct" : "wrong");
+      const matches = typedCh.toLowerCase() === ch.toLowerCase();
+      if (!matches) wordPoisoned = true;
+      span.classList.add(wordPoisoned ? "wrong" : "correct");
       grid.appendChild(span);
       tPtr++;
       lastReached = true;
@@ -1238,14 +1319,35 @@ function flashAnswerFeedback(isCorrect) {
 function wrCheckAnswer() {
   const item = currentWrItem();
   if (!item) return;
-  const typed = document.getElementById("wr-answer-input").value;
-  const isCorrect = normalizeAnswer(typed) === normalizeAnswer(item.en);
-  item.status = isCorrect ? "known" : "difficult";
+  const typedRaw = document.getElementById("wr-answer-input").value;
+  const candidates = allAcceptedAnswers(item);
+  const isCorrect = candidates.some((c) => normalizeAnswer(typedRaw) === normalizeAnswer(c.text));
+  const wasAlreadyFailed = wr.roundFailed;
+
+  if (!isCorrect) {
+    wr.roundFailed = true;
+    item.status = "difficult";
+  } else if (wasAlreadyFailed) {
+    item.status = "difficult"; // đã trượt lượt này rồi — giữ nguyên dù giờ gõ đúng
+  } else {
+    item.status = "known";
+  }
   saveState();
   renderWritingStatsOnly();
   renderWrFeedback();
   wr.checked = true;
-  flashAnswerFeedback(isCorrect);
+
+  if (isCorrect && !wasAlreadyFailed) {
+    flashAnswerFeedback(true);
+    if (wr.quickSaveEnabled) wrShowQuickSaveWords(item);
+  } else if (isCorrect && wasAlreadyFailed) {
+    flashAnswerFeedback(false);
+    showToast("Đúng, nhưng vẫn tính là làm sai vì đã gõ sai / dùng gợi ý trước đó.");
+    wrHideQuickSaveWords();
+  } else {
+    flashAnswerFeedback(false);
+    wrHideQuickSaveWords();
+  }
 }
 
 document.getElementById("wr-answer-input").addEventListener("input", () => {
@@ -1269,36 +1371,44 @@ function revealNextChar() {
   const item = currentWrItem();
   if (!item) return;
   const input = document.getElementById("wr-answer-input");
-  if (input.value.length < item.en.length) {
-    input.value = item.en.slice(0, input.value.length + 1);
+  wrUpdateTrackedAnswer(item, input.value);
+  const answer = wr.trackedAnswer || item.en;
+  if (input.value.length < answer.length) {
+    input.value = answer.slice(0, input.value.length + 1);
   }
   wr.checked = false;
   wr.charHintCount++;
   renderWrFeedback();
   if (wr.charHintCount > wrCharHintLimit()) {
     item.status = "difficult";
+    wr.roundFailed = true;
     saveState();
     renderWritingStatsOnly();
     flashAnswerFeedback(false);
+    wrHideQuickSaveWords();
   }
 }
 function revealNextWord() {
   const item = currentWrItem();
   if (!item) return;
   const input = document.getElementById("wr-answer-input");
+  wrUpdateTrackedAnswer(item, input.value);
+  const answer = wr.trackedAnswer || item.en;
   const cur = input.value.length;
-  let nextSpace = item.en.indexOf(" ", cur);
-  if (nextSpace === -1) nextSpace = item.en.length;
+  let nextSpace = answer.indexOf(" ", cur);
+  if (nextSpace === -1) nextSpace = answer.length;
   else nextSpace += 1;
-  input.value = item.en.slice(0, Math.max(nextSpace, cur + 1));
+  input.value = answer.slice(0, Math.max(nextSpace, cur + 1));
   wr.checked = false;
   wr.wordHintCount++;
   renderWrFeedback();
   if (wr.wordHintCount > wrWordHintLimit()) {
     item.status = "difficult";
+    wr.roundFailed = true;
     saveState();
     renderWritingStatsOnly();
     flashAnswerFeedback(false);
+    wrHideQuickSaveWords();
   }
 }
 document.getElementById("wr-show-char").addEventListener("click", revealNextChar);
@@ -1308,24 +1418,60 @@ document.getElementById("wr-hide-preview-toggle").addEventListener("click", (e) 
   e.currentTarget.classList.toggle("active", wr.hidePreview);
   renderWrFeedback();
 });
-document.getElementById("wr-translate").addEventListener("click", () => {
-  const bar = document.getElementById("quick-translate-bar");
-  const nowHidden = bar.classList.toggle("hidden");
-  if (!nowHidden) {
-    setTimeout(() => document.getElementById("qt-input").focus(), 50);
+// mặc định "Ẩn xem trước" luôn bật sẵn — đồng bộ trạng thái nút với wr.hidePreview lúc khởi động
+document.getElementById("wr-hide-preview-toggle").classList.toggle("active", wr.hidePreview);
+
+function wrHideQuickSaveWords() {
+  const box = document.getElementById("wr-quicksave-words");
+  if (!box) return;
+  box.innerHTML = "";
+  box.classList.add("hidden");
+}
+function wrShowQuickSaveWords(item) {
+  const box = document.getElementById("wr-quicksave-words");
+  if (!box) return;
+  const words = item.en
+    .split(/\s+/)
+    .map((w) => w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""))
+    .filter(Boolean);
+  if (!words.length) { wrHideQuickSaveWords(); return; }
+  box.innerHTML = "";
+  words.forEach((w) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "wr-word-chip";
+    chip.textContent = w;
+    chip.title = "Bấm để tra nhanh từ này";
+    chip.addEventListener("click", () => qtWriting.setInputAndTranslateForced(w, "en-vi"));
+    box.appendChild(chip);
+  });
+  box.classList.remove("hidden");
+}
+document.getElementById("wr-quicksave-toggle").addEventListener("click", (e) => {
+  wr.quickSaveEnabled = !wr.quickSaveEnabled;
+  e.currentTarget.classList.toggle("active", wr.quickSaveEnabled);
+  if (!wr.quickSaveEnabled) {
+    wrHideQuickSaveWords();
+  } else {
+    const item = currentWrItem();
+    if (item && wr.checked && item.status === "known" && !wr.roundFailed) wrShowQuickSaveWords(item);
   }
 });
 document.getElementById("wr-answer").addEventListener("click", () => {
   const item = currentWrItem();
   if (!item) return;
   item.status = "difficult";
+  wr.roundFailed = true;
   saveState();
   document.getElementById("wr-answer-input").value = item.en;
   wr.checked = true;
+  wr.trackedAnswer = item.en;
   renderWritingStatsOnly();
   renderWrFeedback();
   flashAnswerFeedback(false);
-  showToast("Đáp án: " + item.en);
+  wrHideQuickSaveWords();
+  const altsMsg = item.enAlts && item.enAlts.length ? ` (còn có: ${item.enAlts.join(" | ")})` : "";
+  showToast("Đáp án: " + item.en + altsMsg);
   setTimeout(() => wrGoNext(), 1400);
 });
 
@@ -1437,7 +1583,7 @@ function extractPosMeanings(text) {
     const startIdx = m.index + m[0].length;
     const endIdx = i + 1 < matches.length ? matches[i + 1].index : t.length;
     const meaning = t.slice(startIdx, endIdx).trim().replace(/[;,]\s*$/, "");
-    if (meaning) meaningParts.push(`[${pos}] ${meaning}`);
+    if (meaning) meaningParts.push(meaning);
   });
   return { posList, meaningParts, note };
 }
@@ -1499,7 +1645,7 @@ function parseDictionaryEntryHalf(half, results) {
     }
   });
 
-  let vi = meaningParts.join(" ");
+  let vi = meaningParts.join(" / ");
   if (extraNotes.length) vi = (vi ? vi + " " : "") + `(${extraNotes.join("; ")})`;
 
   results.push({ en: headword, ipa, pos: posList.join(", "), vi: vi.trim() });
@@ -1542,12 +1688,17 @@ function playAudio(word, lang = "en-US") {
   return utterance;
 }
 
+const VI_DIACRITIC_REGEX = /[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
+function detectIsVietnamese(text) {
+  return VI_DIACRITIC_REGEX.test(text || "");
+}
+
 /* ============================================================
    QUICK TRANSLATE BAR — reusable factory, instantiated once for
    the Viết tab ("qt") and once for the Thẻ tab ("qt2")
    ============================================================ */
 function createQuickTranslateBar(prefix) {
-  const qs = { dir: "vi-en", lastEn: "", lastVi: "", lastIPA: "", debounceHandle: null, requestId: 0 };
+  const qs = { dir: "vi-en", lastEn: "", lastVi: "", lastIPA: "", sourceText: "", debounceHandle: null, requestId: 0, hasBlurred: false };
   const inputEl = document.getElementById(`${prefix}-input`);
   const dirBtn = document.getElementById(`${prefix}-dir-toggle`);
   const resultBox = document.getElementById(`${prefix}-result`);
@@ -1559,6 +1710,14 @@ function createQuickTranslateBar(prefix) {
     inputEl.placeholder = qs.dir === "vi-en" ? "Nhập từ hoặc cụm từ tiếng Việt ..." : "Nhập từ hoặc cụm từ tiếng Anh ...";
   }
 
+  // Gộp lại các nghĩa đang được chọn (bấm chọn nhiều được, không chỉ 1) thành lastEn/lastVi
+  function recomputeSelection() {
+    const selected = [...resultBox.querySelectorAll(".qt-candidate-selected")].map((el) => el.textContent);
+    const joined = selected.join(" / ");
+    if (qs.dir === "vi-en") { qs.lastVi = qs.sourceText; qs.lastEn = joined; }
+    else { qs.lastEn = qs.sourceText; qs.lastVi = joined; }
+  }
+
   async function translate() {
     const text = inputEl.value.trim();
     resultBox.classList.remove("qt-error", "qt-loading");
@@ -1568,6 +1727,14 @@ function createQuickTranslateBar(prefix) {
       qs.lastVi = "";
       return;
     }
+    if (state.settings && state.settings.qtAutoDetectLang) {
+      const wantedDir = detectIsVietnamese(text) ? "vi-en" : "en-vi";
+      if (wantedDir !== qs.dir) {
+        qs.dir = wantedDir;
+        updateDirButton();
+      }
+    }
+    qs.sourceText = text;
     resultBox.textContent = "Đang dịch...";
     resultBox.classList.add("qt-loading");
     const myRequestId = ++qs.requestId;
@@ -1614,17 +1781,14 @@ function createQuickTranslateBar(prefix) {
         chip.type = "button";
         chip.className = "qt-candidate" + (idx === 0 ? " qt-candidate-primary qt-candidate-selected" : "");
         chip.textContent = c;
-        chip.title = "Nhấn để chọn nghĩa này";
+        chip.title = "Nhấn để chọn / bỏ chọn nghĩa này (chọn được nhiều nghĩa)";
         chip.addEventListener("click", () => {
-          resultBox.querySelectorAll(".qt-candidate").forEach((el) => el.classList.remove("qt-candidate-selected"));
-          chip.classList.add("qt-candidate-selected");
-          if (qs.dir === "vi-en") { qs.lastVi = text; qs.lastEn = c; }
-          else { qs.lastEn = text; qs.lastVi = c; }
+          chip.classList.toggle("qt-candidate-selected");
+          recomputeSelection();
         });
         resultBox.appendChild(chip);
       });
-      if (qs.dir === "vi-en") { qs.lastVi = text; qs.lastEn = candidates[0]; }
-      else { qs.lastEn = text; qs.lastVi = candidates[0]; }
+      recomputeSelection();
 
       const englishWord = qs.dir === "vi-en" ? candidates[0] : text;
       Promise.all([
@@ -1682,6 +1846,17 @@ function createQuickTranslateBar(prefix) {
       translate();
     }
   });
+  inputEl.addEventListener("blur", () => { qs.hasBlurred = true; });
+  inputEl.addEventListener("focus", () => {
+    if (qs.hasBlurred && state.settings && state.settings.qtClearOnRefocus) {
+      inputEl.value = "";
+      resultBox.innerHTML = "";
+      qs.lastEn = "";
+      qs.lastVi = "";
+      qs.lastIPA = "";
+      qs.hasBlurred = false;
+    }
+  });
   playBtn.addEventListener("click", () => {
     if (!qs.lastEn) {
       showToast("Chưa có từ tiếng Anh để phát âm.");
@@ -1713,6 +1888,16 @@ function createQuickTranslateBar(prefix) {
 
   return {
     setInputAndTranslate(text) {
+      inputEl.value = text;
+      clearTimeout(qs.debounceHandle);
+      translate();
+    },
+    // Điền từ + ép chiều dịch (dùng cho khối từ "Lưu nhanh từ" — luôn là từ tiếng Anh)
+    setInputAndTranslateForced(text, forceDir) {
+      if (forceDir && qs.dir !== forceDir) {
+        qs.dir = forceDir;
+        updateDirButton();
+      }
       inputEl.value = text;
       clearTimeout(qs.debounceHandle);
       translate();
@@ -2394,7 +2579,15 @@ document.getElementById("wh-add-items").addEventListener("click", () => {
   const list = whActiveList();
   if (!list) return;
   document.getElementById("wh-add-list-name").textContent = "— " + list.name;
-  document.getElementById("wh-add-textarea").value = "";
+  const textarea = document.getElementById("wh-add-textarea");
+  textarea.value = "";
+  if (wh.cat === "dictionary") {
+    textarea.placeholder = 'Nhập câu hoặc nhiều câu ở đây ...\n( Câu Tiếng Anh - Câu Tiếng Việt )\n\nHoặc dán cả đoạn định dạng • từ /phiên âm/ [loại từ]: nghĩa';
+  } else if (wh.cat === "writing") {
+    textarea.placeholder = 'Nhập mỗi câu 1 dòng:\nI like/love her - Tôi thích cô ấy\nI like her | She\'s someone I like - Tôi thích cô ấy\n\nDùng "/" cho từ thay thế trong 1 đáp án, dùng "|" để thêm đáp án khác hẳn';
+  } else {
+    textarea.placeholder = 'Nhập câu hoặc nhiều câu ở đây ...\n( Câu Tiếng Anh - Câu Tiếng Việt )';
+  }
   whShowInputView();
   whAddOverlay.classList.remove("hidden");
 });
@@ -2459,13 +2652,22 @@ document.getElementById("wh-add-ok").addEventListener("click", () => {
   const list = whActiveList();
   if (!list) return;
   const isDict = wh.cat === "dictionary";
+  const isWriting = wh.cat === "writing";
   const rows = document.querySelectorAll("#wh-preview-list .wh-preview-row");
   let added = 0;
   rows.forEach((row) => {
-    const en = row.querySelector(".wh-preview-en").value.trim();
+    const enRaw = row.querySelector(".wh-preview-en").value.trim();
     const vi = row.querySelector(".wh-preview-vi").value.trim();
-    if (!en || !vi) return;
+    if (!enRaw || !vi) return;
+    let en = enRaw;
+    let enAlts = [];
+    if (isWriting && enRaw.includes("|")) {
+      const parts = enRaw.split("|").map((s) => s.trim()).filter(Boolean);
+      en = parts[0] || enRaw;
+      enAlts = parts.slice(1);
+    }
     const item = { id: uid(), en, vi, status: "new" };
+    if (enAlts.length) item.enAlts = enAlts;
     if (isDict) {
       const ipa = row.querySelector(".wh-preview-ipa").value.trim();
       const pos = row.querySelector(".wh-preview-pos").value.trim();
@@ -2485,6 +2687,19 @@ document.getElementById("wh-add-ok").addEventListener("click", () => {
 /* ---- Edit item modal ---- */
 const whEditOverlay = document.getElementById("wh-edit-overlay");
 let whEditItemId = null;
+
+function whEditAddAltRow(value) {
+  const list = document.getElementById("wh-edit-alts-list");
+  const row = document.createElement("div");
+  row.className = "wh-edit-alts-row";
+  row.innerHTML = `<input type="text" class="text-input" placeholder="Đáp án khác (vd: She's someone I like)">
+    <button type="button" title="Xoá đáp án này">✕</button>`;
+  row.querySelector("input").value = value || "";
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  list.appendChild(row);
+}
+document.getElementById("wh-edit-alts-add").addEventListener("click", () => whEditAddAltRow(""));
+
 function openWhEdit(itemId) {
   const list = whActiveList();
   const item = list.items.find((i) => i.id === itemId);
@@ -2492,6 +2707,15 @@ function openWhEdit(itemId) {
   whEditItemId = itemId;
   document.getElementById("wh-edit-en").value = item.en;
   document.getElementById("wh-edit-vi").value = item.vi;
+  const altsSection = document.getElementById("wh-edit-alts-section");
+  const altsList = document.getElementById("wh-edit-alts-list");
+  altsList.innerHTML = "";
+  if (wh.cat === "writing") {
+    altsSection.classList.remove("hidden");
+    (item.enAlts || []).forEach((alt) => whEditAddAltRow(alt));
+  } else {
+    altsSection.classList.add("hidden");
+  }
   whEditOverlay.classList.remove("hidden");
 }
 document.getElementById("wh-edit-close").addEventListener("click", () => whEditOverlay.classList.add("hidden"));
@@ -2502,6 +2726,13 @@ document.getElementById("wh-edit-save").addEventListener("click", () => {
   if (!item) return;
   item.en = document.getElementById("wh-edit-en").value.trim();
   item.vi = document.getElementById("wh-edit-vi").value.trim();
+  if (wh.cat === "writing") {
+    const alts = [...document.querySelectorAll("#wh-edit-alts-list input")]
+      .map((inp) => inp.value.trim())
+      .filter(Boolean);
+    if (alts.length) item.enAlts = alts;
+    else delete item.enAlts;
+  }
   saveState();
   whEditOverlay.classList.add("hidden");
   renderWarehouseTab();
@@ -3058,6 +3289,18 @@ document.getElementById("settings-flip-volume-val").textContent = state.settings
 document.getElementById("settings-tts-volume").value = state.settings.ttsVolume;
 document.getElementById("settings-tts-volume-val").textContent = state.settings.ttsVolume + "%";
 
+/* ---- Thanh dịch nhanh: xoá khi bấm ra rồi vào lại + tự nhận diện ngôn ngữ ---- */
+document.getElementById("settings-qt-clear-refocus").addEventListener("change", (e) => {
+  state.settings.qtClearOnRefocus = e.target.checked;
+  saveState();
+});
+document.getElementById("settings-qt-autodetect").addEventListener("change", (e) => {
+  state.settings.qtAutoDetectLang = e.target.checked;
+  saveState();
+});
+document.getElementById("settings-qt-clear-refocus").checked = !!state.settings.qtClearOnRefocus;
+document.getElementById("settings-qt-autodetect").checked = !!state.settings.qtAutoDetectLang;
+
 /* ---- Nhắc từ: thời gian hiện tối thiểu + số lần đọc tối đa ---- */
 const reminderMinDisplaySlider = document.getElementById("settings-reminder-min-display");
 const reminderMaxReadsSlider = document.getElementById("settings-reminder-max-reads");
@@ -3441,6 +3684,19 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.8",
+    changes: [
+      "Viết: hỗ trợ nhiều đáp án cho 1 câu — dùng \"/\" giữa từ đồng nghĩa ngay trong 1 đáp án (vd \"I love/like her\"), và thêm hẳn đáp án khác cấu trúc khác qua popup Sửa hoặc dán hàng loạt bằng \"|\"",
+      "Viết: tô màu & gợi ý (Tab/hiện từ) giờ tự bám theo đáp án đang gần giống nhất với những gì đang gõ, thay vì chỉ 1 đáp án cố định",
+      "Viết: chấm chặt hơn — gõ sai hoặc dùng quá gợi ý sẽ tính \"Làm sai\" vĩnh viễn cho câu đó dù sau gõ đúng lại; sai 1 chữ trong 1 từ thì cả từ đó hiện sai hết (không lật lại đúng); khi bật \"Ẩn xem trước\" thì lan luôn ra cả câu còn lại",
+      "\"Ẩn xem trước\" giờ mặc định luôn bật sẵn",
+      "Viết: thanh dịch nhanh giờ luôn hiện sẵn; nút \"Dịch\" đổi thành \"Lưu nhanh từ\" — bật lên thì làm đúng 1 câu sẽ hiện từng từ trong câu dưới dạng khối bấm được để tra nhanh nghĩa",
+      "Thanh dịch nhanh: bấm chọn nhiều nghĩa cùng lúc (không còn chỉ chọn được 1) khi lưu vào Từ điển",
+      "Cài đặt mới: xoá bản dịch cũ khi bấm ra rồi bấm lại vào thanh dịch, và tự động nhận diện Anh/Việt khi gõ",
+      "Fix lỗi cột Tiếng Việt ở Từ điển bị thừa nhãn [C] [U] [Vi]... khi dán đoạn định dạng từ điển hàng loạt",
+    ],
+  },
   {
     version: "2.7",
     changes: [
