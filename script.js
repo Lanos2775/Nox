@@ -32,7 +32,8 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false },
+    studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     bubblePos: null,
   };
 }
@@ -92,6 +93,8 @@ function loadState() {
     if (parsed.settings.sfxVolume === undefined) parsed.settings.sfxVolume = 100;
     if (parsed.settings.qtClearOnRefocus === undefined) parsed.settings.qtClearOnRefocus = false;
     if (parsed.settings.qtAutoDetectLang === undefined) parsed.settings.qtAutoDetectLang = false;
+    if (parsed.settings.showDiary === undefined) parsed.settings.showDiary = false;
+    if (!parsed.studyMomentum) parsed.studyMomentum = { score: 0, streakGain: 1, lastActionAt: null, history: [] };
     return parsed;
   } catch (e) {
     return defaultState();
@@ -321,6 +324,45 @@ function shuffleArr(arr) {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+/* ============================================================
+   ĐÀ HỌC TẬP (dùng cho tab Thống kê > Đà học tập)
+   - Mỗi hành động học (lật/đánh dấu thẻ, kiểm tra câu Viết, chọn đáp án Quizz)
+     gọi logStudyAction(). Nếu hành động liên tiếp cách nhau < 3 phút thì coi
+     là đang học liên tục — "đà" (streakGain) tăng dần, điểm cộng vào ngày
+     càng nhanh. Nếu cách nhau > 3 phút thì coi là bị ngắt quãng: trừ điểm
+     theo thời gian vắng mặt (vắng càng lâu trừ càng nhanh) rồi "đà" về lại
+     mức khởi điểm.
+   ============================================================ */
+const STUDY_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 phút
+function logStudyAction(source, isCorrect) {
+  const m = state.studyMomentum;
+  const now = Date.now();
+  if (m.lastActionAt !== null) {
+    const gap = now - m.lastActionAt;
+    if (gap > STUDY_IDLE_TIMEOUT_MS) {
+      const idleHours = gap / 3600000;
+      const decay = 2 * idleHours + 0.3 * idleHours * idleHours;
+      m.score -= decay;
+      m.streakGain = 1;
+    } else {
+      m.streakGain = Math.min(m.streakGain + 0.2, 5);
+    }
+  }
+  m.score += m.streakGain;
+  if (isCorrect === true) m.score += 0.5;
+  else if (isCorrect === false) m.score -= 0.2;
+  m.lastActionAt = now;
+  m.score = Math.round(m.score * 100) / 100;
+
+  let ts = Math.floor(now / 1000);
+  if (m.history.length && ts <= m.history[m.history.length - 1].t) {
+    ts = m.history[m.history.length - 1].t + 1;
+  }
+  m.history.push({ t: ts, score: m.score });
+  if (m.history.length > 5000) m.history.splice(0, m.history.length - 5000);
+  saveState();
 }
 
 /* ============================================================
@@ -823,6 +865,7 @@ function flipFcCard() {
   if (!fc.queue.length) return;
   const cardEl = document.getElementById("fc-card");
   playFlipSound();
+  logStudyAction("flashcard");
   cardEl.classList.remove("flipping");
   void cardEl.offsetWidth; // restart animation
   cardEl.classList.add("flipping");
@@ -976,6 +1019,7 @@ function fcMark(status) {
   if (!fc.queue.length) return;
   const item = fcItemById(fc.queue[fc.index]);
   item.status = status;
+  logStudyAction("flashcard");
   saveState();
   renderFlashcardTab();
   if (fc.queue.length) {
@@ -1327,6 +1371,7 @@ function wrCheckAnswer() {
   const candidates = allAcceptedAnswers(item);
   const isCorrect = candidates.some((c) => normalizeAnswer(typedRaw) === normalizeAnswer(c.text));
   const wasAlreadyFailed = wr.roundFailed;
+  logStudyAction("writing", isCorrect);
 
   if (!isCorrect) {
     wr.roundFailed = true;
@@ -2224,6 +2269,7 @@ document.querySelectorAll(".quiz-choice-btn").forEach((btn) => {
     const q = quiz.questions[quiz.qIndex];
     const chosenText = btn.querySelector(".choice-text").textContent;
     const isCorrect = chosenText === q.correctAnswer;
+    logStudyAction("quiz", isCorrect);
     document.querySelectorAll(".quiz-choice-btn").forEach((b) => {
       b.disabled = true;
       if (b.querySelector(".choice-text").textContent === q.correctAnswer) b.classList.add("correct");
@@ -2318,7 +2364,7 @@ document.addEventListener("keydown", (e) => {
 const wh = { cat: "flashcard" };
 
 function whCatLabel(cat) {
-  return { flashcard: "Thẻ", writing: "Viết", dictionary: "Từ điển", diary: "Nhật Ký" }[cat];
+  return { flashcard: "Thẻ", writing: "Viết", dictionary: "Từ điển", diary: "Nhật Ký", stats: "Thống kê" }[cat];
 }
 
 document.querySelectorAll("[data-wh-cat]").forEach((btn) => {
@@ -2341,6 +2387,20 @@ function whActiveList() {
 }
 
 function renderWarehouseTab() {
+  const isStats = wh.cat === "stats";
+  document.getElementById("wh-sidebar-list-section").classList.toggle("hidden", isStats);
+  document.getElementById("wh-stats-sidebar-note").classList.toggle("hidden", !isStats);
+  document.getElementById("wh-current-list-title").classList.toggle("hidden", isStats);
+  document.getElementById("wh-stats-view").classList.toggle("hidden", !isStats);
+  document.getElementById("wh-table-wrap").classList.toggle("hidden", isStats);
+  document.getElementById("wh-toolbar").classList.toggle("hidden", isStats);
+  document.getElementById("wh-legend").classList.toggle("hidden", isStats);
+  if (isStats) {
+    document.getElementById("wh-diary-preview").classList.add("hidden");
+    renderStatsTab();
+    return;
+  }
+
   document.getElementById("wh-lists-title").textContent = whCatLabel(wh.cat);
   const grid = document.getElementById("wh-list-grid");
   grid.innerHTML = "";
@@ -2401,6 +2461,119 @@ function renderWarehouseTab() {
   } else {
     renderWhTable();
   }
+}
+
+/* ============================================================
+   TAB THỐNG KÊ (Kho > Thống kê)
+   ============================================================ */
+let statsChartInstance = null;
+let statsSeriesInstance = null;
+
+function statsSnapshotForCat(cat) {
+  const items = allItems(cat);
+  const total = items.length;
+  const known = items.filter((i) => i.status === "known").length;
+  const difficult = items.filter((i) => i.status === "difficult").length;
+  const fresh = Math.max(0, total - known - difficult);
+  return { total, known, difficult, fresh };
+}
+
+function renderStatsSnapshot() {
+  const box = document.getElementById("wh-stats-snapshot");
+  box.innerHTML = "";
+  [
+    { cat: "flashcard", title: "Thẻ", knownLabel: "Đã biết", difficultLabel: "Khó", freshLabel: "Đang học" },
+    { cat: "writing", title: "Viết", knownLabel: "Làm đúng", difficultLabel: "Làm sai", freshLabel: "Chưa làm" },
+    { cat: "dictionary", title: "Từ điển", knownLabel: "Đã biết", difficultLabel: "Khó", freshLabel: "Đang học" },
+  ].forEach((cfg) => {
+    const s = statsSnapshotForCat(cfg.cat);
+    const pctKnown = s.total ? Math.round((s.known / s.total) * 100) : 0;
+    const pctDifficult = s.total ? (s.difficult / s.total) * 100 : 0;
+    const pctFresh = s.total ? (s.fresh / s.total) * 100 : 0;
+    const card = document.createElement("div");
+    card.className = "wh-stats-card";
+    card.innerHTML = `
+      <div class="wh-stats-card-title">${cfg.title}</div>
+      <div class="wh-stats-card-total">${s.total} mục · ${pctKnown}% ${cfg.knownLabel.toLowerCase()}</div>
+      <div class="wh-stats-card-bar">
+        <span class="seg-known" style="width:${(s.total ? (s.known / s.total) * 100 : 0)}%"></span>
+        <span class="seg-difficult" style="width:${pctDifficult}%"></span>
+        <span class="seg-new" style="width:${pctFresh}%"></span>
+      </div>
+      <div class="wh-stats-card-legend">
+        <span><span class="dot" style="background:#22c55e"></span>${cfg.knownLabel}: ${s.known}</span>
+        <span><span class="dot" style="background:#ef4444"></span>${cfg.difficultLabel}: ${s.difficult}</span>
+        <span><span class="dot" style="background:var(--text-muted)"></span>${cfg.freshLabel}: ${s.fresh}</span>
+      </div>`;
+    box.appendChild(card);
+  });
+}
+
+function renderStatsMomentumChart() {
+  const m = state.studyMomentum;
+  const valEl = document.getElementById("wh-stats-momentum-val");
+  valEl.textContent = m.score.toFixed(1);
+  valEl.classList.toggle("positive", m.score > 0);
+  valEl.classList.toggle("negative", m.score < 0);
+
+  const container = document.getElementById("wh-stats-chart");
+  if (typeof LightweightCharts === "undefined") {
+    container.innerHTML = `<div class="wh-stats-card-title" style="padding:20px 0;">Không tải được thư viện biểu đồ — cần kết nối mạng ở lần mở đầu tiên.</div>`;
+    return;
+  }
+  if (!m.history.length) {
+    container.innerHTML = `<div class="wh-stats-card-title" style="padding:20px 0;">Chưa có dữ liệu. Bắt đầu học ở Thẻ / Viết / Quizz để bắt đầu ghi.</div>`;
+    return;
+  }
+
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  if (!statsChartInstance) {
+    container.innerHTML = "";
+    statsChartInstance = LightweightCharts.createChart(container, {
+      layout: { background: { color: "transparent" }, textColor: cssVar("--text-muted") || "#888" },
+      grid: {
+        vertLines: { color: cssVar("--border") || "#333" },
+        horzLines: { color: cssVar("--border") || "#333" },
+      },
+      rightPriceScale: { borderVisible: false },
+      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      autoSize: true,
+    });
+    statsSeriesInstance = statsChartInstance.addBaselineSeries({
+      baseValue: { type: "price", price: 0 },
+      topLineColor: "rgba(34,197,94,1)",
+      topFillColor1: "rgba(34,197,94,0.28)",
+      topFillColor2: "rgba(34,197,94,0.05)",
+      bottomLineColor: "rgba(239,68,68,1)",
+      bottomFillColor1: "rgba(239,68,68,0.05)",
+      bottomFillColor2: "rgba(239,68,68,0.28)",
+      lineWidth: 2,
+    });
+  } else {
+    statsChartInstance.applyOptions({
+      layout: { background: { color: "transparent" }, textColor: cssVar("--text-muted") || "#888" },
+      grid: {
+        vertLines: { color: cssVar("--border") || "#333" },
+        horzLines: { color: cssVar("--border") || "#333" },
+      },
+    });
+  }
+
+  statsSeriesInstance.setData(m.history.map((p) => ({ time: p.t, value: p.score })));
+  statsChartInstance.timeScale().fitContent();
+  requestAnimationFrame(() => {
+    if (statsChartInstance && container.clientWidth) {
+      statsChartInstance.resize(container.clientWidth, container.clientHeight || 300);
+      statsChartInstance.timeScale().fitContent();
+    }
+  });
+}
+
+function renderStatsTab() {
+  renderStatsSnapshot();
+  renderStatsMomentumChart();
 }
 
 function renderDiaryPreview() {
@@ -3323,6 +3496,27 @@ document.getElementById("settings-qt-autodetect").addEventListener("change", (e)
 document.getElementById("settings-qt-clear-refocus").checked = !!state.settings.qtClearOnRefocus;
 document.getElementById("settings-qt-autodetect").checked = !!state.settings.qtAutoDetectLang;
 
+/* ---- Ẩn/hiện tính năng Nhật ký ---- */
+function applyDiaryVisibility() {
+  const show = !!state.settings.showDiary;
+  const catBtn = document.getElementById("wh-cat-diary-btn");
+  const quickBtn = document.getElementById("diary-quick-open");
+  if (catBtn) catBtn.classList.toggle("hidden", !show);
+  if (quickBtn) quickBtn.classList.toggle("hidden", !show);
+  if (!show && wh.cat === "diary") {
+    wh.cat = "flashcard";
+    document.querySelectorAll(".wh-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.whCat === "flashcard"));
+    renderWarehouseTab();
+  }
+}
+document.getElementById("settings-show-diary").addEventListener("change", (e) => {
+  state.settings.showDiary = e.target.checked;
+  saveState();
+  applyDiaryVisibility();
+});
+document.getElementById("settings-show-diary").checked = !!state.settings.showDiary;
+applyDiaryVisibility();
+
 /* ---- Nhắc từ: thời gian hiện tối thiểu + số lần đọc tối đa ---- */
 const reminderMinDisplaySlider = document.getElementById("settings-reminder-min-display");
 const reminderMaxReadsSlider = document.getElementById("settings-reminder-max-reads");
@@ -3706,6 +3900,20 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.11",
+    changes: [
+      "Thêm tab \"Thống kê\" trong Kho: snapshot số liệu Thẻ/Viết/Từ điển (bao nhiêu đã thuộc/khó/mới), và biểu đồ \"Đà học tập\" theo thời gian thực (dùng Lightweight Charts)",
+      "Đà học tập tăng khi học liên tục ở Thẻ/Viết/Quizz (không ngắt quãng quá 3 phút) — học liên tục càng lâu tăng càng nhanh; ngắt quãng sẽ giảm dần, ngắt càng lâu giảm càng nhanh; làm đúng Viết/Quizz cộng thêm, làm sai trừ nhẹ",
+      "Biểu đồ bắt đầu ghi từ bản cập nhật này — không có dữ liệu quá khứ trước đó",
+    ],
+  },
+  {
+    version: "2.10",
+    changes: [
+      "Tạm ẩn tính năng Nhật ký (tab Nhật Ký trong Kho + nút 📔 nhanh) — có thể bật lại bất kỳ lúc nào trong Cài đặt > Nhật ký",
+    ],
+  },
   {
     version: "2.9",
     changes: [
