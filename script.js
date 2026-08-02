@@ -32,7 +32,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     bubblePos: null,
   };
@@ -94,6 +94,9 @@ function loadState() {
     if (parsed.settings.qtClearOnRefocus === undefined) parsed.settings.qtClearOnRefocus = false;
     if (parsed.settings.qtAutoDetectLang === undefined) parsed.settings.qtAutoDetectLang = false;
     if (parsed.settings.showDiary === undefined) parsed.settings.showDiary = false;
+    if (parsed.settings.momentumSystemNotify === undefined) parsed.settings.momentumSystemNotify = false;
+    if (parsed.settings.momentumQuickview === undefined) parsed.settings.momentumQuickview = false;
+    if (parsed.settings.momentumThemeSync === undefined) parsed.settings.momentumThemeSync = false;
     if (!parsed.studyMomentum) parsed.studyMomentum = { score: 0, streakGain: 1, lastActionAt: null, history: [] };
     return parsed;
   } catch (e) {
@@ -336,6 +339,11 @@ function shuffleArr(arr) {
      mức khởi điểm.
    ============================================================ */
 const STUDY_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 phút
+const STUDY_IDLE_WARN_LEAD_MS = 20 * 1000; // cảnh báo trước 20 giây khi sắp hết hạn giữ đà
+let studyIdleWarnTimer = null;
+const MOMENTUM_THEME_POSITIVE = 17; // "Xanh lục rừng"
+const MOMENTUM_THEME_NEGATIVE = 11; // "Đỏ rượu vang"
+
 function logStudyAction(source, isCorrect) {
   const m = state.studyMomentum;
   const now = Date.now();
@@ -363,6 +371,56 @@ function logStudyAction(source, isCorrect) {
   m.history.push({ t: ts, score: m.score });
   if (m.history.length > 5000) m.history.splice(0, m.history.length - 5000);
   saveState();
+
+  scheduleStudyIdleWarning();
+  updateBrandMomentumQuickview();
+  applyMomentumThemeSync();
+}
+
+/* ---- Cảnh báo sắp hết thời gian giữ đà (chỉ hoạt động khi tab web đang mở) ---- */
+function scheduleStudyIdleWarning() {
+  if (studyIdleWarnTimer) clearTimeout(studyIdleWarnTimer);
+  const m = state.studyMomentum;
+  if (!m.lastActionAt) return;
+  const remaining = STUDY_IDLE_TIMEOUT_MS - STUDY_IDLE_WARN_LEAD_MS - (Date.now() - m.lastActionAt);
+  if (remaining <= 0) return;
+  studyIdleWarnTimer = setTimeout(fireStudyIdleWarning, remaining);
+}
+function fireStudyIdleWarning() {
+  playMomentumWarnSound();
+  showToast("⚠️ Sắp hết thời gian giữ đà học — làm thêm 1 hành động nữa để không bị ngắt quãng!", 5000);
+  if (state.settings.momentumSystemNotify && "Notification" in window && Notification.permission === "granted") {
+    try {
+      new Notification("Nox — Sắp ngắt quãng đà học!", {
+        body: "Quay lại học trong ít giây nữa để giữ đà, nếu không hệ số sẽ bắt đầu giảm.",
+        icon: "icon-192.png",
+        tag: "nox-momentum-warn",
+      });
+    } catch (e) { /* ignore */ }
+  }
+}
+
+/* ---- Xem nhanh hệ số cạnh chữ "Nox" ---- */
+function updateBrandMomentumQuickview() {
+  const el = document.getElementById("brand-momentum");
+  if (!el) return;
+  const on = !!(state.settings && state.settings.momentumQuickview);
+  el.classList.toggle("hidden", !on);
+  if (!on) return;
+  const score = state.studyMomentum.score;
+  el.textContent = score.toFixed(1);
+  el.classList.toggle("positive", score > 0);
+  el.classList.toggle("negative", score < 0);
+}
+
+/* ---- Tự động đổi theme theo dấu của hệ số ---- */
+function applyMomentumThemeSync() {
+  if (!state.settings || !state.settings.momentumThemeSync) {
+    applyThemeLevel(state.themeLevel || 1, false); // trả lại theme người dùng đã chọn
+    return;
+  }
+  const level = state.studyMomentum.score >= 0 ? MOMENTUM_THEME_POSITIVE : MOMENTUM_THEME_NEGATIVE;
+  applyThemeLevel(level, false);
 }
 
 /* ============================================================
@@ -844,6 +902,12 @@ function playWrongSound() {
 }
 function playCardSwitchSound() {
   sfxTone(320, 780, 0.14, "triangle", 0.4, getSfxVolume());
+}
+function playMomentumWarnSound() {
+  const vol = getSfxVolume();
+  if (vol <= 0) return;
+  sfxTone(520, null, 0.14, "sine", 0.5, vol, 0);
+  sfxTone(520, null, 0.14, "sine", 0.5, vol, 0.22);
 }
 
 /* Âm khi bấm nút — gắn cho hầu hết các <button>, trừ những nút đã có
@@ -3517,6 +3581,50 @@ document.getElementById("settings-show-diary").addEventListener("change", (e) =>
 document.getElementById("settings-show-diary").checked = !!state.settings.showDiary;
 applyDiaryVisibility();
 
+/* ---- Cài đặt Hệ số (đà học tập) ---- */
+document.getElementById("settings-momentum-system-notify").addEventListener("change", (e) => {
+  if (e.target.checked) {
+    if (!("Notification" in window)) {
+      showToast("Trình duyệt này không hỗ trợ thông báo hệ thống.");
+      e.target.checked = false;
+      return;
+    }
+    Notification.requestPermission().then((perm) => {
+      if (perm !== "granted") {
+        showToast("Chưa được cấp quyền thông báo — hãy cho phép trong cài đặt trình duyệt nếu muốn dùng tính năng này.");
+        e.target.checked = false;
+        state.settings.momentumSystemNotify = false;
+        saveState();
+      } else {
+        state.settings.momentumSystemNotify = true;
+        saveState();
+      }
+    });
+  } else {
+    state.settings.momentumSystemNotify = false;
+    saveState();
+  }
+});
+document.getElementById("settings-momentum-system-notify").checked = !!state.settings.momentumSystemNotify;
+
+document.getElementById("settings-momentum-quickview").addEventListener("change", (e) => {
+  state.settings.momentumQuickview = e.target.checked;
+  saveState();
+  updateBrandMomentumQuickview();
+});
+document.getElementById("settings-momentum-quickview").checked = !!state.settings.momentumQuickview;
+
+document.getElementById("settings-momentum-theme-sync").addEventListener("change", (e) => {
+  state.settings.momentumThemeSync = e.target.checked;
+  saveState();
+  applyMomentumThemeSync();
+});
+document.getElementById("settings-momentum-theme-sync").checked = !!state.settings.momentumThemeSync;
+
+updateBrandMomentumQuickview();
+applyMomentumThemeSync();
+scheduleStudyIdleWarning();
+
 /* ---- Nhắc từ: thời gian hiện tối thiểu + số lần đọc tối đa ---- */
 const reminderMinDisplaySlider = document.getElementById("settings-reminder-min-display");
 const reminderMaxReadsSlider = document.getElementById("settings-reminder-max-reads");
@@ -3900,6 +4008,14 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.12",
+    changes: [
+      "Thêm cảnh báo nhỏ (kèm âm thanh) khi sắp hết 3 phút giữ đà học — mặc định chỉ báo trong web, có thể bật thêm thông báo hệ thống trong Cài đặt",
+      "Tab Thống kê: đưa biểu đồ Hệ số lên trên và phóng to, 3 mục Thẻ/Viết/Từ điển đẩy xuống dưới, bỏ dòng hướng dẫn, đổi tên \"Đà học tập\" thành \"Hệ số\"",
+      "Cài đặt mới: xem nhanh Hệ số cạnh chữ \"Nox\", và tự động đổi theme theo dấu Hệ số (dương → Xanh lục rừng, âm → Đỏ rượu vang)",
+    ],
+  },
   {
     version: "2.11",
     changes: [

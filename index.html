@@ -30,7 +30,7 @@
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1 class="brand">Nox</h1>
+      <h1 class="brand">Nox<span class="brand-momentum hidden" id="brand-momentum">0</span></h1>
       <div class="sidebar-header-right">
         <button class="diary-quick-btn" id="diary-quick-open" title="Nhật ký nhanh">📔</button>
         <button class="bell-pill-btn" id="quick-reminder-toggle" title="Bật/tắt nhắc từ nhanh">🔔</button>
@@ -328,15 +328,14 @@
       </div>
 
       <div class="wh-stats-view hidden" id="wh-stats-view">
-        <div class="wh-stats-snapshot" id="wh-stats-snapshot"></div>
         <div class="wh-stats-chart-card">
           <div class="wh-stats-chart-header">
-            <span>Đà học tập</span>
+            <span>Hệ số</span>
             <span class="wh-stats-momentum-val" id="wh-stats-momentum-val">0</span>
           </div>
           <div id="wh-stats-chart" class="wh-stats-chart"></div>
-          <div class="wh-stats-chart-note">Biểu đồ bắt đầu ghi từ hôm nay. Học liên tục (không ngắt quãng quá 3 phút) ở Thẻ / Viết / Quizz sẽ đẩy đường lên (xanh) — càng liên tục càng tăng nhanh. Ngắt quãng sẽ kéo đường xuống, ngắt càng lâu càng giảm nhanh; xuống dưới 0 chuyển sang đỏ.</div>
         </div>
+        <div class="wh-stats-snapshot" id="wh-stats-snapshot"></div>
       </div>
 
       <div class="wh-toolbar" id="wh-toolbar">
@@ -729,6 +728,22 @@
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-qt-autodetect">
           <span>Tự động nhận diện Anh / Việt khi gõ (dựa vào dấu tiếng Việt)</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Hệ số (đà học tập)</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-momentum-system-notify">
+          <span>Bật thêm thông báo hệ thống khi sắp hết thời gian giữ đà (ngoài thông báo trong web)</span>
+        </label>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-momentum-quickview">
+          <span>Hiện hệ số nhanh cạnh chữ "Nox"</span>
+        </label>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-momentum-theme-sync">
+          <span>Tự động đổi theme theo hệ số (hệ số dương → theme xanh, âm → theme đỏ)</span>
         </label>
       </div>
 
