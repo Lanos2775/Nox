@@ -1129,7 +1129,11 @@ function wrUpdateTrackedAnswer(item, typedRaw) {
   let bestDist = Infinity;
   candidates.forEach((c) => {
     const key = stripPunct(c.text).toLowerCase();
-    const dist = levenshtein(typedKey, key);
+    // So với PHẦN ĐẦU đáp án (cùng độ dài đã gõ), không so cả câu — nếu so cả
+    // câu thì phần đuôi chưa gõ tới sẽ áp đảo, khiến chọn nhầm đáp án dù chữ
+    // đang gõ rõ ràng khớp đáp án khác (vd gõ "Could" bị nhận thành "Can").
+    const cmpKey = key.slice(0, typedKey.length);
+    const dist = levenshtein(typedKey, cmpKey);
     if (dist < bestDist || (dist === bestDist && c.primary && !best.primary)) {
       bestDist = dist;
       best = c;
@@ -1436,13 +1440,31 @@ function wrShowQuickSaveWords(item) {
     .filter(Boolean);
   if (!words.length) { wrHideQuickSaveWords(); return; }
   box.innerHTML = "";
-  words.forEach((w) => {
+  const selected = new Set(); // các chỉ số từ đang được chọn (chọn nhiều được)
+
+  function applySelection() {
+    const orderedIdx = [...selected].sort((a, b) => a - b);
+    const phrase = orderedIdx.map((i) => words[i]).join(" ");
+    if (phrase) {
+      qtWriting.setInputAndTranslateForced(phrase, "en-vi");
+    } else {
+      document.getElementById("qt-input").value = "";
+      document.getElementById("qt-result").innerHTML = "";
+    }
+  }
+
+  words.forEach((w, idx) => {
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = "wr-word-chip";
     chip.textContent = w;
-    chip.title = "Bấm để tra nhanh từ này";
-    chip.addEventListener("click", () => qtWriting.setInputAndTranslateForced(w, "en-vi"));
+    chip.title = "Bấm để chọn — chọn thêm từ liền kề để ghép thành cụm, tra nhanh nghĩa";
+    chip.addEventListener("click", () => {
+      if (selected.has(idx)) selected.delete(idx);
+      else selected.add(idx);
+      chip.classList.toggle("selected", selected.has(idx));
+      applySelection();
+    });
     box.appendChild(chip);
   });
   box.classList.remove("hidden");
@@ -3684,6 +3706,13 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.9",
+    changes: [
+      "Fix lỗi nghiêm trọng: khi gõ dở đáp án phụ/đáp án dùng \"/\", hệ thống hay bám nhầm sang đáp án khác khiến chữ đang gõ đúng vẫn hiện đỏ hết (do so sánh cả câu thay vì chỉ so phần đã gõ) — giờ bám đúng ngay từ ký tự đầu tiên khác nhau",
+      "Lưu nhanh từ: giờ chọn được nhiều từ liên tiếp (bấm từ này rồi bấm thêm từ liền kề), tự ghép thành cụm theo đúng thứ tự trong câu rồi tra nghĩa cả cụm",
+    ],
+  },
   {
     version: "2.8",
     changes: [

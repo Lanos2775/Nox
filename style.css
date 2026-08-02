@@ -419,6 +419,7 @@ input,textarea{font-family:inherit;}
   background:var(--panel);color:var(--text);cursor:pointer;
 }
 .wr-word-chip:hover{background:var(--accent-soft);border-color:var(--accent);}
+.wr-word-chip.selected{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
 
 .wh-edit-alts-label{font-size:.72rem;color:var(--text-muted);margin-top:14px;margin-bottom:6px;}
 .wh-edit-alts-row{display:flex;gap:6px;margin-bottom:6px;}
