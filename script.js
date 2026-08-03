@@ -335,19 +335,23 @@ function shuffleArr(arr) {
 }
 
 /* ============================================================
-   ĐÀ HỌC TẬP (dùng cho tab Thống kê > Đà học tập)
+   ĐÀ HỌC TẬP (dùng cho tab Thống kê > Hệ số)
    - Mỗi hành động học (lật/đánh dấu thẻ, kiểm tra câu Viết, chọn đáp án Quizz)
      gọi logStudyAction(). Nếu hành động liên tiếp cách nhau < 3 phút thì coi
      là đang học liên tục — "đà" (streakGain) tăng dần, điểm cộng vào ngày
      càng nhanh. Nếu cách nhau > 3 phút thì coi là bị ngắt quãng: trừ điểm
      theo thời gian vắng mặt (vắng càng lâu trừ càng nhanh) rồi "đà" về lại
      mức khởi điểm.
+   - CHỈ Viết/Quizz mới thực sự xây "đà" (streakGain) và cộng điểm đáng kể.
+     Thẻ (flashcard) chỉ giữ cho streak không bị coi là ngắt quãng (để không
+     bị trừ điểm oan), nhưng bản thân không góp phần tăng đà và chỉ cộng một
+     mức cực nhỏ, cố định — spam lật thẻ liên tục sẽ không đẩy hệ số lên
+     đáng kể.
    ============================================================ */
 const STUDY_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 phút
 const STUDY_IDLE_WARN_LEAD_MS = 20 * 1000; // cảnh báo trước 20 giây khi sắp hết hạn giữ đà
+const FLASHCARD_FLAT_GAIN = 0.02; // mức cộng cố định, cực nhỏ, cho mỗi hành động ở Thẻ
 let studyIdleWarnTimer = null;
-const MOMENTUM_THEME_POSITIVE = 17; // "Xanh lục rừng"
-const MOMENTUM_THEME_NEGATIVE = 11; // "Đỏ rượu vang"
 
 // Lightweight Charts hiển thị timestamp số như thể nó là giờ UTC (không tự quy
 // đổi múi giờ máy). Để trục thời gian hiện đúng giờ địa phương của người dùng,
@@ -362,6 +366,8 @@ function chartLocalTs(epochMs) {
 function logStudyAction(source, isCorrect) {
   const m = state.studyMomentum;
   const now = Date.now();
+  const isMinor = source === "flashcard"; // Thẻ: chỉ giữ streak, không xây đà
+
   if (m.lastActionAt !== null) {
     const gap = now - m.lastActionAt;
     if (gap > STUDY_IDLE_TIMEOUT_MS) {
@@ -369,13 +375,18 @@ function logStudyAction(source, isCorrect) {
       const decay = 2 * idleHours + 0.3 * idleHours * idleHours;
       m.score -= decay;
       m.streakGain = 1;
-    } else {
+    } else if (!isMinor) {
       m.streakGain = Math.min(m.streakGain + 0.2, 5);
     }
   }
-  m.score += m.streakGain;
-  if (isCorrect === true) m.score += 0.5;
-  else if (isCorrect === false) m.score -= 0.2;
+
+  if (isMinor) {
+    m.score += FLASHCARD_FLAT_GAIN;
+  } else {
+    m.score += m.streakGain;
+    if (isCorrect === true) m.score += 0.5;
+    else if (isCorrect === false) m.score -= 0.2;
+  }
   m.lastActionAt = now;
   m.score = Math.round(m.score * 100) / 100;
 
@@ -428,14 +439,14 @@ function updateBrandMomentumQuickview() {
   el.classList.toggle("negative", score < 0);
 }
 
-/* ---- Tự động đổi theme theo dấu của hệ số ---- */
+/* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
 function applyMomentumThemeSync() {
   if (!state.settings || !state.settings.momentumThemeSync) {
-    applyThemeLevel(state.themeLevel || 1, false); // trả lại theme người dùng đã chọn
+    document.body.style.removeProperty("--border");
     return;
   }
-  const level = state.studyMomentum.score >= 0 ? MOMENTUM_THEME_POSITIVE : MOMENTUM_THEME_NEGATIVE;
-  applyThemeLevel(level, false);
+  const positive = state.studyMomentum.score >= 0;
+  document.body.style.setProperty("--border", positive ? "#22c55e" : "#ef4444");
 }
 
 /* ============================================================
@@ -4023,6 +4034,13 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.14",
+    changes: [
+      "Fix lỗ hổng: spam lật thẻ liên tục ở Thẻ trước đây đẩy Hệ số lên rất cao — giờ Thẻ chỉ giữ streak không bị ngắt quãng, cộng điểm cực nhỏ và không góp phần xây đà; chỉ Viết/Quizz mới thực sự tăng Hệ số đáng kể",
+      "Sửa lại tính năng đổi màu theo Hệ số: không đổi cả theme nữa, chỉ đổi màu viền các khung (dương → viền xanh, âm → viền đỏ), giữ nguyên theme đang chọn",
+    ],
+  },
   {
     version: "2.13",
     changes: [
