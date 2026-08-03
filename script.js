@@ -442,7 +442,9 @@ function updateBrandMomentumQuickview() {
 /* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
 function applyMomentumThemeSync() {
   if (!state.settings || !state.settings.momentumThemeSync) {
-    document.body.style.removeProperty("--border");
+    const level = Math.min(17, Math.max(1, Math.round(state.themeLevel || 1)));
+    const palette = THEME_PALETTES[level];
+    document.body.style.setProperty("--border", palette.border);
     return;
   }
   const positive = state.studyMomentum.score >= 0;
@@ -4034,6 +4036,12 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.15",
+    changes: [
+      "Fix lỗi tắt \"đổi màu viền theo Hệ số\" làm viền khung bị mờ/sai màu (nhất là theme tối) — giờ tắt đi sẽ trả lại đúng màu viền gốc của theme đang dùng ngay lập tức, không cần đổi qua theme khác rồi đổi lại nữa",
+    ],
+  },
   {
     version: "2.14",
     changes: [
