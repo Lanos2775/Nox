@@ -98,6 +98,11 @@ function loadState() {
     if (parsed.settings.momentumQuickview === undefined) parsed.settings.momentumQuickview = false;
     if (parsed.settings.momentumThemeSync === undefined) parsed.settings.momentumThemeSync = false;
     if (!parsed.studyMomentum) parsed.studyMomentum = { score: 0, streakGain: 1, lastActionAt: null, history: [] };
+    if (!parsed.studyMomentum._tzFixed && parsed.studyMomentum.history && parsed.studyMomentum.history.length) {
+      const tzOffsetSec = -new Date().getTimezoneOffset() * 60;
+      parsed.studyMomentum.history.forEach((p) => { p.t += tzOffsetSec; });
+    }
+    parsed.studyMomentum._tzFixed = true;
     return parsed;
   } catch (e) {
     return defaultState();
@@ -344,6 +349,16 @@ let studyIdleWarnTimer = null;
 const MOMENTUM_THEME_POSITIVE = 17; // "Xanh lục rừng"
 const MOMENTUM_THEME_NEGATIVE = 11; // "Đỏ rượu vang"
 
+// Lightweight Charts hiển thị timestamp số như thể nó là giờ UTC (không tự quy
+// đổi múi giờ máy). Để trục thời gian hiện đúng giờ địa phương của người dùng,
+// ta "đánh lừa" thư viện bằng cách cộng thêm độ lệch múi giờ vào timestamp
+// trước khi đưa vào biểu đồ — chỉ ảnh hưởng phần HIỂN THỊ, không đụng đến
+// mốc thời gian thật (m.lastActionAt) dùng để tính đà/suy giảm.
+function chartLocalTs(epochMs) {
+  const tzOffsetSec = -new Date().getTimezoneOffset() * 60;
+  return Math.floor(epochMs / 1000) + tzOffsetSec;
+}
+
 function logStudyAction(source, isCorrect) {
   const m = state.studyMomentum;
   const now = Date.now();
@@ -364,7 +379,7 @@ function logStudyAction(source, isCorrect) {
   m.lastActionAt = now;
   m.score = Math.round(m.score * 100) / 100;
 
-  let ts = Math.floor(now / 1000);
+  let ts = chartLocalTs(now);
   if (m.history.length && ts <= m.history[m.history.length - 1].t) {
     ts = m.history[m.history.length - 1].t + 1;
   }
@@ -4008,6 +4023,12 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.13",
+    changes: [
+      "Fix lỗi trục thời gian ở biểu đồ Hệ số bị lệch múi giờ (thư viện biểu đồ mặc định hiện theo UTC, không tự quy đổi giờ Việt Nam) — giờ hiện đúng giờ máy đang dùng, các điểm dữ liệu cũ đã ghi trước đó cũng được tự sửa lại lần mở app này",
+    ],
+  },
   {
     version: "2.12",
     changes: [
