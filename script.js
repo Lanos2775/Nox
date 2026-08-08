@@ -1216,6 +1216,14 @@ const wr = {
   // mọi từ sau đều không hiện gì nữa (kể cả gõ đúng lại) tới khi sang câu khác ----
   hardFailed: false,
   hardConfirmedWords: 0,
+  // Khoá cứng 1 đáp án ngay từ đầu câu cho chế độ Khó — KHÔNG dùng wr.trackedAnswer
+  // (có thể đổi qua đáp án khác giữa chừng khi gõ do hỗ trợ nhiều đáp án), tránh lệch
+  // chỉ số từ đã xác nhận (bug: sau vài từ tự dưng không hiện nữa dù gõ đúng).
+  hardLockedAnswer: null,
+  // Đã tương tác với câu này chưa (gõ chữ đầu tiên hoặc dùng gợi ý) — nếu có thì
+  // khoá không cho đổi Độ khó nữa, chống kiểu "bí quá hạ xuống Dễ xem gợi ý rồi
+  // chuyển lại Khó" để ăn gian điểm cao.
+  difficultyLocked: false,
   lastCorrectItem: null,
 };
 
@@ -1333,6 +1341,8 @@ function rebuildWrQueue(keep) {
   wr.wordHintCount = 0;
   wr.hardFailed = false;
   wr.hardConfirmedWords = 0;
+  wr.hardLockedAnswer = null;
+  wr.difficultyLocked = false;
 }
 function wrItemById(id) {
   for (const l of getCategory("writing")) {
@@ -1372,8 +1382,11 @@ function resetWrQuestionState() {
   wr.trackedAnswer = "";
   wr.hardFailed = false;
   wr.hardConfirmedWords = 0;
+  wr.hardLockedAnswer = null;
+  wr.difficultyLocked = false;
   document.getElementById("wr-answer-input").value = "";
   wrHideQuickSaveWords();
+  updateWrDifficultyBtn();
 }
 
 function wrGoNext() {
@@ -1477,7 +1490,15 @@ function renderWrFeedback() {
 // sang câu khác. wr.hardFailed/wr.hardConfirmedWords chỉ tăng/khoá, không bao giờ
 // tự "gỡ" lại — đúng tinh thần "gõ sai là mất luôn" của chế độ Khó.
 function renderWrFeedbackHard(item, grid, typedRaw) {
-  const answer = wr.trackedAnswer || item.en;
+  // Khoá cứng đáp án ngay từ lần render đầu (typedRaw rỗng -> wrUpdateTrackedAnswer
+  // luôn chọn đáp án chính/primary) — KHÔNG dùng wr.trackedAnswer trực tiếp vì nó có
+  // thể đổi sang đáp án khác giữa chừng khi gõ (hỗ trợ nhiều đáp án), làm answerWords
+  // đổi luôn giữa chừng trong khi hardConfirmedWords vẫn tính theo mảng cũ -> lệch chỉ
+  // số, dẫn tới lỗi "sau vài từ tự dưng không hiện nữa dù gõ đúng".
+  if (wr.hardLockedAnswer === null) {
+    wr.hardLockedAnswer = wr.trackedAnswer || item.en;
+  }
+  const answer = wr.hardLockedAnswer;
   const answerWords = answer.split(" ").filter((w) => w.length);
 
   if (!wr.hardFailed) {
@@ -1580,8 +1601,12 @@ function wrCheckAnswer() {
   }
 }
 
-document.getElementById("wr-answer-input").addEventListener("input", () => {
+document.getElementById("wr-answer-input").addEventListener("input", (e) => {
   wr.checked = false;
+  if (e.target.value.length > 0 && !wr.difficultyLocked) {
+    wr.difficultyLocked = true;
+    updateWrDifficultyBtn();
+  }
   renderWrFeedback();
 });
 document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
@@ -1601,6 +1626,10 @@ function revealNextChar() {
   if (wr.difficulty === "hard") return; // Khó: khoá toàn bộ gợi ý
   const item = currentWrItem();
   if (!item) return;
+  if (!wr.difficultyLocked) {
+    wr.difficultyLocked = true;
+    updateWrDifficultyBtn();
+  }
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
@@ -1626,6 +1655,10 @@ function revealNextWord() {
   if (wr.difficulty === "hard") return; // Khó: khoá toàn bộ gợi ý
   const item = currentWrItem();
   if (!item) return;
+  if (!wr.difficultyLocked) {
+    wr.difficultyLocked = true;
+    updateWrDifficultyBtn();
+  }
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
@@ -1656,14 +1689,25 @@ const WR_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Tr
 const WR_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
 function updateWrDifficultyBtn() {
   const btn = document.getElementById("wr-difficulty-toggle");
-  btn.textContent = WR_DIFFICULTY_LABELS[wr.difficulty];
+  btn.textContent = WR_DIFFICULTY_LABELS[wr.difficulty] + (wr.difficultyLocked ? " 🔒" : "");
   btn.classList.remove("difficulty-easy", "difficulty-medium", "difficulty-hard");
   btn.classList.add("difficulty-" + wr.difficulty);
+  btn.classList.toggle("locked", wr.difficultyLocked);
+  btn.title = wr.difficultyLocked
+    ? "Đã bắt đầu làm câu này — sang câu tiếp theo mới đổi được độ khó"
+    : "Bấm để đổi độ khó: Dễ → Trung bình → Khó";
   const hintsLocked = wr.difficulty === "hard";
   document.getElementById("wr-show-char").disabled = hintsLocked;
   document.getElementById("wr-show-word").disabled = hintsLocked;
 }
 document.getElementById("wr-difficulty-toggle").addEventListener("click", () => {
+  // Chặn kiểu "bí quá hạ xuống Dễ xem gợi ý rồi chuyển lại Khó để ăn điểm cao" —
+  // một khi đã gõ chữ đầu tiên hoặc dùng gợi ý ở câu này thì không đổi được nữa,
+  // phải sang câu tiếp theo (resetWrQuestionState/rebuildWrQueue sẽ mở khoá lại).
+  if (wr.difficultyLocked) {
+    showToast("Đã bắt đầu làm câu này — sang câu tiếp theo mới đổi được độ khó nhé.");
+    return;
+  }
   wr.difficulty = WR_DIFFICULTY_CYCLE[wr.difficulty];
   state.settings.wrDifficulty = wr.difficulty;
   saveState();
@@ -4166,6 +4210,14 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.19",
+    changes: [
+      "Fix bug độ khó Khó: sau vài từ tự dưng không hiện nữa dù gõ đúng — do đáp án bám theo (hỗ trợ nhiều đáp án) bị đổi giữa chừng khi gõ, giờ khoá cứng 1 đáp án ngay từ đầu câu",
+      "Chống ăn gian: một khi đã gõ chữ đầu tiên hoặc dùng gợi ý ở câu đang làm thì khoá không cho đổi Độ khó nữa (icon 🔒), phải sang câu tiếp theo mới đổi được",
+      "Nút bật/tắt nhắc từ nhanh (🔔) đổi khung bo góc giống hệt nút Cài đặt (⚙️) bên cạnh, bỏ hình viên thuốc tròn",
+    ],
+  },
   {
     version: "2.18",
     changes: [

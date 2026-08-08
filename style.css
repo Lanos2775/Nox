@@ -103,9 +103,9 @@ input,textarea{font-family:inherit;}
 }
 .diary-quick-btn:hover{background:var(--accent-soft);}
 .bell-pill-btn{
-  height:36px;padding:0 12px;
+  width:44px;height:36px;
   border:1.5px solid var(--border);
-  border-radius:20px;
+  border-radius:var(--radius-sm);
   background:var(--panel);color:var(--text);
   font-size:1rem;
   display:flex;align-items:center;justify-content:center;
@@ -640,6 +640,7 @@ input,textarea{font-family:inherit;}
 #wr-difficulty-toggle.difficulty-easy{background:var(--known-soft);border-color:var(--known);color:var(--known);}
 #wr-difficulty-toggle.difficulty-medium{background:var(--learning-soft);border-color:var(--learning);color:var(--learning);}
 #wr-difficulty-toggle.difficulty-hard{background:var(--difficult-soft);border-color:var(--difficult);color:var(--difficult);}
+#wr-difficulty-toggle.locked{opacity:.6;cursor:not-allowed;}
 
 .quick-translate-bar{
   display:flex;align-items:stretch;gap:10px;
