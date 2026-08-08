@@ -32,7 +32,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3 },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium" },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     bubblePos: null,
   };
@@ -98,6 +98,7 @@ function loadState() {
     if (parsed.settings.momentumQuickview === undefined) parsed.settings.momentumQuickview = false;
     if (parsed.settings.momentumThemeSync === undefined) parsed.settings.momentumThemeSync = false;
     if (parsed.settings.momentumIdleMinutes === undefined) parsed.settings.momentumIdleMinutes = 3;
+    if (parsed.settings.wrDifficulty === undefined) parsed.settings.wrDifficulty = "medium";
     if (!parsed.studyMomentum) parsed.studyMomentum = { score: 0, streakGain: 1, lastActionAt: null, history: [] };
     if (!parsed.studyMomentum._tzFixed && parsed.studyMomentum.history && parsed.studyMomentum.history.length) {
       const tzOffsetSec = -new Date().getTimezoneOffset() * 60;
@@ -370,7 +371,7 @@ function chartLocalTs(epochMs) {
   return Math.floor(epochMs / 1000) + tzOffsetSec;
 }
 
-function logStudyAction(source, isCorrect) {
+function logStudyAction(source, isCorrect, customGain, customPenalty) {
   const m = state.studyMomentum;
   const now = Date.now();
   const isMinor = source === "flashcard"; // Thẻ: chỉ giữ streak, không xây đà
@@ -391,8 +392,10 @@ function logStudyAction(source, isCorrect) {
     m.score += FLASHCARD_FLAT_GAIN;
   } else {
     m.score += m.streakGain;
-    if (isCorrect === true) m.score += 0.5;
-    else if (isCorrect === false) m.score -= 0.2;
+    const gain = customGain !== undefined ? customGain : 0.5;
+    const penalty = customPenalty !== undefined ? customPenalty : 0.2;
+    if (isCorrect === true) m.score += gain;
+    else if (isCorrect === false) m.score -= penalty;
   }
   m.lastActionAt = now;
   m.score = Math.round(m.score * 100) / 100;
@@ -1200,14 +1203,19 @@ const wr = {
   filter: "undone",
   queue: [],
   index: 0,
-  checked: false, // has current question been checked via Enter/Đáp án?
-  hidePreview: true, // "Ẩn xem trước" mode: don't reveal letter/word-count structure (mặc định bật)
+  checked: false, // has current question been checked via Enter?
+  // "Độ khó": dễ | trung bình | khó — thay cho "Ẩn xem trước" cũ (trung bình = hành vi
+  // ẩn xem trước cũ). Đọc từ settings để nhớ lựa chọn giữa các phiên.
+  difficulty: state.settings.wrDifficulty || "medium",
   charHintCount: 0,
   wordHintCount: 0,
   flashTimeout: null,
   roundFailed: false, // đã trượt lượt này (Enter sai hoặc dùng quá gợi ý) — không cho lật lại thành đúng
   trackedAnswer: "", // đáp án (trong các đáp án được chấp nhận) đang gần giống nhất với những gì đang gõ
-  quickSaveEnabled: false, // "Lưu nhanh từ": hiện các từ trong câu vừa làm đúng để tra nhanh
+  // ---- Riêng chế độ Khó: gõ xong hẳn 1 từ mới biết đúng/sai, sai 1 từ thì từ đó và
+  // mọi từ sau đều không hiện gì nữa (kể cả gõ đúng lại) tới khi sang câu khác ----
+  hardFailed: false,
+  hardConfirmedWords: 0,
   lastCorrectItem: null,
 };
 
@@ -1289,11 +1297,18 @@ function wrUpdateTrackedAnswer(item, typedRaw) {
   });
   wr.trackedAnswer = best.text;
 }
+// Giới hạn gợi ý theo độ khó — dùng quá giới hạn thì tính như trượt lượt (giống Enter
+// sai). Reset mỗi câu mới (xem resetWrQuestionState/rebuildWrQueue).
+const WR_HINT_LIMITS = {
+  easy: { chars: 10, words: 3 },
+  medium: { chars: 5, words: 1 },
+  hard: { chars: 0, words: 0 }, // Khó: khoá toàn bộ gợi ý
+};
 function wrCharHintLimit() {
-  return wr.hidePreview ? 5 : 3;
+  return WR_HINT_LIMITS[wr.difficulty].chars;
 }
 function wrWordHintLimit() {
-  return wr.hidePreview ? 3 : 1;
+  return WR_HINT_LIMITS[wr.difficulty].words;
 }
 
 function wrStatusFromFilter(f) {
@@ -1316,6 +1331,8 @@ function rebuildWrQueue(keep) {
   wr.checked = false;
   wr.charHintCount = 0;
   wr.wordHintCount = 0;
+  wr.hardFailed = false;
+  wr.hardConfirmedWords = 0;
 }
 function wrItemById(id) {
   for (const l of getCategory("writing")) {
@@ -1353,6 +1370,8 @@ function resetWrQuestionState() {
   wr.wordHintCount = 0;
   wr.roundFailed = false;
   wr.trackedAnswer = "";
+  wr.hardFailed = false;
+  wr.hardConfirmedWords = 0;
   document.getElementById("wr-answer-input").value = "";
   wrHideQuickSaveWords();
 }
@@ -1378,38 +1397,44 @@ function renderWrQuestion() {
 
 function renderWrFeedback() {
   const item = currentWrItem();
-  updateWrNextBtnLabel();
   const grid = document.getElementById("wr-feedback-grid");
   grid.innerHTML = "";
   if (!item) return;
   const typedRaw = document.getElementById("wr-answer-input").value;
   wrUpdateTrackedAnswer(item, typedRaw);
+
+  if (wr.difficulty === "hard") {
+    renderWrFeedbackHard(item, grid, typedRaw);
+    return;
+  }
+
   const answer = wr.trackedAnswer || item.en;
+  const hidePreview = wr.difficulty === "medium"; // Trung bình = hành vi "Ẩn xem trước" cũ
   const typedClean = stripPunct(typedRaw);
   let tPtr = 0;
   let anyMissing = false;
   let lastReached = true; // whether the previous position had visible info (governs punctuation visibility)
-  let wordPoisoned = false; // 1 chữ sai trong từ (hoặc trong hidePreview: trong cả câu) -> mọi chữ sau đó vẫn hiện sai
+  let wordPoisoned = false; // 1 chữ sai trong từ (hoặc ở Trung bình: trong cả câu) -> mọi chữ sau đó vẫn hiện sai
 
   for (let i = 0; i < answer.length; i++) {
     const ch = answer[i];
 
     if (ch === " ") {
       const hasTypedHere = tPtr < typedClean.length;
-      if (hasTypedHere || !wr.hidePreview) {
+      if (hasTypedHere || !hidePreview) {
         const sp = document.createElement("span");
         sp.className = "feedback-char space";
         grid.appendChild(sp);
       }
       if (hasTypedHere && typedClean[tPtr] === " ") tPtr++;
       lastReached = hasTypedHere;
-      if (!wr.hidePreview) wordPoisoned = false; // ranh giới từ mới ở chế độ thường mới được "gột sạch"
+      if (!hidePreview) wordPoisoned = false; // ranh giới từ mới ở chế độ Dễ mới được "gột sạch"
       continue;
     }
 
     if (PUNCT_REGEX.test(ch)) {
       PUNCT_REGEX.lastIndex = 0;
-      if (lastReached || !wr.hidePreview) {
+      if (lastReached || !hidePreview) {
         const sp = document.createElement("span");
         sp.className = "feedback-char space";
         sp.textContent = ch;
@@ -1435,15 +1460,60 @@ function renderWrFeedback() {
     } else {
       anyMissing = true;
       lastReached = false;
-      if (!wr.hidePreview) {
+      if (!hidePreview) {
         const span = document.createElement("span");
         span.className = "feedback-char";
         span.textContent = "_";
         grid.appendChild(span);
       }
-      // in hidePreview mode, nothing is rendered for un-reached letters at all
+      // ở Trung bình, không hiện gì cho các chữ chưa gõ tới
     }
   }
+}
+
+// ============ Chế độ KHÓ: phải gõ hết 1 từ mới biết đúng/sai ============
+// Gõ đúng cả từ (tính tới dấu cách hoặc hết câu) -> hiện từ đó ra. Gõ sai 1 từ ->
+// từ đó và mọi từ sau đều KHÔNG hiện gì nữa (kể cả gõ đúng lại sau đó), tới khi
+// sang câu khác. wr.hardFailed/wr.hardConfirmedWords chỉ tăng/khoá, không bao giờ
+// tự "gỡ" lại — đúng tinh thần "gõ sai là mất luôn" của chế độ Khó.
+function renderWrFeedbackHard(item, grid, typedRaw) {
+  const answer = wr.trackedAnswer || item.en;
+  const answerWords = answer.split(" ").filter((w) => w.length);
+
+  if (!wr.hardFailed) {
+    const endsWithSpace = /\s$/.test(typedRaw) && typedRaw.trim().length > 0;
+    const typedWords = typedRaw.trim().length ? typedRaw.trim().split(/\s+/) : [];
+    // Từ được coi là "gõ xong": mọi từ trừ từ cuối, trừ khi đã có dấu cách sau
+    // từ cuối đó (nghĩa là người dùng đã chuyển sang từ tiếp theo).
+    const completedCount = endsWithSpace ? typedWords.length : Math.max(0, typedWords.length - 1);
+    for (let wi = wr.hardConfirmedWords; wi < completedCount && wi < answerWords.length; wi++) {
+      const typedWord = typedWords[wi] || "";
+      const targetWord = answerWords[wi];
+      if (normalizeAnswer(typedWord) === normalizeAnswer(targetWord)) {
+        wr.hardConfirmedWords++;
+      } else {
+        wr.hardFailed = true;
+        break;
+      }
+    }
+  }
+
+  for (let wi = 0; wi < wr.hardConfirmedWords; wi++) {
+    if (wi > 0) {
+      const sp = document.createElement("span");
+      sp.className = "feedback-char space";
+      grid.appendChild(sp);
+    }
+    const word = answerWords[wi];
+    for (const ch of word) {
+      const span = document.createElement("span");
+      span.className = "feedback-char correct";
+      span.textContent = ch;
+      grid.appendChild(span);
+    }
+  }
+  // Từ đang gõ dở, từ sai, và mọi từ sau đó: không hiện gì hết (đúng tinh thần
+  // "khoá toàn bộ gợi ý" của chế độ Khó).
 }
 
 function renderWritingStatsOnly() {
@@ -1469,6 +1539,12 @@ function flashAnswerFeedback(isCorrect) {
   }, 2000);
 }
 
+// Điểm hệ số theo độ khó ở Viết — Dễ thấp, Trung bình gấp 3, Khó gấp 7 (so với Dễ).
+// Phạt sai cũng giãn theo tỉ lệ tương tự cho nhất quán (Dễ -2, Trung bình -6, Khó -14),
+// thay cho mức cố định +0.5/-0.2 áp dụng chung mọi độ khó trước đây.
+const WR_DIFFICULTY_GAIN = { easy: 5, medium: 15, hard: 35 };
+const WR_DIFFICULTY_PENALTY = { easy: 2, medium: 6, hard: 14 };
+
 function wrCheckAnswer() {
   const item = currentWrItem();
   if (!item) return;
@@ -1476,7 +1552,7 @@ function wrCheckAnswer() {
   const candidates = allAcceptedAnswers(item);
   const isCorrect = candidates.some((c) => normalizeAnswer(typedRaw) === normalizeAnswer(c.text));
   const wasAlreadyFailed = wr.roundFailed;
-  logStudyAction("writing", isCorrect);
+  logStudyAction("writing", isCorrect, WR_DIFFICULTY_GAIN[wr.difficulty], WR_DIFFICULTY_PENALTY[wr.difficulty]);
 
   if (!isCorrect) {
     wr.roundFailed = true;
@@ -1493,7 +1569,7 @@ function wrCheckAnswer() {
 
   if (isCorrect && !wasAlreadyFailed) {
     flashAnswerFeedback(true);
-    if (wr.quickSaveEnabled) wrShowQuickSaveWords(item);
+    wrShowQuickSaveWords(item);
   } else if (isCorrect && wasAlreadyFailed) {
     flashAnswerFeedback(false);
     showToast("Đúng, nhưng vẫn tính là làm sai vì đã gõ sai / dùng gợi ý trước đó.");
@@ -1511,7 +1587,7 @@ document.getElementById("wr-answer-input").addEventListener("input", () => {
 document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
   if (e.key === "Tab") {
     e.preventDefault();
-    revealNextChar();
+    if (wr.difficulty !== "hard") revealNextChar(); // Khó: khoá toàn bộ gợi ý
   } else if (e.key === "Enter") {
     e.preventDefault();
     if (!wr.checked) {
@@ -1522,6 +1598,7 @@ document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
   }
 });
 function revealNextChar() {
+  if (wr.difficulty === "hard") return; // Khó: khoá toàn bộ gợi ý
   const item = currentWrItem();
   if (!item) return;
   const input = document.getElementById("wr-answer-input");
@@ -1546,6 +1623,7 @@ function revealNextChar() {
   }
 }
 function revealNextWord() {
+  if (wr.difficulty === "hard") return; // Khó: khoá toàn bộ gợi ý
   const item = currentWrItem();
   if (!item) return;
   const input = document.getElementById("wr-answer-input");
@@ -1573,13 +1651,26 @@ function revealNextWord() {
 }
 document.getElementById("wr-show-char").addEventListener("click", revealNextChar);
 document.getElementById("wr-show-word").addEventListener("click", revealNextWord);
-document.getElementById("wr-hide-preview-toggle").addEventListener("click", (e) => {
-  wr.hidePreview = !wr.hidePreview;
-  e.currentTarget.classList.toggle("active", wr.hidePreview);
+
+const WR_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Trung bình", hard: "Độ khó: Khó" };
+const WR_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
+function updateWrDifficultyBtn() {
+  const btn = document.getElementById("wr-difficulty-toggle");
+  btn.textContent = WR_DIFFICULTY_LABELS[wr.difficulty];
+  btn.classList.remove("difficulty-easy", "difficulty-medium", "difficulty-hard");
+  btn.classList.add("difficulty-" + wr.difficulty);
+  const hintsLocked = wr.difficulty === "hard";
+  document.getElementById("wr-show-char").disabled = hintsLocked;
+  document.getElementById("wr-show-word").disabled = hintsLocked;
+}
+document.getElementById("wr-difficulty-toggle").addEventListener("click", () => {
+  wr.difficulty = WR_DIFFICULTY_CYCLE[wr.difficulty];
+  state.settings.wrDifficulty = wr.difficulty;
+  saveState();
+  updateWrDifficultyBtn();
   renderWrFeedback();
 });
-// mặc định "Ẩn xem trước" luôn bật sẵn — đồng bộ trạng thái nút với wr.hidePreview lúc khởi động
-document.getElementById("wr-hide-preview-toggle").classList.toggle("active", wr.hidePreview);
+updateWrDifficultyBtn();
 
 function wrHideQuickSaveWords() {
   const box = document.getElementById("wr-quicksave-words");
@@ -1625,34 +1716,6 @@ function wrShowQuickSaveWords(item) {
   });
   box.classList.remove("hidden");
 }
-document.getElementById("wr-quicksave-toggle").addEventListener("click", (e) => {
-  wr.quickSaveEnabled = !wr.quickSaveEnabled;
-  e.currentTarget.classList.toggle("active", wr.quickSaveEnabled);
-  if (!wr.quickSaveEnabled) {
-    wrHideQuickSaveWords();
-  } else {
-    const item = currentWrItem();
-    if (item && wr.checked && item.status === "known" && !wr.roundFailed) wrShowQuickSaveWords(item);
-  }
-});
-// Nút "Tiếp": chưa kiểm tra thì kiểm tra đáp án (giống Enter lần 1), đã kiểm tra rồi
-// thì chuyển sang câu tiếp theo (giống Enter lần 2) — không còn tính năng "bỏ cuộc,
-// xem đáp án đầy đủ" như nút "Đáp án" cũ, chỉ còn 2 gợi ý tăng dần (Tab / Hiện từ).
-function updateWrNextBtnLabel() {
-  const btn = document.getElementById("wr-answer");
-  if (!btn) return;
-  btn.textContent = wr.checked ? "Tiếp" : "Kiểm tra";
-}
-document.getElementById("wr-answer").addEventListener("click", () => {
-  if (!currentWrItem()) return;
-  if (!wr.checked) {
-    wrCheckAnswer();
-  } else {
-    wrGoNext();
-  }
-  updateWrNextBtnLabel();
-});
-
 document.querySelectorAll('[data-wfilter]').forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll('[data-wfilter]').forEach((b) => b.classList.remove("active"));
@@ -2240,6 +2303,7 @@ document.getElementById("quiz-start-btn").addEventListener("click", () => {
   document.getElementById("quiz-start-btn").classList.add("hidden");
   document.getElementById("quiz-topbar").classList.remove("hidden");
   document.getElementById("quiz-empty-state").classList.add("hidden");
+  stopQuizTipRotation();
   document.getElementById("quiz-result-block").classList.add("hidden");
   document.getElementById("quiz-question-block").classList.remove("hidden");
   startQuizTimer();
@@ -2453,12 +2517,48 @@ function exitQuiz() {
   document.getElementById("quiz-question-block").classList.add("hidden");
   document.getElementById("quiz-result-block").classList.add("hidden");
   document.getElementById("quiz-empty-state").classList.remove("hidden");
+  startQuizTipRotation();
 }
 document.getElementById("quiz-exit").addEventListener("click", exitQuiz);
 document.getElementById("quiz-result-exit").addEventListener("click", exitQuiz);
 document.getElementById("quiz-restart").addEventListener("click", () => {
   document.getElementById("quiz-start-btn").click();
 });
+
+/* ---- Màn hình chờ Quiz: xoay vòng mẹo nhỏ cho đỡ nhàm ---- */
+const QUIZ_WAIT_TIPS = [
+  "💡 Bật \"Chế độ nghe\" để luyện phản xạ nghe song song với từ vựng.",
+  "🎯 Lọc theo \"Đang học\" để tập trung ôn đúng những từ chưa nhớ.",
+  "📈 Làm đúng câu Quizz cũng cộng vào Hệ số — xem ở Kho > Thống kê.",
+  "⏱ Thử chế độ đếm ngược để luyện phản xạ trả lời nhanh hơn.",
+  "🔀 Bật \"Ngẫu nhiên\" ở Ngôn ngữ để không đoán được chiều câu hỏi tiếp theo.",
+  "🔥 Làm đúng liên tục không nghỉ — \"đà\" (streak) của Hệ số sẽ tăng nhanh hơn.",
+  "🧩 Chơi \"đến khi sai\" để thử xem giữ được chuỗi đúng dài bao nhiêu câu.",
+];
+let quizTipTimer = null;
+let quizTipIndex = -1;
+function showNextQuizTip() {
+  const el = document.getElementById("quiz-empty-tip");
+  if (!el) return;
+  el.classList.add("fade");
+  setTimeout(() => {
+    let next;
+    do { next = Math.floor(Math.random() * QUIZ_WAIT_TIPS.length); }
+    while (next === quizTipIndex && QUIZ_WAIT_TIPS.length > 1);
+    quizTipIndex = next;
+    el.textContent = QUIZ_WAIT_TIPS[quizTipIndex];
+    el.classList.remove("fade");
+  }, 350);
+}
+function startQuizTipRotation() {
+  showNextQuizTip();
+  clearInterval(quizTipTimer);
+  quizTipTimer = setInterval(showNextQuizTip, 5000);
+}
+function stopQuizTipRotation() {
+  clearInterval(quizTipTimer);
+  quizTipTimer = null;
+}
 
 document.addEventListener("keydown", (e) => {
   if (e.code !== "Space") return;
@@ -4067,6 +4167,18 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.18",
+    changes: [
+      "Viết: nút \"Ẩn xem trước\" đổi thành nút Độ khó (Dễ / Trung bình / Khó, bấm để chuyển lần lượt)",
+      "Độ khó Dễ: 10 gợi ý chữ, 3 gợi ý từ, điểm hệ số +5/đúng",
+      "Độ khó Trung bình (= Ẩn xem trước cũ): 5 gợi ý chữ, 1 gợi ý từ, điểm hệ số +15/đúng",
+      "Độ khó Khó (mới): khoá toàn bộ gợi ý, phải gõ hết cả từ mới biết đúng/sai — gõ sai 1 từ thì từ đó và mọi từ sau đều không hiện gì nữa (kể cả sửa lại đúng), điểm hệ số +35/đúng",
+      "Lưu nhanh từ giờ luôn bật mặc định, bỏ nút bật/tắt riêng",
+      "Bỏ nút \"Kiểm tra\" ở Viết — chỉ dùng phím Enter để kiểm tra/chuyển câu tiếp theo",
+      "Quizz: màn hình chờ lúc thiết lập giờ có icon + mẹo nhỏ xoay vòng cho đỡ nhàm",
+    ],
+  },
+  {
     version: "2.17",
     changes: [
       "Fix layout Kho: các nút Thêm/Sửa/Xoá/Xuất-Nhập trước đây dính sát vào danh sách phía trên, giờ có khoảng cách đều, cân đối hơn",
@@ -4707,6 +4819,7 @@ if (state.reminder.enabled) {
 }
 if (syncCode) connectSync(syncCode);
 updateMobilePanelVisibility();
+startQuizTipRotation();
 saveState();
 
 /* ---- Màn hình loading: hiện cố định ~1.3s rồi tự ẩn ---- */

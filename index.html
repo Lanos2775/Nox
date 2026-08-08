@@ -248,15 +248,11 @@
         </div>
         <div class="feedback-grid" id="wr-feedback-grid"></div>
       </div>
-      <textarea class="writing-answer-input" id="wr-answer-input" placeholder="Nhập câu trả lời tiếng anh tại đây ..."></textarea>
+      <textarea class="writing-answer-input" id="wr-answer-input" placeholder="Nhập câu trả lời tiếng anh tại đây ... (Enter để kiểm tra / sang câu tiếp theo)"></textarea>
       <div class="writing-btn-grid">
         <button class="pill-btn-outline" id="wr-show-char">Hiện chữ tiếp theo (Tab)</button>
         <button class="pill-btn-outline" id="wr-show-word">Hiện từ tiếp theo</button>
-        <button class="pill-btn-outline" id="wr-hide-preview-toggle" title="Ẩn số lượng từ/chữ cái chưa gõ tới">Ẩn xem trước</button>
-      </div>
-      <div class="btn-row-2">
-        <button class="block-btn" id="wr-quicksave-toggle" title="Khi bật: làm đúng câu (đúng thật, không tính lượt đã trượt) sẽ hiện các từ trong câu bên dưới để bấm tra nhanh">Lưu nhanh từ</button>
-        <button class="block-btn" id="wr-answer">Kiểm tra</button>
+        <button class="pill-btn-outline" id="wr-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
       </div>
 
       <div class="quick-translate-bar" id="quick-translate-bar">
@@ -279,7 +275,11 @@
         <span class="quiz-timer">⏱ <span id="quiz-timer-val">0s</span> <button id="quiz-pause" class="timer-pause-btn">⏸</button></span>
       </div>
 
-      <div class="quiz-empty" id="quiz-empty-state">Thiết lập câu hỏi ở thanh bên trái rồi nhấn "Bắt đầu"</div>
+      <div class="quiz-empty" id="quiz-empty-state">
+        <div class="quiz-empty-icon">🎯</div>
+        <div class="quiz-empty-title">Thiết lập câu hỏi ở thanh bên trái rồi nhấn "Bắt đầu"</div>
+        <div class="quiz-empty-tip" id="quiz-empty-tip"></div>
+      </div>
 
       <div class="quiz-question-block hidden" id="quiz-question-block">
         <div class="quiz-listen-hint hidden" id="quiz-listen-hint">
