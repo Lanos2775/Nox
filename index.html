@@ -25,6 +25,17 @@
 </head>
 <body>
 
+<!-- ============ MÀN HÌNH LOADING ============ -->
+<div class="app-loading" id="app-loading">
+  <svg class="app-loading-icon" viewBox="0 0 176 176" xmlns="http://www.w3.org/2000/svg">
+    <rect width="176" height="176" rx="40" fill="#221c3d"/>
+    <path d="M110 35.2 A57.2 57.2 0 1 0 110 140.8 A46.2 46.2 0 1 1 110 35.2 Z" fill="#8b5cf6"/>
+    <circle cx="118.8" cy="48.4" r="6" fill="#8b5cf6"/>
+    <circle cx="136.4" cy="70.4" r="4" fill="#8b5cf6"/>
+  </svg>
+  <div class="app-loading-text">Nox</div>
+</div>
+
 <div class="app-shell">
 
   <!-- ============ SIDEBAR ============ -->
@@ -245,7 +256,7 @@
       </div>
       <div class="btn-row-2">
         <button class="block-btn" id="wr-quicksave-toggle" title="Khi bật: làm đúng câu (đúng thật, không tính lượt đã trượt) sẽ hiện các từ trong câu bên dưới để bấm tra nhanh">Lưu nhanh từ</button>
-        <button class="block-btn" id="wr-answer">Đáp án</button>
+        <button class="block-btn" id="wr-answer">Kiểm tra</button>
       </div>
 
       <div class="quick-translate-bar" id="quick-translate-bar">
@@ -569,7 +580,7 @@
 
     <div class="settings-body">
       <div class="settings-section">
-        <div class="section-label">Đồng bộ giữa thiết bị</div>
+        <div class="section-label">Đồng bộ</div>
         <div class="settings-sync-status">
           <span class="settings-sync-dot sync-off" id="settings-sync-dot"></span>
           <span id="settings-sync-label">Chưa kết nối</span>
@@ -578,14 +589,20 @@
           <input type="text" id="settings-sync-code-input" class="text-input" placeholder="Nhập mã đồng bộ (tối thiểu 8 ký tự) ...">
           <button class="pill-btn primary" id="settings-sync-connect">Kết nối</button>
         </div>
-        <button class="pill-btn-outline" id="settings-sync-generate" style="margin-top:8px;">🎲 Tạo mã ngẫu nhiên</button>
-        <div class="settings-notify-hint">Mã càng dài & khó đoán, đồng bộ càng an toàn — nên dùng mã tạo ngẫu nhiên thay vì tự nghĩ mã đơn giản.</div>
+        <div class="btn-row-2" style="margin-top:8px;">
+          <button class="pill-btn-outline" id="settings-sync-generate">🎲 Tạo mã ngẫu nhiên</button>
+          <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn">🗄️ Đổi database</button>
+        </div>
         <button class="pill-btn-outline hidden" id="settings-sync-disconnect">Ngắt kết nối</button>
-        <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn">🗄️ Đổi database (chuyển acc)</button>
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Màu giao diện</div>
+        <div class="section-label">Ngữ pháp</div>
+        <a class="pill-btn-outline" id="grammar-open-btn" href="./grammar.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center;">📖 Mở tài liệu ngữ pháp</a>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Giao diện</div>
         <div class="theme-level-control" id="theme-level-control" title="Màu giao diện">
           <button class="theme-dot theme-dot-1" data-level="1" title="Trắng"></button>
           <button class="theme-dot theme-dot-2" data-level="2" title="Ngả vàng"></button>
@@ -604,38 +621,33 @@
           <button class="theme-dot theme-dot-15" data-level="15" title="Ngọc lam"></button>
           <button class="theme-dot theme-dot-16" data-level="16" title="Hồng đất"></button>
           <button class="theme-dot theme-dot-17" data-level="17" title="Xanh lục rừng"></button>
+          <button class="theme-dot theme-dot-18" data-level="18" title="Đất nung"></button>
         </div>
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Thông báo trên máy tính</div>
+        <div class="section-label">Thông báo</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-desktop-notify">
-          <span>Hiện Desktop Notification (nổi trên mọi tab/ứng dụng khác)</span>
+          <span>Desktop Notification</span>
         </label>
         <div class="settings-notify-hint" id="settings-notify-hint"></div>
       </div>
 
       <div class="settings-section hidden" id="settings-section-mobile-notify">
-        <div class="section-label">Thông báo trên điện thoại</div>
+        <div class="section-label">Thông báo điện thoại</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-mobile-notify">
-          <span>Hiện bong bóng chat nhắc từ (kiểu Messenger)</span>
+          <span>Bong bóng chat nhắc từ</span>
         </label>
-        <div class="settings-notify-hint" id="settings-mobile-notify-hint">Chỉ hiện khi tab/app Nox còn đang mở (không đè lên được app khác — giới hạn của trình duyệt).</div>
       </div>
 
       <div class="settings-section hidden" id="settings-section-background-run">
-        <div class="section-label">Chạy nền (thử nghiệm)</div>
+        <div class="section-label">Chạy nền</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-background-run">
-          <span>Cho phép nhắc từ tiếp tục khi mở app khác</span>
+          <span>Nhắc từ khi mở app khác</span>
         </label>
-        <div class="settings-notify-hint">
-          Hoạt động kiểu "cố gắng hết sức": chạy tốt nếu bạn chỉ lướt app khác một lát và không tắt màn hình lâu.
-          Trình duyệt di động sẽ tự treo tab nếu bạn tắt màn hình lâu hoặc rời app quá lâu — lúc đó chạy nền sẽ dừng, đây là giới hạn của web/PWA, không phải lỗi.
-          Sau khi hết số chu kỳ đã đặt, chạy nền sẽ <b>tự động tắt</b>.
-        </div>
         <div class="settings-bg-options hidden" id="settings-bg-options">
           <label class="settings-slider-row">
             <span>Số chu kỳ lặp</span>
@@ -666,7 +678,7 @@
         <div class="settings-subsection">
           <label class="settings-checkbox-row">
             <input type="checkbox" id="settings-reminder-autooff">
-            <span>Tự động tắt thông báo nhắc từ</span>
+            <span>Tự động tắt nhắc từ</span>
           </label>
           <div class="settings-suboptions hidden" id="settings-reminder-autooff-options">
             <div class="btn-row-2">
@@ -683,14 +695,13 @@
               <input type="range" id="settings-reminder-autooff-minutes" min="1" max="60" value="5">
               <span class="settings-slider-val" id="settings-reminder-autooff-minutes-val">5</span>
             </label>
-            <div class="settings-notify-hint">1 chu kỳ = đọc hết một lượt tất cả các danh sách đang bật 🔔 nhắc từ.</div>
           </div>
         </div>
 
         <div class="settings-subsection">
           <label class="settings-checkbox-row">
             <input type="checkbox" id="settings-reminder-autoon">
-            <span>Tự động bật lại thông báo nhắc từ</span>
+            <span>Tự động bật lại nhắc từ</span>
           </label>
           <div class="settings-suboptions hidden" id="settings-reminder-autoon-options">
             <div class="btn-row-2">
@@ -711,7 +722,7 @@
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Thẻ (Flashcard)</div>
+        <div class="section-label">Thẻ</div>
         <label class="settings-slider-row">
           <span>Thời gian Auto play</span>
           <input type="range" id="settings-fc-flip-duration" min="5" max="60" value="10">
@@ -720,30 +731,35 @@
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Thanh dịch nhanh</div>
+        <div class="section-label">Dịch nhanh</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-qt-clear-refocus">
-          <span>Xoá bản dịch cũ khi bấm ra ngoài rồi bấm lại vào thanh dịch</span>
+          <span>Xoá bản dịch cũ khi mở lại</span>
         </label>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-qt-autodetect">
-          <span>Tự động nhận diện Anh / Việt khi gõ (dựa vào dấu tiếng Việt)</span>
+          <span>Tự nhận diện Anh / Việt</span>
         </label>
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Hệ số (đà học tập)</div>
+        <div class="section-label">Hệ số</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-momentum-system-notify">
-          <span>Bật thêm thông báo hệ thống khi sắp hết thời gian giữ đà (ngoài thông báo trong web)</span>
+          <span>Thông báo hệ thống khi sắp ngắt quãng</span>
         </label>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-momentum-quickview">
-          <span>Hiện hệ số nhanh cạnh chữ "Nox"</span>
+          <span>Hiện hệ số cạnh chữ "Nox"</span>
         </label>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-momentum-theme-sync">
-          <span>Tự động đổi màu viền khung theo hệ số (dương → viền xanh, âm → viền đỏ)</span>
+          <span>Đổi màu viền theo hệ số</span>
+        </label>
+        <label class="settings-slider-row">
+          <span>Thời gian nhắc ngừng</span>
+          <input type="range" id="settings-momentum-idle-minutes" min="1" max="30" value="3">
+          <span class="settings-slider-val" id="settings-momentum-idle-minutes-val">3p</span>
         </label>
       </div>
 
@@ -751,7 +767,7 @@
         <div class="section-label">Nhật ký</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-show-diary">
-          <span>Hiện tính năng Nhật ký (tab Nhật Ký trong Kho + nút 📔 nhanh)</span>
+          <span>Hiện tính năng Nhật ký</span>
         </label>
       </div>
 
@@ -759,7 +775,7 @@
         <div class="section-label">Âm thanh</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-sfx-enabled">
-          <span>Hiệu ứng âm khi bấm nút / làm đúng / làm sai / chuyển thẻ</span>
+          <span>Hiệu ứng âm</span>
         </label>
         <label class="settings-slider-row">
           <span>Âm lượng hiệu ứng</span>
@@ -776,7 +792,6 @@
           <input type="range" id="settings-tts-volume" min="0" max="100" value="100">
           <span class="settings-slider-val" id="settings-tts-volume-val">100%</span>
         </label>
-        <div class="settings-notify-hint">Kéo quá 100% để to hơn mức mặc định. Riêng "Âm lượng giọng đọc" bị giới hạn tối đa 100% do trình duyệt quy định, không thể đẩy to hơn được.</div>
       </div>
     </div>
   </div>
@@ -789,7 +804,6 @@
       <span class="settings-title-row">Đổi database <button class="version-info-btn" id="db-config-help-btn" title="Hướng dẫn tạo database mới & lấy config">?</button></span>
       <button class="popup-close" id="db-config-close">✕</button>
     </div>
-    <div class="settings-notify-hint" style="margin-bottom:10px;">Dán config Firebase của một project khác vào đây để chuyển đồng bộ sang đó (hữu ích khi đổi tài khoản).</div>
     <textarea id="settings-db-config-input" class="text-input db-config-textarea" placeholder='Dán config Firebase dạng JSON, ví dụ:&#10;{&quot;apiKey&quot;:&quot;...&quot;,&quot;databaseURL&quot;:&quot;...&quot;,&quot;projectId&quot;:&quot;...&quot;}'></textarea>
     <div class="btn-row-2">
       <button class="pill-btn primary" id="db-config-apply">Áp dụng</button>

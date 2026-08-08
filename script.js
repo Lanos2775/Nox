@@ -32,7 +32,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3 },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     bubblePos: null,
   };
@@ -63,7 +63,7 @@ function loadState() {
       // migrate from old light/dark boolean theme if present
       parsed.themeLevel = parsed.theme === "dark" ? 4 : 1;
     }
-    if (parsed.themeLevel > 17) parsed.themeLevel = 17;
+    if (parsed.themeLevel > 18) parsed.themeLevel = 18;
     if (parsed.reminder.autoRead === undefined) parsed.reminder.autoRead = false;
     if (parsed.reminder.desktopNotify === undefined) parsed.reminder.desktopNotify = false;
     if (!parsed.reminder.mobileNotify) parsed.reminder.mobileNotify = { enabled: false };
@@ -97,6 +97,7 @@ function loadState() {
     if (parsed.settings.momentumSystemNotify === undefined) parsed.settings.momentumSystemNotify = false;
     if (parsed.settings.momentumQuickview === undefined) parsed.settings.momentumQuickview = false;
     if (parsed.settings.momentumThemeSync === undefined) parsed.settings.momentumThemeSync = false;
+    if (parsed.settings.momentumIdleMinutes === undefined) parsed.settings.momentumIdleMinutes = 3;
     if (!parsed.studyMomentum) parsed.studyMomentum = { score: 0, streakGain: 1, lastActionAt: null, history: [] };
     if (!parsed.studyMomentum._tzFixed && parsed.studyMomentum.history && parsed.studyMomentum.history.length) {
       const tzOffsetSec = -new Date().getTimezoneOffset() * 60;
@@ -337,18 +338,24 @@ function shuffleArr(arr) {
 /* ============================================================
    ĐÀ HỌC TẬP (dùng cho tab Thống kê > Hệ số)
    - Mỗi hành động học (lật/đánh dấu thẻ, kiểm tra câu Viết, chọn đáp án Quizz)
-     gọi logStudyAction(). Nếu hành động liên tiếp cách nhau < 3 phút thì coi
-     là đang học liên tục — "đà" (streakGain) tăng dần, điểm cộng vào ngày
-     càng nhanh. Nếu cách nhau > 3 phút thì coi là bị ngắt quãng: trừ điểm
-     theo thời gian vắng mặt (vắng càng lâu trừ càng nhanh) rồi "đà" về lại
-     mức khởi điểm.
+     gọi logStudyAction(). Nếu hành động liên tiếp cách nhau < ngưỡng ngắt quãng
+     (mặc định 3 phút, chỉnh được trong Cài đặt > Hệ số, min 1p max 30p — xem
+     studyIdleTimeoutMs()) thì coi là đang học liên tục — "đà" (streakGain)
+     tăng dần, điểm cộng vào ngày càng nhanh. Nếu cách nhau lâu hơn ngưỡng đó
+     thì coi là bị ngắt quãng: trừ điểm theo thời gian vắng mặt (vắng càng lâu
+     trừ càng nhanh) rồi "đà" về lại mức khởi điểm.
    - CHỈ Viết/Quizz mới thực sự xây "đà" (streakGain) và cộng điểm đáng kể.
      Thẻ (flashcard) chỉ giữ cho streak không bị coi là ngắt quãng (để không
      bị trừ điểm oan), nhưng bản thân không góp phần tăng đà và chỉ cộng một
      mức cực nhỏ, cố định — spam lật thẻ liên tục sẽ không đẩy hệ số lên
      đáng kể.
    ============================================================ */
-const STUDY_IDLE_TIMEOUT_MS = 3 * 60 * 1000; // 3 phút
+// Thời gian ngắt quãng giờ lấy từ settings (thanh trượt trong Cài đặt > Hệ số),
+// mặc định 3 phút, min 1 phút, max 30 phút — không còn là hằng số cố định.
+function studyIdleTimeoutMs() {
+  const minutes = Math.min(30, Math.max(1, (state.settings && state.settings.momentumIdleMinutes) || 3));
+  return minutes * 60 * 1000;
+}
 const STUDY_IDLE_WARN_LEAD_MS = 20 * 1000; // cảnh báo trước 20 giây khi sắp hết hạn giữ đà
 const FLASHCARD_FLAT_GAIN = 0.02; // mức cộng cố định, cực nhỏ, cho mỗi hành động ở Thẻ
 let studyIdleWarnTimer = null;
@@ -370,7 +377,7 @@ function logStudyAction(source, isCorrect) {
 
   if (m.lastActionAt !== null) {
     const gap = now - m.lastActionAt;
-    if (gap > STUDY_IDLE_TIMEOUT_MS) {
+    if (gap > studyIdleTimeoutMs()) {
       const idleHours = gap / 3600000;
       const decay = 2 * idleHours + 0.3 * idleHours * idleHours;
       m.score -= decay;
@@ -408,7 +415,7 @@ function scheduleStudyIdleWarning() {
   if (studyIdleWarnTimer) clearTimeout(studyIdleWarnTimer);
   const m = state.studyMomentum;
   if (!m.lastActionAt) return;
-  const remaining = STUDY_IDLE_TIMEOUT_MS - STUDY_IDLE_WARN_LEAD_MS - (Date.now() - m.lastActionAt);
+  const remaining = studyIdleTimeoutMs() - STUDY_IDLE_WARN_LEAD_MS - (Date.now() - m.lastActionAt);
   if (remaining <= 0) return;
   studyIdleWarnTimer = setTimeout(fireStudyIdleWarning, remaining);
 }
@@ -442,7 +449,7 @@ function updateBrandMomentumQuickview() {
 /* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
 function applyMomentumThemeSync() {
   if (!state.settings || !state.settings.momentumThemeSync) {
-    const level = Math.min(17, Math.max(1, Math.round(state.themeLevel || 1)));
+    const level = Math.min(18, Math.max(1, Math.round(state.themeLevel || 1)));
     const palette = THEME_PALETTES[level];
     document.body.style.setProperty("--border", palette.border);
     return;
@@ -563,12 +570,17 @@ const THEME_PALETTES = {
     text: "#dcefdc", textMuted: "#82a086", accent: "#4ade80", accentSoft: "#173319",
     learningSoft: "#332b14", knownSoft: "#173a24", difficultSoft: "#331a1a",
   },
+  18: { // Đất nung — khớp màu trang Ngữ pháp (Eg_notes/grammar.html)
+    bg: "#f3dcc7", panel: "#faf1e3", border: "#45566b", borderSoft: "#e3c4a6",
+    text: "#45566b", textMuted: "#6b7c8f", accent: "#d4665a", accentSoft: "#ecc9b8",
+    learningSoft: "#f5dcae", knownSoft: "#dcefd6", difficultSoft: "#fbd7d2",
+  },
 };
 function cssVarName(key) {
   return "--" + key.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
 function applyThemeLevel(level, persist = true) {
-  level = Math.min(17, Math.max(1, Math.round(level)));
+  level = Math.min(18, Math.max(1, Math.round(level)));
   const palette = THEME_PALETTES[level];
   Object.keys(palette).forEach((key) => {
     document.body.style.setProperty(cssVarName(key), palette[key]);
@@ -583,7 +595,7 @@ function applyThemeLevel(level, persist = true) {
 document.querySelectorAll(".theme-dot").forEach((dot) => {
   dot.addEventListener("click", () => applyThemeLevel(parseInt(dot.dataset.level, 10)));
 });
-applyThemeLevel(Math.min(17, state.themeLevel || 1), false);
+applyThemeLevel(Math.min(18, state.themeLevel || 1), false);
 
 /* ============================================================
    LIST PICKER POPUP (used by Thẻ / Viết / Quizz "Chọn danh sách")
@@ -1366,6 +1378,7 @@ function renderWrQuestion() {
 
 function renderWrFeedback() {
   const item = currentWrItem();
+  updateWrNextBtnLabel();
   const grid = document.getElementById("wr-feedback-grid");
   grid.innerHTML = "";
   if (!item) return;
@@ -1514,8 +1527,11 @@ function revealNextChar() {
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
+  // Giữ nguyên phần đã gõ (kể cả gõ sai) — chỉ nối thêm 1 ký tự đúng tiếp theo vào
+  // cuối, KHÔNG ghi đè answer.slice(0, ...) như trước (bug: tự sửa hết chữ sai phía
+  // trước mỗi khi bấm gợi ý).
   if (input.value.length < answer.length) {
-    input.value = answer.slice(0, input.value.length + 1);
+    input.value = input.value + answer[input.value.length];
   }
   wr.checked = false;
   wr.charHintCount++;
@@ -1539,7 +1555,10 @@ function revealNextWord() {
   let nextSpace = answer.indexOf(" ", cur);
   if (nextSpace === -1) nextSpace = answer.length;
   else nextSpace += 1;
-  input.value = answer.slice(0, Math.max(nextSpace, cur + 1));
+  // Giữ nguyên phần đã gõ (kể cả gõ sai) — chỉ nối thêm phần đúng còn thiếu tới hết
+  // từ tiếp theo, KHÔNG ghi đè answer.slice(0, ...) như trước (bug tương tự
+  // revealNextChar: tự sửa hết chữ sai phía trước).
+  input.value = input.value + answer.slice(cur, Math.max(nextSpace, cur + 1));
   wr.checked = false;
   wr.wordHintCount++;
   renderWrFeedback();
@@ -1616,22 +1635,22 @@ document.getElementById("wr-quicksave-toggle").addEventListener("click", (e) => 
     if (item && wr.checked && item.status === "known" && !wr.roundFailed) wrShowQuickSaveWords(item);
   }
 });
+// Nút "Tiếp": chưa kiểm tra thì kiểm tra đáp án (giống Enter lần 1), đã kiểm tra rồi
+// thì chuyển sang câu tiếp theo (giống Enter lần 2) — không còn tính năng "bỏ cuộc,
+// xem đáp án đầy đủ" như nút "Đáp án" cũ, chỉ còn 2 gợi ý tăng dần (Tab / Hiện từ).
+function updateWrNextBtnLabel() {
+  const btn = document.getElementById("wr-answer");
+  if (!btn) return;
+  btn.textContent = wr.checked ? "Tiếp" : "Kiểm tra";
+}
 document.getElementById("wr-answer").addEventListener("click", () => {
-  const item = currentWrItem();
-  if (!item) return;
-  item.status = "difficult";
-  wr.roundFailed = true;
-  saveState();
-  document.getElementById("wr-answer-input").value = item.en;
-  wr.checked = true;
-  wr.trackedAnswer = item.en;
-  renderWritingStatsOnly();
-  renderWrFeedback();
-  flashAnswerFeedback(false);
-  wrHideQuickSaveWords();
-  const altsMsg = item.enAlts && item.enAlts.length ? ` (còn có: ${item.enAlts.join(" | ")})` : "";
-  showToast("Đáp án: " + item.en + altsMsg);
-  setTimeout(() => wrGoNext(), 1400);
+  if (!currentWrItem()) return;
+  if (!wr.checked) {
+    wrCheckAnswer();
+  } else {
+    wrGoNext();
+  }
+  updateWrNextBtnLabel();
 });
 
 document.querySelectorAll('[data-wfilter]').forEach((btn) => {
@@ -3649,6 +3668,17 @@ document.getElementById("settings-momentum-theme-sync").addEventListener("change
 });
 document.getElementById("settings-momentum-theme-sync").checked = !!state.settings.momentumThemeSync;
 
+/* ---- Hệ số: thời gian ngưỡng ngắt quãng (1-30 phút, mặc định 3) ---- */
+const momentumIdleSlider = document.getElementById("settings-momentum-idle-minutes");
+momentumIdleSlider.value = state.settings.momentumIdleMinutes;
+document.getElementById("settings-momentum-idle-minutes-val").textContent = state.settings.momentumIdleMinutes + "p";
+momentumIdleSlider.addEventListener("input", (e) => {
+  state.settings.momentumIdleMinutes = parseInt(e.target.value, 10);
+  document.getElementById("settings-momentum-idle-minutes-val").textContent = state.settings.momentumIdleMinutes + "p";
+  saveState();
+  scheduleStudyIdleWarning();
+});
+
 updateBrandMomentumQuickview();
 applyMomentumThemeSync();
 scheduleStudyIdleWarning();
@@ -4036,6 +4066,28 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.17",
+    changes: [
+      "Fix layout Kho: các nút Thêm/Sửa/Xoá/Xuất-Nhập trước đây dính sát vào danh sách phía trên, giờ có khoảng cách đều, cân đối hơn",
+      "Đổi database giờ rút gọn, xếp cùng hàng với Tạo mã ngẫu nhiên trong Cài đặt",
+      "Bổ sung tên đầy đủ còn thiếu cho Unit 2/3/4 trong tài liệu Ngữ pháp",
+      "Ẩn thanh cuộn trên toàn app (vẫn cuộn bình thường) — thanh cuộn mặc định trước đây có viền trắng đè lên viền bo góc theme, phá bố cục",
+    ],
+  },
+  {
+    version: "2.16",
+    changes: [
+      "Thêm tab Ngữ pháp (grammar.html) mở ở tab trình duyệt riêng, truy cập từ Cài đặt — tải theo kiểu network-first nên sửa nội dung xong mở lại là thấy ngay, không cần cập nhật app",
+      "Thêm theme #18 \"Đất nung\" khớp màu trang Ngữ pháp",
+      "Đổi icon app sang biểu tượng trăng lưỡi liềm mới",
+      "Thêm màn hình loading khi mở app (hiện cố định ~1.3s)",
+      "Fix bug ở Viết: bấm gợi ý \"Hiện chữ/từ tiếp theo\" trước đây tự sửa luôn hết các chữ gõ sai phía trước — giờ chỉ nối thêm gợi ý vào cuối, phần gõ sai vẫn giữ nguyên hiện sai",
+      "Bỏ nút \"Đáp án\" (xem đáp án đầy đủ khi bỏ cuộc) ở Viết, thay bằng nút \"Kiểm tra\"/\"Tiếp\" — chỉ còn 2 gợi ý tăng dần (Tab / Hiện từ), không còn cách xem trọn đáp án ngay lập tức",
+      "Thêm thanh trượt chỉnh thời gian ngắt quãng Hệ số trong Cài đặt (mặc định 3 phút, min 1p, max 30p) — trước đây cố định 3 phút",
+      "Rút gọn tên các mục & bỏ bớt dòng chữ mờ gợi ý trong Cài đặt cho gọn hơn",
+    ],
+  },
   {
     version: "2.15",
     changes: [
@@ -4656,3 +4708,9 @@ if (state.reminder.enabled) {
 if (syncCode) connectSync(syncCode);
 updateMobilePanelVisibility();
 saveState();
+
+/* ---- Màn hình loading: hiện cố định ~1.3s rồi tự ẩn ---- */
+setTimeout(() => {
+  const loadingEl = document.getElementById("app-loading");
+  if (loadingEl) loadingEl.classList.add("hidden");
+}, 1300);

@@ -1,0 +1,2250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nox - Ngữ pháp tiếng Anh</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%23452e28'/%3E%3Cpath d='M25 8 A13 13 0 1 0 25 32 A10.5 10.5 0 1 1 25 8 Z' fill='%23d4665a'/%3E%3Ccircle cx='27' cy='11' r='1.6' fill='%23d4665a'/%3E%3Ccircle cx='31' cy='16' r='1' fill='%23d4665a'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f3dcc7;
+    --panel-bg: #f3dcc7;
+    --border: #e3c4a6;
+    --text: #45566b;
+    --muted: #6b7c8f;
+    --accent: #d4665a;
+    --accent-bg: #ecc9b8;
+    --code-bg: #ecc9b8;
+  }
+  * { box-sizing: border-box; }
+  /* Ẩn thanh cuộn (vẫn cuộn được bình thường bằng chuột/trackpad/chạm) —
+     thanh cuộn mặc định của trình duyệt có viền trắng đè lên viền bo góc
+     của theme, gây rối mắt, nên ẩn hẳn đi. */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+  }
+  body {
+    background: var(--bg);
+  }
+  .menu-btn {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 1100;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-bg);
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .menu-btn span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--accent);
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.25);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  nav.tabs {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    background: var(--panel-bg);
+    border-right: 1px solid var(--border);
+    padding: 64px 10px 20px;
+    z-index: 1050;
+  }
+  nav.tabs.open {
+    transform: translateX(0);
+  }
+  .tab-btn {
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.92rem;
+    color: var(--text);
+    cursor: pointer;
+    line-height: 1.3;
+  }
+  .tab-btn:hover {
+    background: var(--accent-bg);
+  }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #fff8f5;
+    font-weight: 600;
+  }
+  .layout {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 72px 16px 48px;
+  }
+  main {
+    background: var(--panel-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 32px;
+  }
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  .tab-panel h1 {
+    font-size: 1.4rem;
+    color: var(--accent);
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 8px;
+    margin-top: 0;
+  }
+  .tab-panel h2 {
+    font-size: 1.15rem;
+    color: var(--accent);
+    margin-top: 28px;
+    border-left: 4px solid var(--accent);
+    padding-left: 10px;
+  }
+  .tab-panel h3 {
+    font-size: 1.05rem;
+    margin-top: 22px;
+    color: var(--accent);
+  }
+  .tab-panel h4 {
+    font-size: 0.98rem;
+    margin-top: 18px;
+    color: var(--accent);
+  }
+  .tab-panel p {
+    margin: 10px 0;
+  }
+  .tab-panel strong {
+    color: var(--accent);
+  }
+  .tab-panel table {
+    border-collapse: collapse;
+    margin: 14px 0;
+    width: auto;
+  }
+  .tab-panel table th, .tab-panel table td {
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    text-align: left;
+  }
+  .tab-panel table th {
+    background: var(--accent-bg);
+  }
+  .tab-panel code {
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.92em;
+  }
+  .tab-panel ul, .tab-panel ol {
+    padding-left: 22px;
+  }
+  .tab-panel hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+  @media (max-width: 800px) {
+    nav.tabs {
+      width: 78%;
+      max-width: 300px;
+    }
+    main {
+      padding: 18px;
+    }
+  }
+
+  /* --- Loading splash --- */
+  #nox-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+  }
+  #nox-splash.hide {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  #nox-splash .splash-logo {
+    width: 64px;
+    height: 64px;
+    animation: nox-pulse 1.6s ease-in-out infinite;
+  }
+  #nox-splash .splash-text {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+  #nox-splash .splash-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+  @keyframes nox-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.12); opacity: 0.75; }
+  }
+</style>
+</head>
+<body>
+<div id="nox-splash">
+  <svg class="splash-logo" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+    <path d="M25 8 A13 13 0 1 0 25 32 A10.5 10.5 0 1 1 25 8 Z" fill="#d4665a"/>
+    <circle cx="27" cy="11" r="1.6" fill="#d4665a"/>
+    <circle cx="31" cy="16" r="1" fill="#d4665a"/>
+  </svg>
+  <div class="splash-text">Nox</div>
+  <div class="splash-sub">Đang tải ghi chú...</div>
+</div>
+<button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
+<div class="overlay" id="overlay"></div>
+<nav class="tabs" id="tabsNav">
+  <button class="tab-btn active" data-tab="tab0">Unit 1. Tổng quát về từ và câu</button><button class="tab-btn" data-tab="tab1">Unit 2: Tân cách, số từ, giới từ chỉ vị trí và các động từ phổ dụng</button><button class="tab-btn" data-tab="tab2">Unit 3: Chỉ định từ, giới từ "of", sở hữu cách, trạng từ nhấn mạnh</button><button class="tab-btn" data-tab="tab3">UNIT 4: Số từ số lượng lớn, các từ bất định, trạng từ bổ ngữ</button><button class="tab-btn" data-tab="tab4">UNIT 5. Mệnh lệnh thức</button><button class="tab-btn" data-tab="tab5">UNIT 6: Động từ nguyên thể có TO</button><button class="tab-btn" data-tab="tab6">UNIT 7: TRỢ ĐỘNG TỪ</button><button class="tab-btn" data-tab="tab7">UNIT 8: MỆNH ĐỀ PHỤ VÀ CÂU PHỨC</button><button class="tab-btn" data-tab="tab8">UNIT 9: Dạng phủ định của động từ.</button><button class="tab-btn" data-tab="tab9">UNIT 10: Phủ định mệnh lệnh thức</button><button class="tab-btn" data-tab="tab10">UNIT 11: Phủ định không hoàn toàn</button><button class="tab-btn" data-tab="tab11">UNIT 12: Cách dùng chữ No và Any</button><button class="tab-btn" data-tab="tab12">Unit 13: Mệnh đề danh từ báo hiệu bằng liên từ That (MĐ N-that)</button><button class="tab-btn" data-tab="tab13">Unit 14: Tân ngữ có giới từ</button><button class="tab-btn" data-tab="tab14">Unit 15: Thay thế động từ và kết cấu động từ</button><button class="tab-btn" data-tab="tab15">Unit 16: Nghi vấn</button><button class="tab-btn" data-tab="tab16">Unit 17: Nghi vấn phủ định và phân cách</button><button class="tab-btn" data-tab="tab17">Unit 18: Câu hỏi riêng phần</button><button class="tab-btn" data-tab="tab18">Unit 19: Số từ thứ tự.</button>
+</nav>
+<div class="layout">
+  <main>
+    <div class="tab-panel active" id="tab0"><h1>Unit 1. Tổng quát về từ và câu</h1>
+<h2>Vì sao cần học ngữ pháp?</h2>
+<p>Một đoạn văn (nói hoặc viết) = tập hợp nhiều <strong>câu</strong>. Một câu = tập hợp nhiều <strong>từ</strong>, được sắp xếp theo quy tắc riêng của tiếng Anh — quy tắc này <strong>không giống tiếng Việt</strong>, nên không thể dịch từng chữ.</p>
+<blockquote>
+<p>Ví dụ dịch sai kiểu "word-by-word":<br />
+- "Tôi kinh doanh ở Hà Nội" → ~~I business in Hà Nội~~ (sai, vì "business" là danh từ, không phải động từ) → đúng: <strong>I do business in Hanoi.</strong><br />
+- "Tôi có ô tô" → ~~I have car~~ (thiếu mạo từ) → đúng: <strong>I have a car.</strong></p>
+</blockquote>
+<p>👉 Bài học: tiếng Anh bắt buộc phải để ý <strong>loại từ</strong> (danh từ/động từ/tính từ...) và <strong>mạo từ</strong> (a/an/the) — hai thứ tiếng Việt không có.</p>
+<h2>I. Tám loại từ trong tiếng Anh</h2>
+<h3>1. Danh từ (Noun – N)</h3>
+<p>Danh từ gọi tên sự vật, sự việc, khái niệm. Đọc có trọng âm (thực từ).</p>
+<p>Có 2 loại quan trọng cần phân biệt ngay từ đầu:</p>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Đặc điểm</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Đếm được — Countable [C]</td>
+<td>tách thành từng cái riêng biệt, đếm được, có số nhiều</td>
+<td>a dog, two dogs, three books</td>
+</tr>
+<tr>
+<td>Không đếm được — Uncountable [U]</td>
+<td>là chất liệu/khái niệm, không tách rời, <strong>không có số nhiều</strong></td>
+<td>money, water, time, information</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mẹo nhớ:</strong> nếu có thể đặt số đếm trước nó ("one X, two X") thì đó là [C]; nếu nghe "vô lý" khi đếm (one money? two waters theo nghĩa số lượng chất) thì đó là [U].</p>
+<p>Thêm ví dụ: <em>book [C]</em> (a book, two books) ; <em>milk [U]</em> (không nói "two milks" khi chỉ chất lỏng nói chung, mà nói "two glasses of milk" — vì đơn vị đếm là "glass", không phải "milk").</p>
+<h3>2. Mạo từ (Article)</h3>
+<p>Mạo từ đặt trước danh từ, báo cho người nghe biết N đó <strong>đã xác định (biết rõ là cái nào)</strong> hay <strong>chưa xác định (mới, chung, không rõ cái nào)</strong>.</p>
+<ul>
+<li><strong>a/an + N số ít, chưa xác định, mới nhắc lần đầu</strong></li>
+<li>a + phụ âm: <em>a dog, a book</em></li>
+<li>an + nguyên âm: <em>an actor, an apple</em></li>
+<li><strong>the + N (số ít hoặc số nhiều), đã xác định</strong> — vì đã nói ở câu trước, hoặc cả hai bên đều biết đang nói về cái nào.</li>
+</ul>
+<blockquote>
+<p>Ví dụ chuỗi hội thoại (rất quan trọng để hiểu logic mạo từ):<br />
+<em>I have </em><em>a</em><em> dog. </em><em>The</em><em> dog is very friendly.</em><br />
+(Câu 1: giới thiệu lần đầu, con chó nào cũng được → a dog.<br />
+Câu 2: đã biết chính xác là con chó nào rồi → the dog.)</p>
+</blockquote>
+<p>⚠️ Lưu ý: chỉ danh từ <strong>đếm được, số ít</strong> mới cần a/an. Danh từ không đếm được [U] không dùng a/an (không nói "a money").</p>
+<h3>2.1 Danh từ số nhiều</h3>
+<p>Chỉ danh từ [C] mới có dạng số nhiều (plural – pl). Quy tắc phát âm "-s":</p>
+<table>
+<thead>
+<tr>
+<th>Trường hợp</th>
+<th>Âm cuối từ gốc</th>
+<th>"-s" đọc là</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>phụ âm hữu thanh / nguyên âm</td>
+<td>/z/</td>
+<td>dog → dogs /dɒgz/</td>
+</tr>
+<tr>
+<td>2</td>
+<td>phụ âm vô thanh</td>
+<td>/s/</td>
+<td>cat → cats /kæts/</td>
+</tr>
+<tr>
+<td>3 (bổ sung)</td>
+<td>âm rít s, sh, ch, x, z</td>
+<td>/ɪz/</td>
+<td>box → boxes /ˈbɒksɪz/</td>
+</tr>
+</tbody>
+</table>
+<h3>3. Đại từ (Pronoun – pron)</h3>
+<p>Dùng thay cho danh từ để không phải nhắc lại. Đại từ nhân xưng phân theo <strong>ngôi</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Ngôi</th>
+<th>Số ít</th>
+<th>Số nhiều</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (người nói)</td>
+<td>I</td>
+<td>we</td>
+</tr>
+<tr>
+<td>2 (người nghe)</td>
+<td>you</td>
+<td>you</td>
+</tr>
+<tr>
+<td>3 (người/vật khác)</td>
+<td>he/she/it</td>
+<td>they</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>he</strong>: nam giới số ít · <strong>she</strong>: nữ giới số ít · <strong>it</strong>: vật/việc số ít · <strong>they</strong>: mọi thứ số nhiều (bất kể giới).</li>
+</ul>
+<p>Ví dụ: <em>Tom is my brother. </em><em>He</em><em> is 20 years old.</em> (dùng "he" để tránh lặp lại "Tom").</p>
+<h3>4. Động từ (Verb – V)</h3>
+<p>Động từ diễn tả hành động/trạng thái. Có 2 loại cốt lõi:</p>
+<ul>
+<li><strong>Nội động từ (intransitive – Vi)</strong>: tự đủ nghĩa, không cần vật bị tác động. VD: <em>I sleep. She smiles.</em></li>
+<li><strong>Ngoại động từ (transitive – Vt)</strong>: cần có <strong>tân ngữ</strong> (vật bị tác động) đi kèm mới đủ nghĩa. VD: <em>I like </em><em>coffee</em><em>.</em> (không thể chỉ nói "I like." rồi dừng lại)</li>
+</ul>
+<p><strong>Động từ "chia" (conjugated) vs "chưa chia" (bare/infinitive):</strong><br />
+Một câu tiếng Anh <strong>bắt buộc phải có ít nhất một động từ đã chia</strong> theo chủ ngữ/thời gian. Ví dụ:<br />
+- <em>He </em><em>lives</em><em> here.</em> (lives = đã chia theo ngôi 3, thì hiện tại → tạo thành câu hoàn chỉnh)<br />
+- <em>...living here...</em> (chưa chia → không tự tạo được câu)</p>
+<h3>4.1 Ba kiểu câu cơ bản</h3>
+<p>Câu đơn giản = 1 động từ chia. Cấu trúc gồm <strong>Chủ ngữ (CN) – Vị ngữ (VN)</strong>. Có 3 kiểu câu hay gặp nhất khi mới học:</p>
+<p><strong>Kiểu 1 — CN + Vi</strong> (nội động từ, đứng một mình đủ nghĩa)</p>
+<blockquote>
+<p><em>I walk.</em> / <em>Birds fly.</em></p>
+</blockquote>
+<p><strong>Kiểu 2 — CN + Vt + Tân ngữ trực tiếp (TT)</strong></p>
+<blockquote>
+<p><em>I like </em><em>it</em><em>.</em> / <em>She reads </em><em>books</em><em>.</em></p>
+</blockquote>
+<p><strong>Kiểu 3 — CN + Vi kèm bổ nghĩa (Vi-kr) + Bổ ngữ chủ ngữ (BC)</strong><br />
+Đây là các động từ "liên kết" như <em>be, become, seem</em> — đứng một mình chưa rõ nghĩa, cần thêm phần bổ sung để nói rõ về chủ ngữ.</p>
+<blockquote>
+<p><em>She </em><em>is</em><em> a doctor.</em> (BC = a doctor, nói rõ "she là gì")<br />
+<em>He </em><em>seems</em><em> tired.</em></p>
+</blockquote>
+<h3>4.2 Chia động từ ở thì hiện tại đơn</h3>
+<p>Thì hiện tại đơn dùng để nói về <strong>sự thật chung, thói quen, quy luật lặp lại thường xuyên</strong>.</p>
+<p>Quy tắc chia: giữ nguyên động từ ở mọi ngôi, <strong>riêng ngôi thứ 3 số ít (he/she/it) thêm "-s"</strong>.</p>
+<blockquote>
+<p><em>I know English. She </em><em>knows</em><em> English.</em><br />
+<em>They like cats. He </em><em>likes</em><em> cats.</em></p>
+</blockquote>
+<h3>4.3 Hai động từ chia đặc biệt</h3>
+<table>
+<thead>
+<tr>
+<th>Động từ</th>
+<th>Nghĩa</th>
+<th>Chia theo ngôi</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>have</td>
+<td>có (sở hữu)</td>
+<td>I/you/we/they <strong>have</strong> — he/she/it <strong>has</strong></td>
+</tr>
+<tr>
+<td>be</td>
+<td>là/thì/mà</td>
+<td>I <strong>am</strong> — he/she/it <strong>is</strong> — you/we/they <strong>are</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>He </em><em>is</em><em> a teacher.</em> / <em>She </em><em>has</em><em> two dogs.</em></p>
+</blockquote>
+<h3>5. Tính từ (Adjective – adj)</h3>
+<p>Tính từ mô tả đặc điểm, tính chất, hoặc mối quan hệ của danh từ. Có 2 chức năng chính:</p>
+<p><strong>a) Làm thuộc ngữ (attributive)</strong> — đứng <strong>trước</strong> danh từ để bổ nghĩa cho nó:</p>
+<blockquote>
+<p><em>a </em><em>good</em><em> table</em> / <em>He has a </em><em>good</em><em> job.</em></p>
+</blockquote>
+<p>Có thể dùng nhiều tính từ liền nhau: <em>a </em><em>tall, skinny</em><em> man.</em></p>
+<p><strong>b) Làm bổ ngữ chủ ngữ (BC)</strong> — đứng sau động từ liên kết (be...):</p>
+<blockquote>
+<p><em>She is </em><em>beautiful</em><em>.</em> (adj) so với <em>She is </em><em>a beautiful girl</em><em>.</em> (N có adj đi kèm)</p>
+</blockquote>
+<h3>5.1 Tính từ sở hữu</h3>
+<table>
+<thead>
+<tr>
+<th>Đại từ</th>
+<th>Tính từ sở hữu</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I</td>
+<td>my</td>
+</tr>
+<tr>
+<td>you</td>
+<td>your</td>
+</tr>
+<tr>
+<td>he</td>
+<td>his</td>
+</tr>
+<tr>
+<td>she</td>
+<td>her</td>
+</tr>
+<tr>
+<td>it</td>
+<td>its</td>
+</tr>
+<tr>
+<td>we</td>
+<td>our</td>
+</tr>
+<tr>
+<td>they</td>
+<td>their</td>
+</tr>
+</tbody>
+</table>
+<p>Khi danh từ đã có tính từ sở hữu đứng trước, <strong>không dùng thêm a/an/the</strong> nữa (vì đã "xác định" theo cách khác):</p>
+<blockquote>
+<p><em>I have a dog. </em><em>His</em><em> name is Jet.</em> (không nói "the his name")</p>
+</blockquote>
+<h3>5.2 Tính từ chỉ lượng bất định</h3>
+<table>
+<thead>
+<tr>
+<th>Dùng với [C] số nhiều</th>
+<th>Dùng với [U]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>many (nhiều)</td>
+<td>much (nhiều)</td>
+</tr>
+<tr>
+<td>few (ít) / a few (một ít)</td>
+<td>little (ít) / a little (một ít)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>She has </em><em>many</em><em> books.</em> (C, pl)<br />
+<em>He has </em><em>much</em><em> free time.</em> (U)<br />
+<em>He has </em><em>few</em><em> books.</em> / <em>I need </em><em>a little</em><em> help.</em></p>
+</blockquote>
+<h3>6. Trạng từ (Adverb – adv)</h3>
+<p>Trạng từ bổ nghĩa cho động từ, tính từ, trạng từ khác, hoặc cả câu.</p>
+<p><strong>Vị trí chung:</strong><br />
+- Bổ nghĩa cho động từ → thường đứng <strong>sau</strong> động từ (hoặc sau tân ngữ).<br />
+- Bổ nghĩa cho adj/adv khác → đứng <strong>trước</strong>.<br />
+- Bổ nghĩa cho cả câu → đứng <strong>đầu câu</strong>.</p>
+<p><strong>a) Trạng từ chỉ mức độ</strong></p>
+<p><em>very</em> (rất – mức cao) chỉ bổ nghĩa cho adj/adv, <strong>không</strong> bổ nghĩa được cho động từ:</p>
+<blockquote>
+<p><em>She is </em><em>very</em><em> beautiful.</em> ✔️<br />
+~~She very likes it.~~ ✘ → phải nói: <em>She likes it </em><em>very much</em><em>.</em> (much đứng cuối câu khi bổ nghĩa cho động từ)</p>
+</blockquote>
+<p>Các từ khác cùng nhóm: <em>quite</em> (khá là), <em>pretty</em> (khá là — thân mật hơn).</p>
+<blockquote>
+<p><em>She is </em><em>quite</em><em> good at English.</em></p>
+</blockquote>
+<p><strong>b) Trạng từ chỉ cách thức</strong></p>
+<p><em>well</em> (tốt, giỏi, thạo) — khác với <em>good</em> (tính từ):</p>
+<blockquote>
+<p><em>She speaks </em><em>good</em><em> English.</em> (adj + N) = <em>She speaks English </em><em>well</em><em>.</em> (adv sau động từ)</p>
+</blockquote>
+<p><em>too</em> (cũng — đặt cuối câu, có dấu phẩy, dùng khi 2 chủ thể <strong>khác nhau</strong> cùng làm 1 việc):</p>
+<blockquote>
+<p><em>I am a doctor. He is a doctor, </em><em>too</em><em>.</em></p>
+</blockquote>
+<p><em>also</em> (cũng — đặt sau "be"/trợ động từ, dùng khi <strong>1 chủ thể</strong> có thêm vai trò khác):</p>
+<blockquote>
+<p><em>I am a doctor. I am </em><em>also</em><em> a teacher.</em></p>
+</blockquote>
+<h3>7. Giới từ (Preposition – prep)</h3>
+<p>Giới từ + Danh từ (Prep + N) tạo thành 1 cụm có thể làm nhiều chức năng trong câu, ví dụ làm bổ ngữ chủ ngữ:</p>
+<blockquote>
+<p><em>Their house is </em><em>in Sapa</em><em>.</em> (in Sapa = BC, nói rõ nhà ở đâu)</p>
+</blockquote>
+<p><em>in</em> [prep]: trong/ở/tại — dùng cho địa điểm khép kín, nơi sinh sống (thành phố, quốc gia, phòng...).</p>
+<h3>8. Liên từ (Conjunction – conj)</h3>
+<p>Nối từ, cụm từ, hoặc câu với nhau. Có 2 loại: <strong>liên hợp</strong> (nối 2 ý độc lập ngang hàng, học ở Unit này) và <strong>phức hợp</strong> (nối ý phụ thuộc, học ở Unit 8).</p>
+<p><strong>and</strong> (và – bổ sung):</p>
+<blockquote>
+<p><em>My mom and dad are teachers.</em><br />
+<em>She is beautiful and intelligent.</em></p>
+</blockquote>
+<p>Khi liệt kê ≥3 thứ, dùng dấu phẩy, giữ "and" ở vị trí cuối:</p>
+<blockquote>
+<p><em>Apples, bananas, </em><em>and</em><em> oranges.</em></p>
+</blockquote>
+<p><strong>but</strong> (nhưng – đối lập):</p>
+<blockquote>
+<p><em>She is beautiful </em><em>but</em><em> selfish.</em></p>
+</blockquote>
+<p><strong>or</strong> (hoặc – lựa chọn):</p>
+<blockquote>
+<p><em>Tea </em><em>or</em><em> coffee?</em></p>
+</blockquote>
+<h2>II. Bốn thành phần phụ thường gặp trong câu</h2>
+<p>Thành phần phụ có thể bỏ đi mà câu vẫn còn nghĩa (khác thành phần chính, bỏ đi là câu vô nghĩa/thiếu).</p>
+<h3>1. Đồng vị ngữ (Apposition)</h3>
+<p>Từ/cụm từ đứng ngay sau một danh từ khác, <strong>cùng chỉ một sự vật, cùng chức năng ngữ pháp</strong>. Thường dùng để: gọi tên riêng sau chức danh, hoặc chú thích thêm sau dấu phẩy.</p>
+<blockquote>
+<p><em>I know </em><em>Doctor Nam</em><em>.</em> (chức danh + tên riêng, viết hoa, có mạo từ khi nói chung: <em>a doctor</em>)<br />
+<em>My sister, </em><em>Emma</em><em>, is very tall.</em> (đồng vị ngữ đặt giữa 2 dấu phẩy để chú thích thêm)</p>
+</blockquote>
+<p>Các danh xưng thường gặp: <strong>Mr.</strong> (ông/anh, dùng cho nam trưởng thành), <strong>Mrs.</strong> (bà + họ chồng), <strong>Miss</strong> (cô + họ bố, chưa lập gia đình), <strong>Ms.</strong> (chị — không nói rõ tình trạng hôn nhân), <strong>Sir</strong> (ông/ngài, trang trọng).</p>
+<h3>2. Thành phần đệm — xen (Interjection/Insert)</h3>
+<p>Làm câu tự nhiên, thể hiện thái độ, sự lịch sự. Có thể là 1 từ (<em>Yes, No</em>), tên riêng, danh chức vị, hoặc trạng từ. Vị trí: đầu câu, giữa câu, hoặc cuối câu, ngăn bởi dấu phẩy.</p>
+<blockquote>
+<p><em>Yes, my English is bad.</em><br />
+<em>You know, pronunciation is hard.</em> (You know = đệm, ý "biết đấy")</p>
+</blockquote>
+<h3>3. Tính ngữ (Modifier of noun)</h3>
+<p>Bổ nghĩa cho danh từ, trả lời câu hỏi "N gì?/nào?/của ai?". Có 2 vị trí:</p>
+<ul>
+<li><strong>Tính ngữ trước (attributive)</strong> — thường là tính từ, đặt trước N: <em>a </em><em>good</em><em> girl</em></li>
+<li><strong>Tính ngữ sau (postmodifier)</strong> — thường là giới từ + N, đặt sau N: <em>the girl </em><em>in Hanoi</em>**</li>
+</ul>
+<h3>4. Trạng ngữ (Adverbial)</h3>
+<p>Bổ nghĩa cho động từ hoặc cả câu, dùng trạng từ hoặc cụm giới từ + N.</p>
+<blockquote>
+<p><em>She </em><em>lives</em><em> [happily] [in Hanoi].</em> (happily = trạng từ, in Hanoi = giới từ+N, cả hai đều bổ nghĩa cho "lives")</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab1"><h1>Unit 2: Tân cách, số từ, giới từ chỉ vị trí và các động từ phổ dụng</h1>
+<h2>1. Chủ cách và tân cách</h2>
+<p>"Cách" (case) quy định hình thức của danh từ/đại từ tùy vào vai trò trong câu:<br />
+- Làm <strong>chủ ngữ</strong> → <strong>chủ cách</strong> (subjective)<br />
+- Làm <strong>tân ngữ</strong> (vật bị tác động, hoặc đứng sau giới từ) → <strong>tân cách</strong> (objective)</p>
+<p>Danh từ thì chủ cách = tân cách (không đổi dạng), nhưng <strong>đại từ nhân xưng thì đổi dạng khác nhau</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Chủ cách</th>
+<th>Tân cách</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I</td>
+<td>me</td>
+</tr>
+<tr>
+<td>he</td>
+<td>him</td>
+</tr>
+<tr>
+<td>she</td>
+<td>her</td>
+</tr>
+<tr>
+<td>we</td>
+<td>us</td>
+</tr>
+<tr>
+<td>they</td>
+<td>them</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>John loves Jane.</em> → <em>Jane loves </em><em>him</em><em>.</em> (John → him, vì giờ John làm tân ngữ)<br />
+<em>for </em><em>I</em><strong> ✘ → <em>for **me</em></strong> ✔️ (sau giới từ luôn dùng tân cách)</p>
+</blockquote>
+<h2>2. Đại từ "each other" (nhau)</h2>
+<p>Dùng khi 2 đối tượng tác động qua lại với nhau theo cách giống nhau:</p>
+<blockquote>
+<p><em>Jane and I know </em><em>each other</em><em> well.</em> (Jane biết tôi, và tôi cũng biết Jane — qua lại 2 chiều)</p>
+</blockquote>
+<h2>3. "The + Họ + s"</h2>
+<p>Cách nói chỉ cả gia đình/vợ chồng theo họ:</p>
+<blockquote>
+<p><em>The Smiths</em> = gia đình/nhà ông bà Smith.</p>
+</blockquote>
+<h2>4. Số từ (Numeral)</h2>
+<p>Số từ có thể làm chức năng như N, pron, adj, hoặc adv tùy câu:</p>
+<blockquote>
+<p><em>I have got </em><em>two</em><em> dogs.</em> (two = adj, bổ nghĩa cho "dogs")<br />
+<em>She has </em><em>four</em><em>.</em> (four = pron, thay cho cụm danh từ đã biết)</p>
+</blockquote>
+<p><strong>Giới từ <em>under</em>:</strong><br />
+- Chỉ vị trí (ở dưới): <em>The dog </em><em>under</em><em> the table...</em><br />
+- Chỉ mức độ (chưa đến, dưới mức): <em>She is </em><em>under</em><em> 30.</em> (chưa đến 30 tuổi)</p>
+<h2>5. Hai động từ chia đặc biệt cần phân biệt</h2>
+<ul>
+<li><strong>do</strong> [Vt]: làm việc gì đó <strong>đã có sẵn khuôn mẫu</strong> — <em>do business, do homework</em></li>
+<li><strong>make</strong> [Vt]: <strong>tạo ra</strong> cái gì đó <strong>chưa có</strong> — <em>make friends, make a cake</em></li>
+<li><strong>go</strong> [Vi]: đi (xa khỏi người nói) ↔ <strong>come</strong> [Vi]: đi (đến gần người nói)</li>
+</ul>
+<blockquote>
+<p><em>I do business in Hanoi.</em> (kinh doanh — hoạt động đã có khuôn mẫu sẵn)<br />
+<em>Men make houses, women make homes.</em> (make — tạo ra cái mới)</p>
+</blockquote>
+<h2>6. Giới từ làm trạng ngữ, tính ngữ</h2>
+<p>Ba chức năng chính của "prep + N" đã và sẽ gặp xuyên suốt các unit:<br />
+1. Làm <strong>bổ ngữ chủ ngữ</strong>: <em>She is </em><em>in Hanoi</em><em>.</em><br />
+2. Làm <strong>trạng ngữ</strong> (bổ nghĩa cho động từ): <em>My husband </em><em>works</em><em> [at a private company].</em><br />
+3. Làm <strong>tính ngữ sau</strong> (bổ nghĩa cho danh từ): <em>a novel </em><em>[in English]</em>**</p>
+<p>Một số giới từ hay dùng:<br />
+- <strong>at</strong>: nơi làm việc/học tập cụ thể — <em>at work, at school</em><br />
+- <strong>with</strong>: có (kèm theo) — <em>a house </em><em>with</em><em> white windows</em>; hoặc chỉ 2 người cùng làm gì — <em>I work </em><em>with</em><em> Mr. Smith.</em><br />
+- <strong>without</strong>: không có — <em>tea </em><em>without</em><em> sugar</em></p>
+<h2>7. Lối nói cố định (Expressions) với giới từ chỉ thời gian</h2>
+<table>
+<thead>
+<tr>
+<th>Giới từ</th>
+<th>Dùng cho</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>on</td>
+<td>ngày cụ thể</td>
+<td>on Sunday, on Monday</td>
+</tr>
+<tr>
+<td>in</td>
+<td>tháng/năm/mùa/buổi trong ngày (sáng, chiều, tối)</td>
+<td>in the morning, in June, in 2024</td>
+</tr>
+<tr>
+<td>at</td>
+<td>giờ cụ thể, hoặc buổi đặc biệt (trưa, đêm)</td>
+<td>at 7 o'clock, at noon, at night</td>
+</tr>
+</tbody>
+</table>
+<p>Đây là 3 giới từ thời gian <strong>quan trọng nhất</strong> trong tiếng Anh, cần nhớ theo bảng trên vì không dịch theo logic tiếng Việt được.</p>
+<h2>8. Trạng từ chỉ tần suất</h2>
+<p>Thứ tự mức độ thường gặp: <em>always</em> (luôn luôn, ~100%) &gt; <em>usually</em> (thường, ~80-90%) &gt; <em>often</em> (hay, thường, ~60-70%).</p>
+<p><strong>Vị trí:</strong> đứng <strong>trước</strong> động từ thường, nhưng đứng <strong>sau</strong> động từ "be":</p>
+<blockquote>
+<p><em>She </em><em>often</em><em> comes late.</em> (trước động từ thường "comes")<br />
+<em>She is </em><em>often</em><em> late.</em> (sau "be")</p>
+</blockquote>
+<h2>9. Cách diễn đạt sự tồn tại: There is/are</h2>
+<p>Phân biệt 2 cách dùng "có":<br />
+- <strong>have</strong> — chỉ <strong>sở hữu</strong>: <em>I have a dog.</em> (tôi nuôi một con chó)<br />
+- <strong>there is/are</strong> — chỉ <strong>sự tồn tại</strong> (có tồn tại một cái gì ở đâu): <em>There is a dog on the table.</em> (có một con chó trên bàn — không phải tôi sở hữu nó, chỉ là nó đang ở đó)</p>
+<blockquote>
+<p><em>There </em><em>is</em><em> a table and 4 chairs in the room.</em> (there is/are chia theo N ngay sau nó, ở đây "a table" số ít nên dùng "is")</p>
+</blockquote>
+<h2>10. Cách dùng "and" khi ghép 2 danh từ thành một cụm</h2>
+<ul>
+<li>Nếu 2 danh từ tách rời về ý nghĩa: <em>a table </em><em>and</em><em> a bed</em> (một cái bàn và một cái giường — 2 thứ riêng biệt)</li>
+<li>Nếu 2 danh từ gắn liền thành 1 bộ/khái niệm chung: <em>a </em><em>knife and fork</em><em><em> (một bộ dao dĩa), </em>fish and chips</em> (cá và khoai tây chiên — món ăn cố định)</li>
+</ul>
+<blockquote>
+<p><em>Lauren Hutton is an American </em><em>model and actress</em><em>.</em> (2 vai trò của 1 người, không dùng "a" lặp lại)</p>
+</blockquote></div><div class="tab-panel" id="tab2"><h1>Unit 3: Chỉ định từ, giới từ "of", sở hữu cách, trạng từ nhấn mạnh</h1>
+<h2>1. Chỉ định từ (Demonstrative)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Số ít</th>
+<th>Số nhiều</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gần (này)</td>
+<td>this</td>
+<td>these</td>
+</tr>
+<tr>
+<td>Xa (kia/đó)</td>
+<td>that</td>
+<td>those</td>
+</tr>
+</tbody>
+</table>
+<p>Có thể làm <strong>tính từ</strong> (đứng trước N) hoặc <strong>đại từ</strong> (đứng độc lập, thay cho cả cụm danh từ):</p>
+<blockquote>
+<p><em>This mom is a doctor.</em> (adj, bổ nghĩa cho "mom")<br />
+<em><strong>This</strong> is between you and me.</em> (pron, tự làm chủ ngữ, không cần N đi kèm)</p>
+</blockquote>
+<p><strong>Mẹo phân biệt "That's":</strong> khi "that" + "is" viết tắt thành "That's", ngoài nghĩa là đại từ, còn mang nghĩa "thế thì" để nhận xét điều người khác vừa nói:</p>
+<blockquote>
+<p>A: I passed the exam! B: <strong>That's</strong> good! (Thế thì tốt quá!)</p>
+</blockquote>
+<h2>2. Giới từ "OF" — giới từ đa nghĩa, hay gặp nhất</h2>
+<p><strong>a) Chỉ sở hữu (của)</strong> — Of + N làm tính ngữ sau cho N phía trước:</p>
+<blockquote>
+<p><em>This is the bike </em><em>of my sister</em><em>.</em> (= my sister's bike)</p>
+</blockquote>
+<p><strong>b) Chỉ đặc trưng, bản chất của N phía trước:</strong></p>
+<blockquote>
+<p><em>He is a </em><em>teacher of English</em><em>.</em> (giáo viên [về/của] tiếng Anh)<br />
+<em>My </em><em>knowledge of English</em><em> is still poor.</em> (kiến thức [về] tiếng Anh)</p>
+</blockquote>
+<p><strong>c) Trong cụm "N + of + N":</strong> khi cần chuyển 1 tính từ + danh từ (attributive) sang dạng danh từ + "of" + danh từ (tính ngữ sau), ý nghĩa gần như tương đương nhưng nhấn mạnh khác nhau:</p>
+<blockquote>
+<p><em>She is a very </em><em>beautiful girl</em><em>.</em> (tính từ đứng trước, cách nói thông thường)<br />
+<em>She is a </em><em>girl of beauty</em><em>.</em> (danh từ + of, trang trọng/văn học hơn)</p>
+</blockquote>
+<p><strong>d) "have a + N + of":</strong> cách diễn đạt lịch sự/trang trọng hơn động từ thường:</p>
+<blockquote>
+<p><em>These people </em><em>need help</em><em>.</em> = <em>These people </em><em>are in need of help</em><em>.</em><br />
+<em>You </em><em>choose</em><em> tea, coffee, or milk.</em> = <em>You </em><em>have a choice of</em><em> tea, coffee, or milk.</em></p>
+</blockquote>
+<h2>3. Sở hữu cách ('s)</h2>
+<p>Dùng cho <strong>người/vật sống</strong>, hoặc tổ chức, thời gian... để chỉ quan hệ sở hữu.</p>
+<table>
+<thead>
+<tr>
+<th>Loại danh từ</th>
+<th>Cách thêm</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Số ít, hoặc số nhiều bất quy tắc</td>
+<td>thêm <strong>'s</strong></td>
+<td>my mother's (house), the children's (toys)</td>
+</tr>
+<tr>
+<td>Số nhiều có "-s" sẵn</td>
+<td>chỉ thêm <strong>'</strong></td>
+<td>my friends' (books)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cấu trúc N1's N2</strong>: N1's đóng vai trò như tính từ bổ nghĩa cho N2 (N2 là trung tâm, dịch N2 trước rồi dịch N1's sau, mang nghĩa "của"):</p>
+<blockquote>
+<p><em>The house of my sister</em> = <strong><em>My sister's</em><em> house</em> (nhà </strong>của<strong> chị tôi)<br />
+*Vietnamese </strong>Women's*<em> Day</em> (Ngày Phụ nữ Việt Nam)</p>
+</blockquote>
+<h2>4. Danh từ ghép (N + N)</h2>
+<p>Khi 2 danh từ đứng liền nhau, <strong>danh từ thứ 2 (N2) là trung tâm</strong>, N1 chỉ bổ nghĩa cho N2 — dịch N2 trước, N1 sau (không có "của"):</p>
+<blockquote>
+<p><em>a teacher of English</em> → <strong><em>an English teacher</em></strong> (một giáo viên [dạy] tiếng Anh)<br />
+<em>3 cups of </em><em>tea</em><strong> (có trà, chỉ số lượng cốc) khác với <em>3 **tea cups</em></strong> (những cái cốc [dùng để uống] trà — chỉ loại cốc)</p>
+</blockquote>
+<p><strong>So sánh nhanh 's vs N ghép:</strong><br />
+- <em>my sister's house</em> → nhà <strong>thuộc về</strong> chị tôi (sở hữu)<br />
+- <em>an English teacher</em> → giáo viên <strong>dạy</strong> tiếng Anh (phân loại, không phải sở hữu)</p>
+<h2>5. Trạng từ nhấn mạnh (Emphasizing adverbs)</h2>
+<p>Nhóm trạng từ này có thể đặt ngay trước thành phần cần nhấn mạnh, để làm rõ chính xác ý người nói muốn nhấn vào đâu.</p>
+<p><strong>only</strong> (chỉ, chỉ có): vị trí thay đổi làm nghĩa thay đổi!</p>
+<blockquote>
+<p><strong><em>Only I</em><em> love you.</em> (chỉ có tôi yêu bạn, không ai khác)<br />
+*I </strong>only<strong> love you.<em> (tôi chỉ yêu bạn — không làm gì khác với bạn)<br />
+</em>I love </strong>only you*<em>.</em> (tôi chỉ yêu bạn — không yêu ai khác)</p>
+</blockquote>
+<p><strong>just</strong> (chỉ, chẳng qua chỉ là), <strong>really</strong> (thực sự), <strong>quite</strong> (khá là), <strong>even</strong> (thậm chí, ngay cả):</p>
+<blockquote>
+<p><em>I am </em><em>just</em><em> a little girl in this big world.</em><br />
+<em>I take a cold shower </em><em>even</em><em> in winter.</em> (thậm chí vào mùa đông [tôi] vẫn tắm nước lạnh)</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab3"><h1>UNIT 4: Số từ số lượng lớn, các từ bất định, trạng từ bổ ngữ</h1>
+<h2>1. Số từ số lượng lớn</h2>
+<ul>
+<li>100 = <strong>a hundred</strong> (~ one hundred)</li>
+<li>Số lớn: dùng dấu <strong>phẩy</strong> để phân cách hàng nghìn: <em>10,000</em> ; dùng dấu <strong>chấm</strong> cho số lẻ: <em>0.25</em> (đọc "zero point two five" — đọc rời từng số sau dấu chấm)</li>
+</ul>
+<p><strong>hundreds/thousands of + N</strong> = hàng trăm/hàng nghìn (số lượng ước tính, không chính xác), khác với <em>a hundred/a thousand</em> (chính xác 100/1000):</p>
+<blockquote>
+<p><em>There are </em><em>a thousand</em><em> people in the park.</em> (đúng 1.000)<br />
+<em><strong>Thousands of</strong> people work here.</em> (hàng nghìn người — không đếm chính xác)</p>
+</blockquote>
+<p><strong>a lot of / lots of</strong> [adj] = nhiều, dùng được cho cả [C] và [U]:</p>
+<blockquote>
+<p><em>A lot of people work from home.</em> (C, số nhiều)<br />
+<em>She has a lot of money.</em> (U)</p>
+</blockquote>
+<p><strong>a lot</strong> [adv] (không có "of", không có N theo sau) ~ much, đặt cuối câu:</p>
+<blockquote>
+<p><em>Thank you </em><em>a lot</em><em>.</em> = <em>Thank you very much.</em></p>
+</blockquote>
+<h2>2. Từ bất định SOME</h2>
+<p><strong>Với [C] số nhiều / [U]:</strong> nghĩa là "vài, một ít, một chút":</p>
+<blockquote>
+<p><em>some books</em> (vài cuốn sách) / <em>some butter</em> (một ít bơ)</p>
+</blockquote>
+<p><strong>Với số từ chính xác:</strong> mang nghĩa "khoảng, chừng" (~ about/around):</p>
+<blockquote>
+<p><em>A human breathes </em><em>some</em><em> [tonnes] of air a year.</em> (khoảng vài tấn không khí)</p>
+</blockquote>
+<p><strong>Các từ phái sinh:</strong><br />
+- someone/somebody [pron] = ai đó<br />
+- something [pron] = cái/điều gì đó<br />
+- somewhere [adv] = nơi nào đó</p>
+<blockquote>
+<p><em>There is </em><em>somebody</em><em> at the gate.</em></p>
+</blockquote>
+<h2>3. Từ bất định EVERY</h2>
+<p><strong>every</strong> [adj] = mọi, mỗi (đứng trước N số ít). Phân biệt 2 dạng dễ nhầm:<br />
+- <strong>every day</strong> (2 từ, adj+N) = mỗi ngày [adv, chỉ trạng ngữ thời gian]<br />
+- <strong>everyday</strong> (1 từ, adj) = thường ngày, hàng ngày [bổ nghĩa cho N khác]</p>
+<blockquote>
+<p><em>I go to work </em><em>every day</em><em>.</em> (mỗi ngày — trạng ngữ)<br />
+<em>This is my </em><em>everyday</em><em> routine.</em> (thường ngày — tính từ bổ nghĩa cho "routine")</p>
+</blockquote>
+<p><strong>Các từ phái sinh:</strong> everyone/everybody (mọi người), everything (mọi thứ), everywhere (mọi nơi).</p>
+<blockquote>
+<p><em>Everything has its price.</em></p>
+</blockquote>
+<h2>4. Trạng từ bổ ngữ (Adverb of state — làm được cả BC)</h2>
+<p>Một nhóm trạng từ đặc biệt (thường chỉ địa điểm, phương hướng) có thể đứng làm <strong>bổ ngữ chủ ngữ</strong> sau "be" — điều mà trạng từ thông thường không làm được.</p>
+<table>
+<thead>
+<tr>
+<th>Trạng từ</th>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>in</td>
+<td>ở/vào bên trong</td>
+<td><em>She is </em><em>in</em><em>.</em> (cô ấy đang ở trong [nhà/phòng])</td>
+</tr>
+<tr>
+<td>out</td>
+<td>ra/ở ngoài</td>
+<td><em>I am </em><em>out</em><em> of a job.</em> (tôi thất nghiệp)</td>
+</tr>
+<tr>
+<td>off</td>
+<td>tách khỏi, rời khỏi</td>
+<td><em>I am </em><em>off</em><em> to work.</em> (tôi đi làm đây)</td>
+</tr>
+<tr>
+<td>over</td>
+<td>đã kết thúc, xong</td>
+<td><em>The class is </em><em>over</em><em>.</em> (lớp học đã xong)</td>
+</tr>
+<tr>
+<td>abroad</td>
+<td>ở/ra nước ngoài</td>
+<td><em>She lives </em><em>abroad</em><em>.</em></td>
+</tr>
+</tbody>
+</table>
+<p>Các trạng từ này cũng có thể làm <strong>tính ngữ sau</strong> cho danh từ:</p>
+<blockquote>
+<p><em>The rooms </em><em>upstairs</em><em> are for guests only.</em> (những phòng ở trên tầng)</p>
+</blockquote>
+<h2>5. Prep + N làm trạng ngữ nội dung cho tính từ</h2>
+<p>Rất nhiều tính từ tiếng Anh <strong>buộc phải đi kèm một giới từ cố định</strong> — không thể tự chọn giới từ theo logic tiếng Việt, phải học thuộc theo cặp:</p>
+<table>
+<thead>
+<tr>
+<th>Tính từ</th>
+<th>Giới từ đi kèm</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>good</td>
+<td>at</td>
+<td><em>He is good </em><em>at English</em><em>.</em></td>
+</tr>
+<tr>
+<td>afraid</td>
+<td>of</td>
+<td><em>I am afraid </em><em>of dogs</em><em>.</em></td>
+</tr>
+<tr>
+<td>sure</td>
+<td>of</td>
+<td><em>I am sure </em><em>of your success</em><em>.</em></td>
+</tr>
+<tr>
+<td>different</td>
+<td>from/to</td>
+<td><em>Chinese is different </em><em>from Japanese</em><em>.</em></td>
+</tr>
+<tr>
+<td>tired</td>
+<td>of</td>
+<td><em>I am tired </em><em>of waiting</em><em>.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prep + N làm trạng ngữ cho động từ:</strong><br />
+- <strong>as</strong> (với tư cách, thân phận): <em>She works </em><em>as a doctor</em><em>.</em><br />
+- <strong>like</strong> (giống như): <em>She speaks English </em><em>like a Londoner</em><em>.</em><br />
+- <strong>unlike</strong> (không giống, thường đứng đầu câu để đối chiếu 2 chủ thể): <em><strong>Unlike</strong> her sister, she gets up early.</em></p>
+<p>Một số cụm đệm hay dùng đầu câu: <em>In fact,</em> (thực ra) · <em>By nature,</em> (bản chất là) · <em>In a word,</em> (nói tóm lại) · <em>By the way,</em> (nhân tiện).</p>
+<h2>Phụ lục Unit 3-4: Tiền tố và hậu tố thường gặp</h2>
+<p>Từ gốc (root) có thể ghép thêm <strong>hậu tố</strong> (suffix, thêm sau) hoặc <strong>tiền tố</strong> (prefix, thêm trước) để tạo từ mới.</p>
+<p><strong>Hậu tố tạo danh từ chỉ người:</strong><br />
+| Hậu tố | Ví dụ |<br />
+|---|---|<br />
+| -er/-or | speak → speak<strong>er</strong>, direct → direct<strong>or</strong> |<br />
+| -ist | art → art<strong>ist</strong>, novel → novel<strong>ist</strong> |<br />
+| -ess (chuyển sang giống nữ) | act<strong>or</strong> → act<strong>ress</strong>, host → host<strong>ess</strong> |</p>
+<p><strong>Hậu tố tạo tính từ:</strong><br />
+| Hậu tố | Nghĩa | Ví dụ |<br />
+|---|---|---|<br />
+| -able | có thể/đáng | love → lov<strong>able</strong>, accept → accept<strong>able</strong> |<br />
+| -ful | có tính chất của | care → care<strong>ful</strong>, beauty → beauti<strong>ful</strong> |<br />
+| -less | không có | care → care<strong>less</strong>, home → home<strong>less</strong> |<br />
+| -ly (N→adj) | mang tính chất | friend → friend<strong>ly</strong>, man → man<strong>ly</strong> |</p>
+<p><strong>Hậu tố tạo trạng từ:</strong> -ly (adj→adv): <em>beautiful → beautiful</em><em>ly</em>**</p>
+<p><strong>Hậu tố tạo danh từ trừu tượng:</strong> -ness (adj→N): <em>happy → happi</em><em>ness</em>**</p>
+<p><strong>Tiền tố tạo nghĩa ngược (phủ định):</strong><br />
+| Tiền tố | Ví dụ |<br />
+|---|---|<br />
+| un- | fair → <strong>un</strong>fair, believable → <strong>un</strong>believable |<br />
+| in-/im- | convenient → <strong>in</strong>convenient, possible → <strong>im</strong>possible |<br />
+| dis- | like → <strong>dis</strong>like, connect → <strong>dis</strong>connect |</p>
+<blockquote>
+<p>Ghi nhớ nhanh: <em>Knowledge without practice is useless. Practice without knowledge is dangerous.</em> (Kiến thức mà không thực hành thì vô dụng. Thực hành mà không có kiến thức thì nguy hiểm.) — Khổng Tử</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab4"><h1>UNIT 5. Mệnh lệnh thức (Imperative Mood)</h1>
+<h2>I. Ba thức của động từ</h2>
+<p>Tiếng Anh có 3 "thức" (mood) khác nhau, tùy vào mục đích của câu:</p>
+<ol>
+<li><strong>Thức trần thuật</strong> — kể lại sự việc như nó diễn ra (có 5 thì: hiện tại, quá khứ, tương lai...)</li>
+<li><strong>Thức mệnh lệnh</strong> — ra lệnh, đề nghị, yêu cầu, van xin (dùng <strong>động từ nguyên thể</strong>, không chia)</li>
+<li><strong>Thức giả định</strong> — mô tả điều không có thật, giả tưởng (có 2 thì riêng)</li>
+</ol>
+<p>Bài này tập trung vào <strong>thức mệnh lệnh</strong>.</p>
+<h2>II. Mệnh lệnh thức ngôi 2 (ra lệnh cho người nghe)</h2>
+<p><strong>Cấu tạo:</strong> bỏ hẳn chủ ngữ "you" (vì hiển nhiên ai cũng biết là đang nói với người nghe), động từ giữ nguyên dạng gốc (không chia).</p>
+<blockquote>
+<p><em>Stay here.</em> (Hãy ở lại đây / Ở lại đây!)<br />
+<em>Lock the door on your way out.</em> (Khóa cửa khi ra ngoài nhé.)<br />
+<em>Be happy.</em> (Hãy hạnh phúc nhé.) — chú ý "be" chứ không phải "is/are"</p>
+</blockquote>
+<p><strong>Thêm "please" để lịch sự hơn</strong> — đặt trước động từ hoặc cuối câu (có dấu phẩy):</p>
+<blockquote>
+<p><em>Please come with me.</em> / <em>Come with me, please.</em></p>
+</blockquote>
+<p><strong>Thêm chủ ngữ "you"</strong> để biểu đạt sắc thái đặc biệt (thân ái, hối thúc, hoặc bực dọc — tùy giọng điệu và ngữ cảnh):</p>
+<blockquote>
+<p><em>You go with me, Jane.</em> (đi cùng tôi nhé, Jane — thân ái)<br />
+<em>You listen carefully!</em> (nghe kỹ đấy! — có thể mang sắc thái bực dọc/nhấn mạnh)</p>
+</blockquote>
+<p><strong>Cấu trúc "Go/Come and V"</strong> = đi làm gì đó (trong tiếng Anh Mỹ thường bỏ "and"):</p>
+<blockquote>
+<p><em>Go and wash your hands.</em> (= Go wash your hands. — AmE)</p>
+</blockquote>
+<h2>III. Mệnh lệnh thức ngôi 1 (rủ rê "chúng ta")</h2>
+<p>Dùng khi người nói muốn <strong>rủ</strong> người nghe cùng làm gì đó, ngôi 1 số nhiều ("chúng ta"):</p>
+<p><strong>Let's + V</strong> = Chúng ta hãy...</p>
+<blockquote>
+<p><em>Let's find a good view.</em> (Chúng ta hãy tìm một chỗ có view đẹp.)</p>
+</blockquote>
+<h2>IV. Động từ ghép với trạng từ chỉ phương hướng (Phrasal verbs)</h2>
+<p>Rất phổ biến trong tiếng Anh nói. Một động từ + một trạng từ chỉ phương hướng tạo thành nghĩa mới, đôi khi khác hẳn nghĩa gốc.</p>
+<table>
+<thead>
+<tr>
+<th>Adv</th>
+<th>Nghĩa gốc</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>away</td>
+<td>đi xa khỏi người nói</td>
+<td>Go <strong>away</strong>. (đi đi!)</td>
+</tr>
+<tr>
+<td>back</td>
+<td>trở lại nơi cũ</td>
+<td>Go <strong>back</strong> to your seat.</td>
+</tr>
+<tr>
+<td>in / out</td>
+<td>vào / ra</td>
+<td>Go <strong>in</strong>. / Go <strong>out</strong>.</td>
+</tr>
+<tr>
+<td>up</td>
+<td>lên trên</td>
+<td>Get <strong>up</strong>. (thức dậy/ngồi dậy)</td>
+</tr>
+<tr>
+<td>down</td>
+<td>xuống</td>
+<td>Put it <strong>down</strong>. (đặt xuống)</td>
+</tr>
+<tr>
+<td>off</td>
+<td>tách/dứt ra</td>
+<td>Turn <strong>off</strong> the light. (tắt đèn)</td>
+</tr>
+<tr>
+<td>on</td>
+<td>tiếp tục</td>
+<td>Go <strong>on</strong>. (tiếp tục đi)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nghĩa bóng, khác hẳn nghĩa đen</strong> (rất hay gặp trong đề thi/giao tiếp):<br />
+- <em>put off</em> = trì hoãn (= postpone, trang trọng hơn)<br />
+- <em>go up</em> = tăng lên (= increase)<br />
+- <em>put on</em> (mặc/đội <strong>vào</strong>, hành động) khác <em>wear</em> (<strong>đang</strong> mặc, trạng thái)</p>
+<p><strong>Vị trí của tân ngữ với động từ ghép (Vt):</strong><br />
+- Nếu tân ngữ là danh từ → có thể đặt ở 2 vị trí: <em>put </em><em>the book</em><em> down</em> = <em>put down </em><em>the book</em><strong><br />
+- Nếu tân ngữ là đại từ (it, him, her...) → </strong>chỉ được đặt giữa**, không đặt sau cùng:</p>
+<blockquote>
+<p><em>put </em><em>him</em><em> down</em> ✔️<br />
+~~put down him~~ ✘</p>
+<p><em>Take </em><em>off</em><em> your shoes and hang </em><em>them up</em><em>.</em> (Cởi giày ra và treo chúng lên.)</p>
+</blockquote></div><div class="tab-panel" id="tab5"><h1>UNIT 6: Động từ nguyên thể có TO (To-infinitive)</h1>
+<h2>I. Khái niệm nền tảng</h2>
+<p>Nhắc lại: một câu <strong>bắt buộc</strong> phải có một động từ đã <strong>chia</strong>. Động từ <strong>chưa chia</strong> (nguyên thể) không thể tự tạo câu, nhưng lại linh hoạt hơn — có thể đóng nhiều vai trò khác (như một danh từ, tính từ, trạng ngữ...).</p>
+<p>4 dạng của động từ chưa chia: <strong>V</strong> (work), <strong>to V</strong> (to work), <strong>V-ing</strong> (working), <strong>V-ed</strong> (worked).</p>
+<p>Bài này học về <strong>to V</strong> — "to" ở đây đọc nhẹ /tə/, không phải giới từ "to" (đến).</p>
+<h2>II. Các cách dùng của "to V"</h2>
+<h3>1. Làm chủ ngữ</h3>
+<blockquote>
+<p><em><strong>To know</strong> English is necessary.</em> (Việc biết tiếng Anh là cần thiết.)</p>
+</blockquote>
+<p>Lý do phải dùng "to V" mà không dùng tính từ: tính từ (necessary, easy...) không thể tự làm chủ ngữ, nên cần "to V" đứng trước để tạo thành một cụm có vai trò như danh từ.</p>
+<p>⚠️ Câu dùng "to V" làm chủ ngữ mang tính <strong>khái quát, chân lý chung</strong>, áp dụng cho mọi người — không nói về một người cụ thể.</p>
+<h3>2. Làm tân ngữ cho động từ (Vt)</h3>
+<p>Nhiều động từ (want, like, hope, decide...) khi tân ngữ là một <strong>hành động sắp/sẽ xảy ra</strong> thì dùng "to V":</p>
+<blockquote>
+<p><em>She </em><em>wants</em><em> [to go] to London.</em> (muốn đi — hành động chưa xảy ra, mang tính tương lai)<br />
+<em>He always </em><em>wants</em><em> [to be] successful.</em></p>
+</blockquote>
+<p>Cũng vì lý do tương tự Chủ ngữ ở mục 1: tính từ không tự làm tân ngữ được, nên khi muốn nói "muốn giàu" phải nói <em>want </em><em>to be</em><em> rich</em>, không nói "want rich".</p>
+<h3>3. Làm bổ ngữ chủ ngữ (BC)</h3>
+<blockquote>
+<p><strong><em>To worry</em>* about tomorrow </strong>is to be<strong> unhappy today.<em> (Lo cho ngày mai chính là làm cho hôm nay bất hạnh.)<br />
+</em>My dream </strong>is to travel*<em> around the world.</em></p>
+</blockquote>
+<h3>4. Làm trạng ngữ chỉ mục đích ("để làm gì")</h3>
+<p>Đây là cách dùng <strong>thường gặp nhất</strong> của to V trong văn nói/viết hàng ngày:</p>
+<blockquote>
+<p><em>I come here every day </em><em>to learn</em><em> English.</em> (đến đây mỗi ngày để học tiếng Anh)<br />
+<em>She saves money </em><em>to buy</em><em> books.</em></p>
+</blockquote>
+<p><strong>Lưu ý:</strong> có thể thay "to V" bằng <strong>"for + N"</strong> khi mục đích là một sự vật (không phải hành động):</p>
+<blockquote>
+<p><em>This house is </em><em>for sale</em><em>.</em> (căn nhà này để bán — for + N, không phải "to sell")</p>
+</blockquote>
+<h3>5. Làm thành phần đệm/xen (mở đầu câu, nêu quan điểm)</h3>
+<p>Các cụm cố định rất hay dùng để mở đầu câu, thể hiện lập trường người nói:</p>
+<blockquote>
+<p><strong>To be honest,</strong> I hate her. (Thành thật mà nói...)<br />
+<strong>To tell the truth,</strong> I hate her. (Nói thật thì...)<br />
+<em>He has 3 jobs, </em><em>to be exact</em><em>: a teacher, a freelancer, and a translator.</em> (nói chính xác thì...)</p>
+</blockquote>
+<h3>6. Làm tính ngữ sau cho danh từ</h3>
+<blockquote>
+<p><em>I have some </em><em>work to do</em><em> tonight.</em> (một số việc [cần] để làm — to V bổ nghĩa cho "work")<br />
+<em>That is a hard </em><em>question to answer</em><em>.</em> (câu hỏi khó [để] trả lời)</p>
+</blockquote>
+<h3>7. Làm trạng ngữ nội dung cho tính từ</h3>
+<p>Giống prep+N ở Unit 4, "to V" cũng có thể đứng sau tính từ để nói rõ nội dung:</p>
+<blockquote>
+<p><em>I am </em><em>sorry to be</em><em> late.</em> (xin lỗi vì đã đến muộn)<br />
+<em>I am </em><em>afraid to go</em><em>.</em> (sợ [phải] đi)</p>
+</blockquote>
+<h3>8. Cấu trúc "It ... to V ..." (chủ ngữ giả IT)</h3>
+<p>Trong tiếng Anh hiện đại, <strong>rất ít khi</strong> dùng trực tiếp "to V" làm chủ ngữ ở đầu câu (mục 1) — thay vào đó, người ta dùng "It" làm <strong>chủ ngữ giả</strong>, đẩy "to V" xuống cuối câu. Cách này tự nhiên và phổ biến hơn rất nhiều:</p>
+<blockquote>
+<p><em>To know English is necessary.</em> (ít dùng, hơi cứng)<br />
+→ <strong><em>It</em>* is necessary </strong>to know*<em> English.</em> (tự nhiên, thường dùng)</p>
+</blockquote>
+<p>Khi dịch, dịch từ "to V" ở cuối trước, "It" chỉ là chủ ngữ hình thức không có nghĩa riêng.</p>
+<p><strong>Mở rộng — "It ... for sb ... to V ..."</strong>: khi nhận định áp dụng cho <strong>một người/đối tượng cụ thể</strong> (không phải chân lý chung), thêm "for + đối tượng" trước to V:</p>
+<blockquote>
+<p><em>It is dangerous </em><em>for a girl</em><em> to walk alone at night.</em> (nguy hiểm [đối với một cô gái] khi đi bộ một mình vào ban đêm)</p>
+</blockquote>
+<p><strong>Mở rộng — "It takes + thời gian + to V"</strong>: một cấu trúc rất hay dùng để nói về thời gian cần để làm gì:</p>
+<blockquote>
+<p><em>It </em><em>takes</em><em> time to learn a language.</em> (học một ngôn ngữ [cần] tốn thời gian)<br />
+<em>It takes a long time to understand a person.</em></p>
+</blockquote>
+<h2>III. Phụ lục: các cách nói "have" liên quan đến bệnh tật, đau nhức</h2>
+<table>
+<thead>
+<tr>
+<th>Cấu trúc</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>have + tên bệnh</td>
+<td><em>She has cancer.</em></td>
+</tr>
+<tr>
+<td>have (got) + a + bộ phận cơ thể + -ache</td>
+<td><em>I have a headache.</em> (đau đầu)</td>
+</tr>
+<tr>
+<td>have a pain in + bộ phận cơ thể</td>
+<td><em>I have a pain in my leg.</em></td>
+</tr>
+<tr>
+<td>have a sore + bộ phận cơ thể</td>
+<td><em>I have a sore throat.</em> (đau họng)</td>
+</tr>
+<tr>
+<td>It hurts</td>
+<td><em>Ouch! It hurts.</em> (đau quá!)</td>
+</tr>
+<tr>
+<td>have to V</td>
+<td><em>I have to go.</em> (phải đi — chỉ sự bắt buộc, học kỹ hơn ở Unit 7)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div><div class="tab-panel" id="tab6"><h1>UNIT 7: Trợ động từ (Auxiliary verbs / Modal verbs)</h1>
+<h2>I. Khái niệm</h2>
+<p>Trợ động từ (Aux) luôn ở dạng <strong>đã chia</strong>, đứng <strong>trước</strong> động từ chính để hỗ trợ thêm nghĩa: <strong>Trợ động từ + Động từ chính</strong>. Mỗi trợ động từ có thể mang <strong>nhiều nghĩa khác nhau</strong> tùy tình huống — đây là phần khó nhất, cần học kỹ từng nghĩa.</p>
+<h2>II. Các trợ động từ modal thường gặp</h2>
+<h3>1. CAN — "có thể"</h3>
+<table>
+<thead>
+<tr>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a) Năng lực (do rèn luyện mà có)</td>
+<td><em>I </em><em>can</em><em> swim.</em> (tôi biết bơi)</td>
+</tr>
+<tr>
+<td>b) Khả năng xảy ra cao (~80%)</td>
+<td><em>We </em><em>can</em><em> eat pears every day.</em> (mùa lê, hoàn toàn có thể)</td>
+</tr>
+<tr>
+<td>c) Sự cho phép (thân mật)</td>
+<td><em>You </em><em>can</em><em> go.</em> (con có thể đi — cho phép)</td>
+</tr>
+</tbody>
+</table>
+<h3>2. MAY — lịch sự/trang trọng hơn CAN</h3>
+<table>
+<thead>
+<tr>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a) Sự cho phép (trang trọng, do luật/quy định)</td>
+<td><em>You </em><em>may</em><em> swim in this lake.</em> (được phép — nghe trang trọng hơn "can")</td>
+</tr>
+<tr>
+<td>b) Khả năng xảy ra (~50%, thấp hơn "can")</td>
+<td><em>You </em><em>may</em><em> be right.</em> (có thể bạn đúng — không chắc chắn như "can")</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ Cụm <strong>"maybe"</strong> viết liền = trạng từ "có thể/rất có thể", đứng đầu câu:</p>
+<blockquote>
+<p><strong><em>Maybe</em><em>, she is a doctor.</em> (khác với *She </strong>may be*<em> a doctor.</em> — "may be" viết rời là động từ khuyết thiếu + be)</p>
+</blockquote>
+<h3>3. MUST — "phải"</h3>
+<table>
+<thead>
+<tr>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a) Bắt buộc theo ý chí chủ quan/luật lệ</td>
+<td><em>You </em><em>must</em><em> stop at the red light.</em></td>
+</tr>
+<tr>
+<td>b) Suy đoán chắc chắn (100%)</td>
+<td><em>It </em><em>must</em><em> be very important to you.</em> (chắc hẳn là...)</td>
+</tr>
+<tr>
+<td>c) Lời khuyên/đề nghị thiết tha</td>
+<td><em>We </em><em>must</em><em> meet for dinner.</em> (nhất định phải gặp nhau ăn tối đấy!)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>So sánh "must" và "have to":</strong><br />
+- <strong>must</strong> — mang tính <strong>chủ quan</strong> (do người nói tự thấy cần thiết)<br />
+- <strong>have to</strong> — mang tính <strong>khách quan</strong> (do hoàn cảnh, quy định bên ngoài áp đặt)</p>
+<blockquote>
+<p><em>I </em><em>must</em><em> go home by 10.</em> (tôi tự thấy nên về trước 10h — ý mình)<br />
+<em>I </em><em>have to</em><em> go home by 10.</em> (vì có quy định/lý do khách quan bắt tôi về trước 10h)</p>
+</blockquote>
+<p><strong>Phủ định của must khác hẳn nghĩa:</strong> <em>must not</em> (mustn't) = <strong>cấm, không được</strong> (mạnh hơn nhiều so với việc chỉ đơn giản phủ định "phải")</p>
+<blockquote>
+<p><em>You </em><em>mustn't</em><em> ride your motorbike without a helmet.</em> (cấm đi xe máy không đội mũ bảo hiểm)</p>
+</blockquote>
+<h3>4. SHOULD — "nên"</h3>
+<table>
+<thead>
+<tr>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a) Lời khuyên</td>
+<td><em>You </em><em>should</em><em> be careful about your health.</em></td>
+</tr>
+<tr>
+<td>b) Sự cần thiết (nhẹ hơn must)</td>
+<td><em>You </em><em>should</em><em> turn off your phone.</em></td>
+</tr>
+</tbody>
+</table>
+<p>Cách diễn đạt tương đương trang trọng hơn: <strong>"It is advisable to V"</strong> (nên/khuyên nên):</p>
+<blockquote>
+<p><em>It is advisable </em><em>to drive slowly</em><em> through school zones.</em></p>
+</blockquote>
+<h3>5. DO (Aux nhấn mạnh)</h3>
+<p>Khi "do/does" không dùng để tạo câu hỏi/phủ định mà đặt trước động từ khẳng định, nó mang nghĩa <strong>nhấn mạnh</strong>:</p>
+<blockquote>
+<p><em>I </em><em>do</em><em> love you.</em> (Tôi thực sự yêu bạn — nhấn mạnh, không phải nghi vấn)<br />
+<strong>Do</strong> take a seat.* (Xin mời ngồi luôn đi — nhấn mạnh lời mời/mệnh lệnh)</p>
+</blockquote>
+<h2>III. WILL/SHALL — Trợ động từ chỉ tương lai</h2>
+<p><strong>Cách dùng cơ bản:</strong> tạo thì tương lai, thường dịch "sẽ".</p>
+<p><strong>Quy tắc dịch "sẽ":</strong><br />
+- <strong>TH1:</strong> Không có từ chỉ thời điểm tương lai cụ thể → <strong>bắt buộc dịch "sẽ"</strong>: <em>I </em><em>will go</em><em> to London.</em> (Tôi sẽ đi London.)<br />
+- <strong>TH2:</strong> Có từ/cụm chỉ thời điểm tương lai cụ thể (tomorrow, next week, in 2 days...) → <strong>thường không cần dịch "sẽ"</strong>: <em>We </em><em>will be</em><em> off tomorrow.</em> (Ngày mai chúng tôi đi.)</p>
+<p><strong>Các cụm chỉ thời gian tương lai hay gặp:</strong><br />
+- <em>tomorrow</em> (ngày mai), <em>tomorrow morning/afternoon/evening</em><br />
+- <em>in + khoảng thời gian</em> (sau...nữa): <em>in 20 minutes, in 2 days</em><br />
+- <em>next + N thời gian</em> (sắp tới): <em>next month, next year</em><br />
+- <em>this morning/afternoon/evening</em> (buổi này, khi chưa kết thúc)</p>
+<p><strong>Chú ý đặc biệt:</strong> khi nói về <strong>lịch trình đã được lên kế hoạch cố định</strong> (tàu xe, sự kiện định kỳ), tiếng Anh dùng <strong>thì hiện tại đơn</strong> thay vì "will":</p>
+<blockquote>
+<p><em>The train </em><em>leaves</em><em> at 7 a.m. tomorrow.</em> (không nói "will leave" vì đây là giờ tàu cố định theo lịch trình)</p>
+</blockquote>
+<p><strong>WILL còn mang nghĩa quyết tâm, ý chí</strong> (không chỉ đơn thuần là tương lai):</p>
+<blockquote>
+<p><em>We </em><em>will</em><em> fight for our rights.</em> (Chúng ta sẽ [quyết] đấu tranh cho quyền lợi của mình.)</p>
+</blockquote>
+<p><strong>SHALL với ngôi 2</strong> mang tính bắt buộc trang trọng (ít dùng trong văn nói hiện đại, hay gặp trong văn bản pháp lý/luật lệ):</p>
+<blockquote>
+<p><em>You </em><em>shall</em><em> obey the rules.</em></p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab7"><h1>UNIT 8: Mệnh đề phụ và câu phức (Complex sentences)</h1>
+<h2>1. Khái niệm nền tảng</h2>
+<ul>
+<li><strong>Câu đơn giản</strong>: có 1 động từ chia.</li>
+<li><strong>Câu phức tạp</strong>: nhiều câu đơn giản ghép lại, gồm 2 loại:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Loại</th>
+<th>Đặc điểm</th>
+<th>Liên từ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Câu liên hợp</td>
+<td>các ý <strong>độc lập, ngang hàng</strong></td>
+<td>and, but, or (liên từ liên hợp)</td>
+</tr>
+<tr>
+<td>Câu phức hợp</td>
+<td>các ý <strong>phụ thuộc</strong> vào nhau</td>
+<td>because, when, if... (liên từ phức hợp)</td>
+</tr>
+</tbody>
+</table>
+<p>Trong câu phức hợp, mỗi câu đơn được gọi là một <strong>mệnh đề</strong> (clause):<br />
+- <strong>Mệnh đề chính (MĐC)</strong> — mang ý chính, có thể đứng độc lập.<br />
+- <strong>Mệnh đề phụ (MĐP)</strong> — chứa liên từ, bổ nghĩa cho MĐC, <strong>không thể tỉnh lược thành phần</strong> như câu liên hợp.</p>
+<p>Có 3 loại mệnh đề phụ: <strong>trạng ngữ</strong> (học ở đây), <strong>danh từ</strong> (Unit 13), <strong>tính ngữ</strong> (không có trong file gốc).</p>
+<h2>2. Mệnh đề phụ trạng ngữ chỉ nguyên nhân</h2>
+<table>
+<thead>
+<tr>
+<th>Liên từ</th>
+<th>Sắc thái</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>because</strong></td>
+<td>nguyên nhân trực tiếp, rõ ràng</td>
+<td><em>She wants to learn English </em><em>because</em><em> she will go to London.</em></td>
+</tr>
+<tr>
+<td><strong>as</strong></td>
+<td>nhấn mạnh kết quả hơn là nguyên nhân, thường đặt đầu câu</td>
+<td><em><strong>As</strong> my wife is away, I am very busy with my kids.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Có thể đảo mệnh đề phụ lên đầu câu</strong>, thêm dấu phẩy trước mệnh đề chính:</p>
+<blockquote>
+<p><em>He rarely goes out </em><em>because</em><em> his health is bad.</em> → <em><strong>Because</strong> his health is bad, he rarely goes out.</em></p>
+</blockquote>
+<p><strong>Thay bằng cụm giới từ (khi không cần cả một mệnh đề):</strong><br />
+- <strong>because of</strong> [prep] + N: <em>He rarely goes out </em><em>because of</em><em> his bad health.</em><br />
+- <strong>thanks to</strong> [prep] + N (nhờ có — mang nghĩa tích cực): <strong><em>Thanks to</em><em> the internet, you can watch your favorite movies.</em><br />
+- </strong>for<strong> (vì — trang trọng, ngắn): *Sorry </strong>for*<em> the delay.</em></p>
+<h2>3. Mệnh đề phụ trạng ngữ chỉ thời gian</h2>
+<table>
+<thead>
+<tr>
+<th>Liên từ</th>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>when</strong></td>
+<td>khi (một thời điểm/sự việc)</td>
+<td><em><strong>When</strong> you have a cold, you sneeze a lot.</em></td>
+</tr>
+<tr>
+<td><strong>while</strong></td>
+<td>trong khi (nhấn mạnh 2 việc diễn ra đồng thời)</td>
+<td><em>Hold my hand </em><em>while</em><em> we cross the street.</em></td>
+</tr>
+<tr>
+<td><strong>before/after</strong></td>
+<td>trước khi/sau khi</td>
+<td><em>I read a book </em><em>before</em><em> I go to bed.</em></td>
+</tr>
+<tr>
+<td><strong>whenever</strong></td>
+<td>mỗi khi/hễ</td>
+<td><em>He takes off his hat </em><em>whenever</em><em> he meets elderly people.</em></td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>Quy tắc quan trọng về thì:</strong> dù mệnh đề chỉ thời gian nói về việc <strong>chưa xảy ra</strong> (tương lai), vẫn dùng <strong>thì hiện tại</strong>, không dùng "will" trong mệnh đề phụ:</p>
+<blockquote>
+<p><em>I </em><em>will go</em><em> to London </em><em>when</em><em> I </em><em>have</em><em> enough money.</em> (không nói "when I will have")<br />
+<strong><em>When</em>* you </strong>get*<em> home, call me.</em></p>
+</blockquote>
+<h2>4. Mệnh đề phụ trạng ngữ điều kiện</h2>
+<p><strong>if</strong> (nếu) — nêu điều kiện:</p>
+<blockquote>
+<p><em><strong>If</strong> you go with me, I will pay for your ticket.</em></p>
+</blockquote>
+<p><strong>If + MĐP, then + MĐC</strong> — cấu trúc "nếu... thì...":</p>
+<blockquote>
+<p><strong><em>If</em>* I pay for dinner, </strong>then*<em> we are even.</em></p>
+</blockquote>
+<p><strong>in case</strong> (để đề phòng, nhỡ đâu):</p>
+<blockquote>
+<p><em>Leave home early </em><em>in case</em><em> there is too much traffic.</em> (đi sớm để đề phòng tắc đường)</p>
+</blockquote>
+<h2>5. Mệnh đề trạng ngữ chỉ cách thức</h2>
+<p><strong>like/as</strong> (như, như là):</p>
+<blockquote>
+<p><em>He loves her </em><em>like</em><em> she is his daughter.</em><br />
+<em>Do the job </em><em>as</em><em> I do it.</em> (làm theo cách tôi làm)</p>
+</blockquote>
+<h2>6. Câu phụ (không dùng liên từ, dùng trạng từ + dấu chấm)</h2>
+<p>Khác với mệnh đề phụ (nối bằng liên từ + dấu phẩy trong CÙNG một câu), "câu phụ" ở đây là <strong>câu riêng biệt</strong> (có dấu chấm), nối với câu trước bằng một <strong>trạng từ liên kết</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Trạng từ liên kết</th>
+<th>Ý nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>while</strong> (đầu câu, nối 2 mệnh đề trong 1 câu)</td>
+<td>đối chiếu, so sánh</td>
+<td><em>The elder sister is diligent, </em><em>while</em><em> the younger sister is lazy.</em></td>
+</tr>
+<tr>
+<td><strong>also</strong></td>
+<td>ngoài ra, hơn nữa</td>
+<td><em>I don't like the restaurant. </em><em>Also</em><em>, the meals are expensive.</em></td>
+</tr>
+<tr>
+<td><strong>besides</strong></td>
+<td>ngoài ra (đầu câu) / ngoài (prep)</td>
+<td><em>You are beautiful. </em><em>Besides</em><em>, you are kind.</em></td>
+</tr>
+<tr>
+<td><strong>as well as</strong> (~and)</td>
+<td>cũng như là</td>
+<td><em>Technology has benefits </em><em>as well as</em><em> drawbacks.</em></td>
+</tr>
+<tr>
+<td><strong>as well</strong> (cuối câu, ~also/too)</td>
+<td>cũng</td>
+<td><em>She is nice. Her sister is nice </em><em>as well</em><em>.</em></td>
+</tr>
+<tr>
+<td><strong>though/although</strong></td>
+<td>tuy/dù...nhưng</td>
+<td><em>He is still strong, </em><em>though</em><em> he is over 80.</em></td>
+</tr>
+<tr>
+<td><strong>even though</strong> (nhấn mạnh hơn "though")</td>
+<td>dù cho</td>
+<td><em><strong>Even though</strong> John is very rich, he lives in a small house.</em></td>
+</tr>
+<tr>
+<td><strong>so</strong></td>
+<td>vì vậy, cho nên</td>
+<td><em>This tea is very hot, </em><em>so</em><em> sip it carefully.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Lưu ý về "though":</strong> có thể đặt ở 3 vị trí — đầu câu (có dấu phẩy), giữa 2 mệnh đề (có dấu phẩy), hoặc <strong>cuối câu</strong> như một trạng từ độc lập (ít gặp nhưng rất tự nhiên trong văn nói):</p>
+<blockquote>
+<p><em>He is still strong. He is over 80, </em><em>though</em><em>.</em></p>
+</blockquote></div><div class="tab-panel" id="tab8"><h1>UNIT 9: Dạng phủ định của động từ</h1>
+<h2>I. Khái niệm</h2>
+<p>Động từ có 3 "dạng": khẳng định, phủ định, nghi vấn. Khi xét về cách tạo phủ định/nghi vấn, động từ tiếng Anh chia làm <strong>3 nhóm</strong>:</p>
+<ol>
+<li><strong>Trợ động từ (Aux)</strong> — can, may, must, will, should...</li>
+<li><strong>be</strong> — am/is/are</li>
+<li><strong>Động từ thường</strong> — mọi động từ còn lại</li>
+</ol>
+<p>Đây là kiến thức nền quan trọng: <strong>3 nhóm này có cách phủ định khác nhau!</strong></p>
+<h2>II. Cách phủ định</h2>
+<h3>Cách 1: Dùng NOT</h3>
+<table>
+<thead>
+<tr>
+<th>Nhóm động từ</th>
+<th>Cách phủ định</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trợ động từ</td>
+<td>thêm <strong>not</strong> ngay sau Aux</td>
+<td><em>You </em><em>cannot</em><em> change the life length, but you can change its width.</em></td>
+</tr>
+<tr>
+<td>be</td>
+<td>thêm <strong>not</strong> sau be</td>
+<td><em>She </em><em>is not</em><em> a doctor.</em></td>
+</tr>
+<tr>
+<td>Động từ thường</td>
+<td>mượn <strong>do/does + not</strong> rồi mới đến động từ gốc</td>
+<td><em>She </em><em>doesn't live</em><em> here.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Lưu ý cách viết:</strong> "must not, may not, will not" viết <strong>tách rời</strong>; riêng <strong>cannot</strong> viết <strong>liền</strong>. Dạng viết tắt: <em>can't, mustn't, won't</em> (will not → won't, biến đổi bất quy tắc).</p>
+<p><strong>Phân biệt "will not/won't" (đơn giản là "sẽ không") với "won't" mang sắc thái cứng đầu, nhất quyết không:</strong></p>
+<blockquote>
+<p><em>My dog is sick. He </em><em>won't</em><em> eat.</em> (nó cứ nhất quyết không ăn — như thể "chống đối", không đơn thuần là phủ định tương lai)</p>
+</blockquote>
+<p><strong>"must not/mustn't" = CẤM</strong>, khác hẳn ý nghĩa "không cần phải":</p>
+<blockquote>
+<p><em>You </em><em>mustn't</em><em> ride your motorbike without your helmet.</em> (cấm/không được đi xe máy mà không đội mũ bảo hiểm)</p>
+</blockquote>
+<h3>Cách 2: Dùng NEVER (adv) = không bao giờ</h3>
+<p>Vị trí giống trạng từ tần suất (trước động từ thường, sau "be"):</p>
+<blockquote>
+<p><em>She </em><em>never</em><em> comes to work late.</em> / <em>She is </em><em>never</em><em> late for work.</em></p>
+</blockquote>
+<h3>Cách 3: Dùng HARDLY (adv) = hầu như không</h3>
+<blockquote>
+<p><em>I </em><em>hardly</em><em> know him.</em> (tôi hầu như không biết anh ta)</p>
+</blockquote>
+<p>Hai cụm cố định rất hay dùng:<br />
+- <strong>can hardly V</strong> = hầu như không làm được: <em>She can </em><em>hardly</em><em> speak English.</em><br />
+- <strong>hardly ever V</strong> = hầu như không bao giờ (mạnh hơn "never" một chút về sắc thái do dự, khác never là tuyệt đối)</p>
+<h2>III. EITHER và NEITHER</h2>
+<table>
+<thead>
+<tr>
+<th>Từ</th>
+<th>Vai trò</th>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>either</strong></td>
+<td>adj (trước N số ít)</td>
+<td>mỗi một trong 2, cả 2</td>
+<td><em>There are shops on </em><em>either side</em><em> of the street.</em></td>
+</tr>
+<tr>
+<td></td>
+<td>pron</td>
+<td>một trong 2, cái nào cũng được</td>
+<td><em><strong>Either</strong> is OK.</em></td>
+</tr>
+<tr>
+<td></td>
+<td>adv (câu phủ định, cuối câu)</td>
+<td>cũng không</td>
+<td><em>I don't like fish </em><em>either</em><em>.</em></td>
+</tr>
+<tr>
+<td></td>
+<td>conj: either A or B</td>
+<td>hoặc A hoặc B</td>
+<td><strong><em>Either</em>* I </strong>or*<em> you are wrong.</em></td>
+</tr>
+<tr>
+<td><strong>neither</strong></td>
+<td>adj/pron</td>
+<td>không cái nào trong 2</td>
+<td>—</td>
+</tr>
+<tr>
+<td></td>
+<td>conj: neither A nor B</td>
+<td>không A mà cũng không B</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h2>IV. Cấu trúc "THE + adj" = một nhóm người có tính chất đó</h2>
+<p>Đặt "the" trước tính từ chỉ phẩm chất (young, old) hoặc quốc tịch (Vietnamese, French...) để tạo ra một danh từ tập hợp, chỉ <strong>chung một nhóm người</strong>:</p>
+<blockquote>
+<p><strong><em>The young</em>* can hardly understand </strong>the old<strong>.<em> (người trẻ khó hiểu người già)<br />
+</em></strong>The French*<em> eat a lot of cheese.</em> (người Pháp [nói chung] ăn nhiều phô mai)</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab9"><h1>UNIT 10: Phủ định mệnh lệnh thức</h1>
+<h2>I. Đối với ngôi 2 (bảo người nghe đừng làm gì)</h2>
+<h3>Kiểu 1: Dùng "Do not / Don't + V"</h3>
+<blockquote>
+<p><strong>Don't</strong> come in. (Đừng vào)<br />
+<strong>Don't</strong> forget to lock up at night.</p>
+</blockquote>
+<p><strong>Áp dụng cho cả động từ "be"</strong> (điều đặc biệt, vì thông thường "be" phủ định bằng "not" trực tiếp, nhưng ở mệnh lệnh thức vẫn phải mượn "don't"):</p>
+<blockquote>
+<p><em>She is not selfish.</em> → <em><strong>Don't be</strong> selfish.</em> (Đừng ích kỷ.)</p>
+</blockquote>
+<h3>Kiểu 2: Dùng "Never" (mạnh hơn, dứt khoát hơn "don't")</h3>
+<blockquote>
+<p><strong>Never mind.</strong> (Đừng bận tâm / Không sao đâu.)</p>
+</blockquote>
+<p><strong>Don't ever = Never</strong> (nhấn mạnh tuyệt đối không bao giờ).</p>
+<h2>II. Đối với ngôi 1 (rủ nhau đừng làm gì)</h2>
+<blockquote>
+<p><strong>Let's not</strong> waste time. (Đừng lãng phí thời gian [nhé].)</p>
+</blockquote>
+<h2>III. Trạng từ NOT dùng để phủ định các thành phần khác (không phải động từ)</h2>
+<p>"Not" có thể phủ định danh từ, tính từ, trạng từ, hoặc cả một cụm "to V" — không chỉ phủ định động từ:</p>
+<blockquote>
+<p><em>I need </em><em>a home, not a house</em><em>.</em> (phủ định danh từ "a house")<br />
+<em>Eat to live, but </em><em>not</em><em> live to eat.</em> (phủ định cụm "to V")</p>
+</blockquote>
+<p><strong>Hai cấu trúc rất hay dùng:</strong></p>
+<ul>
+<li>
+<p><strong>Not A (but) B</strong> = không phải A mà là B:</p>
+<blockquote>
+<p><em>Knowledge advances </em><em>not</em><em> by leaps </em><em>but</em><em> by steps.</em> (kiến thức tiến bộ không phải bằng những bước nhảy mà bằng từng bước nhỏ)</p>
+</blockquote>
+</li>
+<li>
+<p><strong>Not only A but also B</strong> = không chỉ A mà còn B:<br />
+  (cấu trúc nhấn mạnh, thêm cả B vào bên cạnh A, không phải loại trừ A như cấu trúc trên)</p>
+</li>
+</ul>
+<p><strong>Phủ định "to V":</strong></p>
+<blockquote>
+<p><em>A healthy breakfast has many benefits, so try </em><em>not to skip</em><em> it.</em> (đừng bỏ qua bữa sáng)</p>
+</blockquote>
+<h2>IV. Trạng từ SO dùng để thay thế một mệnh đề đã nói trước đó</h2>
+<p>"So" thay cho <strong>mệnh đề khẳng định</strong> đã nhắc ở câu trước (giống "vậy thì", tránh lặp lại toàn bộ câu); ngược lại <strong>"not"</strong> thay cho mệnh đề phủ định:</p>
+<blockquote>
+<p>A: I am busy just now.<br />
+B: If you are busy, I will go home. <strong>If not</strong>, I will stay. (= if you are not busy)</p>
+</blockquote>
+<p><strong>Cách dùng "... or so"</strong> = khoảng, chừng đó (đứng cuối câu, chỉ số lượng ước tính):</p>
+<blockquote>
+<p><em>a year </em><em>or so</em>** = một năm gì đó (khoảng một năm).</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab10"><h1>UNIT 11: Phủ định không hoàn toàn</h1>
+<p>Đây là các cách nói <strong>"không...hẳn/lắm"</strong> — phủ định nhưng không tuyệt đối 100%, để lại một khoảng "có thể vẫn đúng một phần".</p>
+<h2>1. Phủ định không hoàn toàn về mức độ</h2>
+<p><strong>Not very/quite/so + adj/adv</strong> = không...lắm (chưa đến mức đó):</p>
+<blockquote>
+<p><em>She is not beautiful.</em> (không đẹp — phủ định tuyệt đối)<br />
+<em>She is </em><em>not very</em><em> beautiful.</em> (không đẹp lắm — có thể vẫn ổn, chỉ là chưa "rất đẹp")</p>
+</blockquote>
+<p>Các trạng từ này (very well, that old...) có thể <strong>đứng độc lập</strong> để trả lời ngắn:</p>
+<blockquote>
+<p>A: Anh ấy nấu ăn có ngon không? B: <strong>Not very well.</strong> (Không ngon lắm.)</p>
+</blockquote>
+<p><strong>Not that</strong> = không đến mức thế (nhắc lại mức độ mà người trước vừa đề cập):</p>
+<blockquote>
+<p>A: She is 37. B: <strong>Not that</strong> old. (Không đến mức già như thế đâu.)</p>
+</blockquote>
+<h2>2. Phủ định không hoàn toàn về khả năng xảy ra</h2>
+<p><strong>Not necessarily</strong> = không nhất thiết/chưa chắc đã:</p>
+<blockquote>
+<p><em>Big men </em><em>aren't necessarily</em><em> strong men.</em> (người to lớn chưa chắc đã khỏe.)<br />
+<em>A good book </em><em>doesn't necessarily</em><em> sell well.</em></p>
+</blockquote>
+<h2>3. Phủ định không hoàn toàn về thời điểm</h2>
+<p><strong>Not always</strong> = không phải lúc nào cũng:</p>
+<blockquote>
+<p><em>People with a lot of money </em><em>aren't always</em><em> happy.</em></p>
+</blockquote>
+<p><strong>Not ... yet</strong> = còn chưa (tính đến hiện tại):</p>
+<blockquote>
+<p><em>She is </em><em>not</em><em> married </em><em>yet</em><em>.</em> (cô ấy vẫn chưa kết hôn)</p>
+</blockquote>
+<p><strong>Not ... till/until/before</strong> = mãi tới khi... mới (chỉ mốc thời gian bắt đầu đúng):</p>
+<blockquote>
+<p><em>Let's wait here </em><em>till</em><em> she comes back.</em> (đợi ở đây tới khi cô ấy về)<br />
+<em>My husband </em><em>doesn't</em><em> come back </em><em>till</em><em> 7 p.m.</em> (mãi tới 7h tối chồng tôi mới về)</p>
+</blockquote>
+<p>⚠️ Lưu ý: sau <em>till/until</em> nếu theo bởi một <strong>mệnh đề</strong> (có chủ ngữ + động từ) thì đó là <strong>liên từ</strong>; nếu chỉ theo bởi <strong>một cụm giờ/thời điểm</strong> thì đó là <strong>giới từ</strong>. Cả 2 trường hợp cách dùng ý nghĩa tương tự nhau.</p>
+<hr /></div><div class="tab-panel" id="tab11"><h1>UNIT 12: Cách dùng chữ NO và ANY</h1>
+<h2>1. Phủ định các thành phần khác bằng từ mang nghĩa ngược</h2>
+<p>Ngoài cách phủ định động từ, có thể phủ định <strong>bất kỳ thành phần nào</strong> trong câu bằng cách dùng từ có sẵn nghĩa ngược (tiền tố un-/in-/dis- đã học ở Unit 3-4):</p>
+<blockquote>
+<p><em>It is </em><em>unnecessary</em><em> to learn big words.</em> (không cần thiết — thay vì "not necessary")<br />
+<em>It is </em><em>unusual</em><em> for John to be late.</em></p>
+</blockquote>
+<h2>2. Phủ định danh từ: dùng "No"</h2>
+<p><strong>No</strong> [adj] đứng trước danh từ để phủ định trực tiếp danh từ đó (thay vì phủ định động từ):</p>
+<blockquote>
+<p><em>I don't have </em><em>a</em><em> book.</em> = <em>I have </em><em>no</em><em> book.</em><br />
+<em>I don't have money.</em> = <em>I have </em><em>no</em><em> money.</em> ~ <em>I don't have </em><em>any</em><em> money.</em></p>
+</blockquote>
+<p><strong>So sánh No và Not...any:</strong> hai cách này ý nghĩa tương đương, nhưng <strong>"no" mang sắc thái phủ định mạnh/dứt khoát hơn</strong> "not":</p>
+<blockquote>
+<p><em>I don't know (it).</em> (không biết) — bình thường<br />
+<em>I have </em><em>no</em><em> idea.</em> (chả biết gì cả) — dứt khoát, nhấn mạnh hơn</p>
+<p><strong><em>No</em><em> woman likes housework.</em><br />
+*There are </strong>no*<em> buses, so you will have to walk.</em></p>
+</blockquote>
+<p>⚠️ <strong>Quy tắc quan trọng: KHÔNG được phủ định 2 lần trong 1 câu</strong> (double negative — khác tiếng Việt, tiếng Việt có thể nói "chả có ai không đến" nhưng tiếng Anh KHÔNG được làm vậy trừ trường hợp đặc biệt để nhấn mạnh):</p>
+<blockquote>
+<p>~~You don't have no book.~~ ✘ (sai — 2 phủ định cùng lúc: don't + no)<br />
+<em>You </em><em>have no</em><em> reason </em><em>not to</em><em> trust me.</em> ✔️ (đây là trường hợp đặc biệt: 2 phủ định nhưng có chủ đích nhấn mạnh — "không có lý do gì để KHÔNG tin tôi" = "hãy tin tôi")</p>
+</blockquote>
+<h2>3. Các từ phái sinh từ "no"</h2>
+<table>
+<thead>
+<tr>
+<th>Từ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nobody / no one</td>
+<td>không ai, chẳng ai</td>
+</tr>
+<tr>
+<td>nothing</td>
+<td>không cái gì, không điều gì</td>
+</tr>
+<tr>
+<td>nowhere</td>
+<td>không đâu, chẳng chỗ nào</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong><em>Nobody</em><em> speaks English here.</em><br />
+</strong><em>Nothing</em><em> is certain but death.</em> (không gì chắc chắn ngoài cái chết)</p>
+</blockquote>
+<p><strong>Lưu ý dùng "but" sau từ phủ định = "ngoại trừ, ngoài":</strong></p>
+<blockquote>
+<p><em>I want </em><em>nobody but</em><em> you.</em> (tôi không muốn ai khác ngoài bạn)</p>
+</blockquote>
+<p><strong>Ghi nhớ:</strong> <em>no = not any</em> — hai cách diễn đạt cùng ý nghĩa, chọn "no" khi muốn nhấn mạnh, gọn hơn, và văn viết trang trọng hơn.</p></div><div class="tab-panel" id="tab12"><h1>Unit 13: Mệnh đề danh từ báo hiệu bằng liên từ THAT (MĐ N-that)</h1>
+<p>Mệnh đề danh từ (Noun clause) là một <strong>mệnh đề phụ</strong> nhưng hoạt động <strong>như một danh từ</strong> trong câu — có thể làm chủ ngữ, tân ngữ, bổ ngữ, tính ngữ sau, hoặc trạng ngữ. Được nhận diện bằng liên từ <strong>that</strong> (rằng/là) đứng đầu mệnh đề — <strong>that có thể tỉnh lược (bỏ đi)</strong> trong văn nói mà không ảnh hưởng nghĩa.</p>
+<h2>1. Làm tân ngữ trực tiếp cho động từ (Vt)</h2>
+<p>So sánh cách tân ngữ tăng dần độ phức tạp:</p>
+<blockquote>
+<p><em>I know </em><em>English</em><em>.</em> (TT = danh từ đơn giản)<br />
+<em>I know </em><em>him</em><em>.</em> (TT = đại từ)<br />
+<em>I know [</em><em>that</em><em> he is a good man].</em> (TT = cả một mệnh đề, giới thiệu bằng "that")</p>
+</blockquote>
+<p>Không phải Vt nào cũng dùng được với mệnh đề "that" — chỉ những Vt mang nghĩa <strong>suy nghĩ, phát ngôn, tin tưởng</strong> mới phù hợp:</p>
+<table>
+<thead>
+<tr>
+<th>Động từ</th>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>think</td>
+<td>nghĩ, cho rằng</td>
+<td><em>I think </em><em>that</em><em> English is easy to learn.</em></td>
+</tr>
+<tr>
+<td>guess</td>
+<td>đoán (AmE, ~think)</td>
+<td><em>I guess he is over 40.</em></td>
+</tr>
+<tr>
+<td>say</td>
+<td>nói (rằng)</td>
+<td><em>They say </em><em>that</em><em> you should drink a lot of water.</em></td>
+</tr>
+<tr>
+<td>believe</td>
+<td>tin (rằng)</td>
+<td><em>I believe </em><em>that</em><em> I can study English in 5 months.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Lưu ý về cách phủ định:</strong> khi phủ định một câu chứa mệnh đề "that", người Anh có xu hướng <strong>phủ định ở mệnh đề chính</strong> (chứa think/believe...) thay vì phủ định trong mệnh đề "that":</p>
+<blockquote>
+<p><em>I think it isn't a good idea.</em> (ít tự nhiên hơn)<br />
+→ <em><strong>I don't think</strong> it is a good idea.</em> (tự nhiên hơn, người Anh nói theo cách này)</p>
+</blockquote>
+<p><strong>Các cụm "I think, I believe, I guess" có thể tách ra làm thành phần đệm xen</strong>, đặt ở đầu, giữa, hoặc cuối câu:</p>
+<blockquote>
+<p><em>You are wrong, </em><em>I think</em><em>.</em> (Tôi nghĩ là bạn sai — "I think" đệm ở cuối)</p>
+</blockquote>
+<p><strong>"I mean" — dùng để đính chính, giải thích rõ lại điều vừa nói:</strong></p>
+<blockquote>
+<p><em>I can't help you, </em><em>I mean</em><em>.</em> (Ý tôi là, tôi không giúp được đâu.)</p>
+</blockquote>
+<h2>2. Làm bổ ngữ chủ ngữ (sau "be")</h2>
+<blockquote>
+<p><em>The </em><em>problem</em><em> is </em><em>that</em><em> the apartment doesn't have a view of the beach.</em> (vấn đề là...)<br />
+<em>The </em><em>trouble</em><em> is [we have nowhere to stay].</em> (khổ nỗi là...)</p>
+</blockquote>
+<p><strong>Cấu trúc đặc biệt với "it":</strong> <em>It is not that... but that...</em> = không phải vì... mà là vì...</p>
+<blockquote>
+<p><em>It is </em><em>not that</em><em> I like her, </em><em>but that</em><em> I love her.</em> (không phải là tôi thích cô ấy, mà là tôi yêu cô ấy)</p>
+</blockquote>
+<h2>3. Làm chủ ngữ</h2>
+<p>Giống "to V" ở Unit 6, mệnh đề "that" làm chủ ngữ trực tiếp cũng <strong>ít dùng trong văn nói hiện đại</strong>, thường thay bằng cấu trúc "It is... that...":</p>
+<blockquote>
+<p><em>[That she is your friend] is good.</em> (ít tự nhiên)<br />
+→ <strong><em>It</em>* is good </strong>that*<em> she is your friend.</em> (tự nhiên hơn — giống hệt logic "It...to V..." đã học)</p>
+</blockquote>
+<h2>4. Làm trạng ngữ nội dung cho tính từ</h2>
+<p>Tương tự prep+N và to V ở các Unit trước, mệnh đề "that" cũng đứng sau tính từ để giải thích rõ nội dung:</p>
+<blockquote>
+<p><em>I am </em><em>afraid</em><em> [</em><em>that</em><em> she is too young].</em> (tôi sợ rằng cô ấy còn quá trẻ)<br />
+<em>I am </em><em>sure</em><em> [</em><em>that</em><em> you will be successful].</em></p>
+</blockquote>
+<p>Các cụm "I'm afraid, I'm sure" cũng dùng độc lập làm đệm xen:</p>
+<blockquote>
+<p><em>The news is not very good, </em><em>I'm afraid</em><em>.</em> (tin không tốt lắm, tôi e là vậy)</p>
+</blockquote>
+<h2>5. Làm tính ngữ sau cho danh từ</h2>
+<blockquote>
+<p><em>I have no </em><em>doubt</em><em> [</em><em>that</em><em> it is a lie].</em> (tôi không nghi ngờ gì rằng đó là lời nói dối)</p>
+</blockquote>
+<h2>6. Làm trạng ngữ cho động từ</h2>
+<blockquote>
+<p><em>She often </em><em>complains</em><em> [</em><em>that</em><em> she has headaches].</em><br />
+<em>Please tell him [</em><em>that</em><em> she is already back].</em></p>
+</blockquote>
+<p><strong>Cấu trúc "so that"</strong> = để, để mà (chỉ mục đích, tương tự "to V" chỉ mục đích ở Unit 6 nhưng dùng khi cần một mệnh đề đầy đủ hơn là chỉ động từ):</p>
+<blockquote>
+<p><em>She has enough money to live comfortably </em><em>so that</em><em> she can enjoy her old age.</em></p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab13"><h1>Unit 14: Tân ngữ có giới từ (Prepositional object)</h1>
+<p>Một số <strong>nội động từ (Vi)</strong> vốn không cần tân ngữ, nhưng khi muốn "kéo" một đối tượng vào để trả lời "ai? cái gì?", vì bản chất là Vi (không tác động trực tiếp), phải <strong>thông qua một giới từ</strong> trước khi đặt tân ngữ:</p>
+<p><strong>CN – Vi – prep – Tân ngữ</strong></p>
+<blockquote>
+<p><em>Look at me.</em> (nhìn tôi — "look" là Vi, phải qua "at" mới đặt được tân ngữ "me")</p>
+</blockquote>
+<p>So sánh với tiếng Việt hay bị nhầm — nhiều động từ Việt là ngoại động từ (tác động trực tiếp) nhưng động từ tiếng Anh tương ứng lại là Vi:</p>
+<blockquote>
+<p><em>Yêu em</em> → <strong>love</strong> me (Vt, không cần prep)<br />
+<em>Chờ em</em> → <strong>wait</strong> ~~me~~ → <strong>wait FOR</strong> me (Vi, phải qua "for")</p>
+</blockquote>
+<h2>Cùng một Vi + giới từ khác nhau → nghĩa khác nhau hoàn toàn</h2>
+<table>
+<thead>
+<tr>
+<th>Cụm</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>look at sb/sth</td>
+<td>nhìn ai/cái gì</td>
+</tr>
+<tr>
+<td>look for sb/sth</td>
+<td>tìm ai/cái gì</td>
+</tr>
+<tr>
+<td>look after sb/sth</td>
+<td>chăm sóc ai/cái gì</td>
+</tr>
+</tbody>
+</table>
+<h2>Một số Vi dùng được 2 giới từ nhưng cùng nghĩa</h2>
+<blockquote>
+<p><em>think of / think about</em> sb/sth = nghĩ về ai đó/cái gì<br />
+<em>I often </em><em>think of/about</em><em> my parents at home.</em></p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab14"><h1>Unit 15: Thay thế động từ và kết cấu động từ (tránh lặp lại)</h1>
+<p>Để tránh nhắc lại toàn bộ động từ/kết cấu động từ đã nói ở câu trước, tiếng Anh dùng các cách <strong>rút gọn</strong> sau, tùy vào loại động từ ở câu gốc:</p>
+<table>
+<thead>
+<tr>
+<th>Câu gốc dùng</th>
+<th>Thay thế bằng</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Trợ động từ (Aux)</td>
+<td>CN + Aux (không lặp lại động từ chính)</td>
+<td>A: <em>I don't know if he can help.</em> B: <em>If he </em><em>can</em><em>, he will [help].</em></td>
+</tr>
+<tr>
+<td>"be"</td>
+<td>CN + be chia</td>
+<td><em>It is free and always </em><em>will be</em><em>.</em></td>
+</tr>
+<tr>
+<td>Động từ thường</td>
+<td>CN + do/does/did</td>
+<td><em>She seldom comes here, and whenever she </em><em>does</em><em>, she stays a few minutes.</em></td>
+</tr>
+<tr>
+<td>To V</td>
+<td>dùng "to" (bỏ động từ, giữ "to")</td>
+<td><em>You don't have to come if you don't want </em><em>to</em><em>.</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Nhận xét:</strong> đây chính là kỹ thuật giúp câu tiếng Anh không bị lặp từ dài dòng — luôn ưu tiên rút về phần "trợ" (aux/be/do) và bỏ phần động từ chính đã nhắc ở câu trước.</p>
+<hr /></div><div class="tab-panel" id="tab15"><h1>Unit 16: Câu hỏi tổng quát (Yes/No Questions)</h1>
+<h2>I. Khái niệm — khác biệt lớn với tiếng Việt</h2>
+<p>Trong tiếng Việt, câu hỏi thường giữ <strong>nguyên cấu trúc</strong> câu trần thuật, chỉ thêm từ nghi vấn ("có...không?"). Tiếng Anh thì <strong>ngược lại</strong>:</p>
+<ul>
+<li>Nếu hỏi vào <strong>chủ ngữ</strong> → giữ nguyên trật tự bình thường.</li>
+<li>Nếu hỏi vào bất kỳ phần nào của <strong>vị ngữ</strong> → phải <strong>đảo ngữ (inversion)</strong>: đưa trợ động từ lên trước chủ ngữ.</li>
+</ul>
+<p><strong>Sơ đồ đảo ngữ:</strong> CN + Trợ động + Động từ chính → <strong>Trợ động + CN + Động từ chính</strong></p>
+<p>Có 2 loại câu hỏi trong tiếng Anh: <strong>câu hỏi tổng quát</strong> (Yes/No — học ở đây) và <strong>câu hỏi riêng phần</strong> (WH — Unit 18).</p>
+<h2>II. Ba dạng câu hỏi tổng quát (tùy động từ ở câu gốc)</h2>
+<h3>Dạng 1: Câu gốc đã có trợ động từ (can/must/may/will...)</h3>
+<p>Chỉ cần đảo trợ động từ lên trước chủ ngữ:</p>
+<blockquote>
+<p><em>Can you swim?</em> — A: Yes, I can. / No, I can't.<br />
+<em>Can I come in?</em> (xin phép)<br />
+<em>Can you help me with this bag?</em> (đề nghị lịch sự)<br />
+<em>Shall we eat out tonight?</em> (rủ rê — "shall" dùng để đề nghị làm gì cùng nhau)<br />
+<em>Will you come this way, please?</em> (mời một cách lịch sự — dịch: "Xin mời...")</p>
+</blockquote>
+<p><strong>Cách trả lời phong phú hơn Yes/No:</strong></p>
+<blockquote>
+<p>A: <em>Can you write a poem?</em> B: <em>Yes, I think I can.</em> / <em>No, I don't think I can.</em> / <em>I'm afraid not.</em></p>
+</blockquote>
+<h3>Dạng 2: Câu gốc dùng "be"</h3>
+<p>Đảo "be" lên trước chủ ngữ:</p>
+<blockquote>
+<p><em>He is a doctor.</em> → <em><strong>Is</strong> he a doctor?</em> — Yes, he is. / No, he isn't.</p>
+</blockquote>
+<p><strong>3 cách dùng đặc biệt của dạng này:</strong></p>
+<p>a) <strong>Biểu thị sự ngạc nhiên</strong> (lặp lại "be" của câu vừa nghe, dịch "Thế à?"):</p>
+<blockquote>
+<p>A: <em>Helen is unmarried.</em> B: <em><strong>Is</strong> she?</em> (Thế á?)</p>
+</blockquote>
+<p>b) <strong>Hỏi về sự tồn tại</strong> (dùng There is/are — xem lại Unit 2):</p>
+<blockquote>
+<p>Có tiền trong hộp này không? → <em><strong>Is there</strong> money in this box?</em></p>
+</blockquote>
+<p>c) <strong>Dùng IT làm chủ ngữ giả</strong> (xem lại cấu trúc It...to V ở Unit 6):</p>
+<blockquote>
+<p><em>It is necessary to know English.</em> → <em><strong>Is it</strong> necessary to know English?</em></p>
+</blockquote>
+<h3>Dạng 3: Câu gốc dùng động từ thường</h3>
+<p>Mượn <strong>do/does</strong> để đảo (vì động từ thường không tự đảo được):</p>
+<blockquote>
+<p><em>She lives in Hanoi.</em> → <em><strong>Does</strong> she live in Hanoi?</em> — Yes, she does. / No, she doesn't.</p>
+</blockquote>
+<p><strong>Biểu thị ngạc nhiên</strong> (lặp lại do/does):</p>
+<blockquote>
+<p>A: <em>He has 3 houses.</em> B: <em><strong>Does</strong> he?</em> (Thế á?)</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab16"><h1>Unit 17: Nghi vấn phủ định và câu hỏi phân cách (Tag questions)</h1>
+<h2>I. Nghi vấn phủ định (Negative questions)</h2>
+<p>Là câu hỏi ở <strong>dạng phủ định</strong>, tạo từ câu trần thuật phủ định, mang nhiều sắc thái khác nhau tùy tình huống:</p>
+<table>
+<thead>
+<tr>
+<th>Sắc thái</th>
+<th>Ví dụ</th>
+<th>Dịch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a) Hỏi mà đã đoán trước câu trả lời là "không"</td>
+<td><em>Don't you know English?</em></td>
+<td>Không biết tiếng Anh à?</td>
+</tr>
+<tr>
+<td>b) Câu phản vấn, bày tỏ cảm xúc (dùng dạng đầy đủ, không viết tắt)</td>
+<td><em>Am I not your wife?</em></td>
+<td>Tôi không phải vợ anh sao?</td>
+</tr>
+<tr>
+<td>c) Phàn nàn, mất kiên nhẫn</td>
+<td><em>Can't you wait till we get home?</em></td>
+<td>Không thể đợi tới khi về nhà được sao?</td>
+</tr>
+<tr>
+<td>d) Câu cảm thán</td>
+<td><em>Isn't this great!</em></td>
+<td>Cái này tuyệt quá đi mất!</td>
+</tr>
+<tr>
+<td>Mỉa mai</td>
+<td><em>Aren't you smart?</em></td>
+<td>(nói mỉa: "Giỏi nhỉ?")</td>
+</tr>
+</tbody>
+</table>
+<h2>II. Câu hỏi phân cách (Tag questions) — đuôi hỏi cuối câu</h2>
+<p>Câu chia thành 2 phần bằng dấu phẩy: <strong>vế trước</strong> (câu trần thuật, nêu nhận định) + <strong>vế sau</strong> (đuôi hỏi ngắn, xác nhận lại nhận định đó).</p>
+<p><strong>Quy tắc vàng:</strong> vế trước khẳng định → đuôi phủ định; vế trước phủ định → đuôi khẳng định (<strong>ngược nhau</strong>):</p>
+<blockquote>
+<p><em>You know English, </em><em>don't you</em><em>?</em> (khẳng định → đuôi phủ định)<br />
+<em>You don't know English, </em><em>do you</em><em>?</em> (phủ định → đuôi khẳng định)</p>
+</blockquote>
+<h3>1. Câu hỏi xác minh — ngữ điệu <strong>lên</strong> cuối câu (thực sự chưa chắc, muốn hỏi xác nhận)</h3>
+<blockquote>
+<p><em>You know Eg, </em><em>don't you</em><em>?</em> ↗ (thực sự đang hỏi, không chắc câu trả lời)</p>
+</blockquote>
+<h3>2. Đuôi bất đồng tình / tìm sự đồng thuận — ngữ điệu <strong>xuống</strong> cuối câu (đã chắc chắn, chỉ muốn người nghe xác nhận đồng ý)</h3>
+<blockquote>
+<p><em>It is fine today, </em><em>isn't it</em><em>?</em> ↘ (chắc chắn trời đẹp rồi, chỉ hỏi cho có, mong đồng tình)</p>
+</blockquote>
+<h3>3. Vế trước là mệnh lệnh thức → đuôi dùng shall/will</h3>
+<ul>
+<li>Nếu <strong>rủ rê</strong> (câu trước có "let's") → đuôi dùng <strong>shall we</strong>:<blockquote>
+<p><em>Let's go to the sea, </em><em>shall we</em><em>?</em></p>
+</blockquote>
+</li>
+<li>Nếu <strong>đề nghị/gợi ý lịch sự</strong> (câu mệnh lệnh thông thường) → đuôi dùng <strong>will you</strong>:<blockquote>
+<p><em>Help me with this, </em><em>will you</em><em>?</em></p>
+</blockquote>
+</li>
+</ul>
+<h3>Một số đuôi hỏi đặc biệt (thân mật, văn nói)</h3>
+<table>
+<thead>
+<tr>
+<th>Đuôi</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OK?</strong></td>
+<td>được không?</td>
+</tr>
+<tr>
+<td><strong>right?</strong></td>
+<td>đúng không?</td>
+</tr>
+<tr>
+<td><strong>no?</strong></td>
+<td>chứ? đúng không? (thân mật)</td>
+</tr>
+</tbody>
+</table>
+<hr /></div><div class="tab-panel" id="tab17"><h1>Unit 18: Câu hỏi riêng phần (WH-questions)</h1>
+<h2>I. Khái niệm</h2>
+<p>Câu hỏi riêng phần nhắm vào các thành phần <strong>khác động từ</strong> trong câu (chủ ngữ, vị ngữ, bổ ngữ...), dùng các từ hỏi bắt đầu bằng <strong>W</strong> và <strong>H</strong> (nên gọi chung là <strong>WH-question</strong>).</p>
+<p><strong>Quy tắc đảo ngữ:</strong><br />
+- Nếu từ hỏi thay cho <strong>chủ ngữ</strong> → <strong>không đảo ngữ</strong> (giữ trật tự bình thường).<br />
+- Nếu từ hỏi thay cho <strong>thành phần khác</strong> (tân ngữ, bổ ngữ...) → <strong>có đảo ngữ</strong> (Trợ động + CN + Động từ chính).</p>
+<p>Ngữ điệu: xuống giọng cuối câu (khác câu hỏi Yes/No lên giọng).</p>
+<h2>II. Các từ hỏi WH</h2>
+<table>
+<thead>
+<tr>
+<th>Từ hỏi</th>
+<th>Nghĩa</th>
+<th>Vai trò</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>who</strong></td>
+<td>ai?</td>
+<td>hỏi CN hoặc TT (chủ cách)</td>
+<td><em><strong>Who</strong> is a doctor?</em> (không đảo, vì "who" thay CN)</td>
+</tr>
+<tr>
+<td><strong>whom</strong></td>
+<td>ai? (tân cách, trang trọng)</td>
+<td>hỏi TT</td>
+<td><em><strong>Whom</strong> does John love?</em></td>
+</tr>
+<tr>
+<td><strong>what</strong></td>
+<td>gì, cái gì?</td>
+<td>pron/adj</td>
+<td><strong><em>What</em><em> does John buy?</em> / </strong><em>What</em><em> book do you need?</em></td>
+</tr>
+<tr>
+<td><strong>which</strong></td>
+<td>cái nào? (có lựa chọn giới hạn)</td>
+<td>pron/adj</td>
+<td><em><strong>Which</strong> do you prefer, tea or coffee?</em></td>
+</tr>
+<tr>
+<td><strong>whose</strong></td>
+<td>của ai?</td>
+<td>adj sở hữu</td>
+<td><em><strong>Whose</strong> car is this?</em> — B: <em>It's Lan's.</em></td>
+</tr>
+<tr>
+<td><strong>when</strong></td>
+<td>khi nào?</td>
+<td>adv</td>
+<td><em><strong>When</strong> is your birthday?</em></td>
+</tr>
+<tr>
+<td><strong>why</strong></td>
+<td>tại sao?</td>
+<td>adv</td>
+<td><em><strong>Why</strong> does Lan never wear make-up?</em></td>
+</tr>
+<tr>
+<td><strong>how</strong></td>
+<td>thế nào? / bao nhiêu</td>
+<td>adv</td>
+<td><em><strong>How</strong> does she speak English?</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Chú ý về "who" vs "whom":</strong> trong tiếng Anh hiện đại (đặc biệt văn nói), người ta thường dùng <strong>"who" cho cả 2 trường hợp</strong> (chủ cách và tân cách), "whom" chỉ còn dùng trong văn viết trang trọng.</p>
+<p><strong>Chú ý về "how":</strong> khi hỏi mức độ của tính từ/trạng từ, dùng <strong>"How + adj/adv"</strong>:</p>
+<blockquote>
+<p><em>She is beautiful.</em> → <strong><em>How beautiful</em><em> is she?</em> (Cô ấy đẹp đến mức nào?)<br />
+</strong><em>How much</em><em> do you love me?</em> (bạn yêu tôi đến mức nào)</p>
+</blockquote>
+<h2>III. Câu hỏi tỉnh lược (bỏ phần "it is" đã ngầm hiểu)</h2>
+<p>Trong hội thoại, nhiều cấu trúc dài được <strong>rút gọn</strong>, bỏ đi phần "it is/does" đã ngầm hiểu từ ngữ cảnh:</p>
+<table>
+<thead>
+<tr>
+<th>Đầy đủ</th>
+<th>Rút gọn</th>
+<th>Ý nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What is it about?</td>
+<td><strong>What about...?</strong></td>
+<td>hỏi nội dung, hoặc gợi ý phương án khác — "Còn ... thì sao?"</td>
+</tr>
+<tr>
+<td>What is it if...?</td>
+<td><strong>What if...?</strong></td>
+<td>Ngộ nhỡ...thì sao!</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>A: <em>I'm sorry, I can't go with you today.</em> B: <strong><em>What about</em><em> tomorrow?</em> (Còn ngày mai thì sao?)<br />
+A: <em>I'll go there tomorrow.</em> B: </strong><em>What if</em><em> it rains?</em> (Nhỡ mưa thì sao?)</p>
+</blockquote>
+<p><strong>Hỏi lại để xác minh (chưa nghe rõ)</strong> — lặp lại đúng vị trí không nghe rõ bằng từ hỏi WH, giữ nguyên trật tự câu (không đảo):</p>
+<blockquote>
+<p>A: <em>His name is Cameron.</em> B: <em>His name is </em><em>what</em><em>?</em> (Tên anh ta là gì [cơ]?)</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab18"><h1>Unit 19: Số từ thứ tự (Ordinal numbers)</h1>
+<h2>1. Cách hình thành</h2>
+<p>Quy tắc chung: <strong>số từ số lượng + "th"</strong>.</p>
+<blockquote>
+<p><em>ten → tenth</em> (10th)</p>
+</blockquote>
+<p><strong>Ngoại lệ chính tả:</strong> nếu số từ số lượng tận cùng bằng "y", đổi "y" → "ie" trước khi thêm "th" (đọc là /ɪ/):</p>
+<blockquote>
+<p><em>sixty → sixt</em><em>ie</em><em>th</em> (60th) /ˈsɪkstɪəθ/</p>
+</blockquote>
+<p><strong>Các số bất quy tắc cần nhớ riêng (không theo quy tắc thêm "th"):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Số lượng</th>
+<th>Số thứ tự</th>
+<th>Viết tắt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>one</td>
+<td>fir<strong>st</strong></td>
+<td>1st</td>
+</tr>
+<tr>
+<td>two</td>
+<td>seco<strong>nd</strong></td>
+<td>2nd</td>
+</tr>
+<tr>
+<td>three</td>
+<td>thi<strong>rd</strong></td>
+<td>3rd</td>
+</tr>
+<tr>
+<td>five</td>
+<td>fi<strong>fth</strong></td>
+<td>5th</td>
+</tr>
+<tr>
+<td>eight</td>
+<td>eigh<strong>th</strong></td>
+<td>8th</td>
+</tr>
+<tr>
+<td>nine</td>
+<td>nin<strong>th</strong></td>
+<td>9th</td>
+</tr>
+<tr>
+<td>twelve</td>
+<td>twelf<strong>th</strong></td>
+<td>12th</td>
+</tr>
+</tbody>
+</table>
+<p>(Các số còn lại từ four, six, seven, ten, eleven... theo đúng quy tắc chung: fourth, sixth, seventh, tenth, eleventh...)</p>
+<h2>2. Cách dùng</h2>
+<p>Số từ thứ tự có thể đóng vai trò như danh từ, tính từ, đại từ, hoặc trạng từ tùy câu.</p>
+<p><strong>a) Làm thuộc ngữ của danh từ, chỉ thứ tự — luôn có "the" đứng trước:</strong></p>
+<blockquote>
+<p><em>the </em><em>first</em><em> day of school</em> (ngày đầu tiên đi học)<br />
+<em>the </em><em>third</em><em> floor</em> (tầng ba)</p>
+</blockquote>
+<p>Đây là điểm khác biệt quan trọng với số từ số lượng (one, two, three...) — số từ <strong>thứ tự luôn cần "the"</strong> khi làm thuộc ngữ, vì bản chất nó đang chỉ đến <strong>một vị trí xác định, duy nhất</strong> trong một chuỗi trình tự (không giống số lượng chỉ đếm số lượng chung).</p></div>
+  </main>
+</div>
+<script>
+  const nav = document.getElementById('tabsNav');
+  const overlay = document.getElementById('overlay');
+  const menuBtn = document.getElementById('menuBtn');
+
+  function openNav() {
+    nav.classList.add('open');
+    overlay.classList.add('show');
+  }
+  function closeNav() {
+    nav.classList.remove('open');
+    overlay.classList.remove('show');
+  }
+  menuBtn.addEventListener('click', () => {
+    nav.classList.contains('open') ? closeNav() : openNav();
+  });
+  overlay.addEventListener('click', closeNav);
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+      window.scrollTo({top: 0, behavior: 'instant'});
+      closeNav();
+    });
+  });
+
+  window.addEventListener('load', () => {
+    const splash = document.getElementById('nox-splash');
+    setTimeout(() => {
+      splash.classList.add('hide');
+      setTimeout(() => splash.remove(), 600);
+    }, 500);
+  });
+</script>
+</body>
+</html>
