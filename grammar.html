@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nox</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%23452e28'/%3E%3Cpath d='M25 8 A13 13 0 1 0 25 32 A10.5 10.5 0 1 1 25 8 Z' fill='%23d4665a'/%3E%3Ccircle cx='27' cy='11' r='1.6' fill='%23d4665a'/%3E%3Ccircle cx='31' cy='16' r='1' fill='%23d4665a'/%3E%3C/svg%3E">
+<title>Ngữ pháp tiếng Anh - Ghi chú</title>
 <style>
   :root {
     --bg: #f3dcc7;
@@ -17,11 +16,6 @@
     --code-bg: #ecc9b8;
   }
   * { box-sizing: border-box; }
-  /* Ẩn thanh cuộn (vẫn cuộn được bình thường bằng chuột/trackpad/chạm) —
-     thanh cuộn mặc định của trình duyệt có viền trắng đè lên viền bo góc
-     của theme, gây rối mắt, nên ẩn hẳn đi. */
-  * { scrollbar-width: none; -ms-overflow-style: none; }
-  *::-webkit-scrollbar { display: none; width: 0; height: 0; }
   body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -191,62 +185,13 @@
       padding: 18px;
     }
   }
-
-  /* --- Loading splash --- */
-  #nox-splash {
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: var(--bg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    transition: opacity 0.5s ease, visibility 0.5s ease;
-  }
-  #nox-splash.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  #nox-splash .splash-logo {
-    width: 64px;
-    height: 64px;
-    animation: nox-pulse 1.6s ease-in-out infinite;
-  }
-  #nox-splash .splash-text {
-    font-family: Georgia, "Times New Roman", serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--text);
-  }
-  #nox-splash .splash-sub {
-    font-size: 0.8rem;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-  }
-  @keyframes nox-pulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.12); opacity: 0.75; }
-  }
 </style>
 </head>
 <body>
-<div id="nox-splash">
-  <svg class="splash-logo" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-    <path d="M25 8 A13 13 0 1 0 25 32 A10.5 10.5 0 1 1 25 8 Z" fill="#d4665a"/>
-    <circle cx="27" cy="11" r="1.6" fill="#d4665a"/>
-    <circle cx="31" cy="16" r="1" fill="#d4665a"/>
-  </svg>
-  <div class="splash-text">Nox</div>
-  <div class="splash-sub">Đang tải ghi chú...</div>
-</div>
 <button class="menu-btn" id="menuBtn" aria-label="Menu"><span></span><span></span><span></span></button>
 <div class="overlay" id="overlay"></div>
 <nav class="tabs" id="tabsNav">
-  <button class="tab-btn active" data-tab="tab0">Unit 1: Tổng quát về từ và câu</button><button class="tab-btn" data-tab="tab1">Unit 2: Tân cách, số từ, giới từ chỉ vị trí và các động từ phổ dụng</button><button class="tab-btn" data-tab="tab2">Unit 3: Chỉ định từ, giới từ "of", sở hữu cách, trạng từ nhấn mạnh</button><button class="tab-btn" data-tab="tab3">UNIT 4: Số từ số lượng lớn, các từ bất định, trạng từ bổ ngữ</button><button class="tab-btn" data-tab="tab4">UNIT 5: Mệnh lệnh thức</button><button class="tab-btn" data-tab="tab5">UNIT 6: Động từ nguyên thể có TO</button><button class="tab-btn" data-tab="tab6">UNIT 7: TRỢ ĐỘNG TỪ</button><button class="tab-btn" data-tab="tab7">UNIT 8: MỆNH ĐỀ PHỤ VÀ CÂU PHỨC</button><button class="tab-btn" data-tab="tab8">UNIT 9: Dạng phủ định của động từ.</button><button class="tab-btn" data-tab="tab9">UNIT 10: Phủ định mệnh lệnh thức</button><button class="tab-btn" data-tab="tab10">UNIT 11: Phủ định không hoàn toàn</button><button class="tab-btn" data-tab="tab11">UNIT 12: Cách dùng chữ No và Any</button><button class="tab-btn" data-tab="tab12">Unit 13: Mệnh đề danh từ báo hiệu bằng liên từ That (MĐ N-that)</button><button class="tab-btn" data-tab="tab13">Unit 14: Tân ngữ có giới từ</button><button class="tab-btn" data-tab="tab14">Unit 15: Thay thế động từ và kết cấu động từ</button><button class="tab-btn" data-tab="tab15">Unit 16: Nghi vấn</button><button class="tab-btn" data-tab="tab16">Unit 17: Nghi vấn phủ định và phân cách</button><button class="tab-btn" data-tab="tab17">Unit 18: Câu hỏi riêng phần</button><button class="tab-btn" data-tab="tab18">Unit 19: Số từ thứ tự.</button>
+  <button class="tab-btn active" data-tab="tab0">Unit 1. Tổng quát về từ và câu</button><button class="tab-btn" data-tab="tab1">Unit 2: Tân cách, số từ, giới từ chỉ vị trí và các động từ phổ dụng</button><button class="tab-btn" data-tab="tab2">Unit 3: Chỉ định từ, giới từ &quot;of&quot;, sở hữu cách, trạng từ nhấn mạnh</button><button class="tab-btn" data-tab="tab3">UNIT 4: Số từ số lượng lớn, các từ bất định, trạng từ bổ ngữ</button><button class="tab-btn" data-tab="tab4">UNIT 5. Mệnh lệnh thức (Imperative Mood)</button><button class="tab-btn" data-tab="tab5">UNIT 6: Động từ nguyên thể có TO (To-infinitive)</button><button class="tab-btn" data-tab="tab6">UNIT 7: Trợ động từ (Auxiliary verbs / Modal verbs)</button><button class="tab-btn" data-tab="tab7">UNIT 8: Mệnh đề phụ và câu phức (Complex sentences)</button><button class="tab-btn" data-tab="tab8">UNIT 9: Dạng phủ định của động từ</button><button class="tab-btn" data-tab="tab9">UNIT 10: Phủ định mệnh lệnh thức</button><button class="tab-btn" data-tab="tab10">UNIT 11: Phủ định không hoàn toàn</button><button class="tab-btn" data-tab="tab11">UNIT 12: Cách dùng chữ NO và ANY</button><button class="tab-btn" data-tab="tab12">Unit 13: Mệnh đề danh từ báo hiệu bằng liên từ THAT (MĐ N-that)</button><button class="tab-btn" data-tab="tab13">Unit 14: Tân ngữ có giới từ (Prepositional object)</button><button class="tab-btn" data-tab="tab14">Unit 15: Thay thế động từ và kết cấu động từ (tránh lặp lại)</button><button class="tab-btn" data-tab="tab15">Unit 16: Câu hỏi tổng quát (Yes/No Questions)</button><button class="tab-btn" data-tab="tab16">Unit 17: Nghi vấn phủ định và câu hỏi phân cách (Tag questions)</button><button class="tab-btn" data-tab="tab17">Unit 18: Câu hỏi riêng phần (WH-questions)</button><button class="tab-btn" data-tab="tab18">Unit 19: Số từ thứ tự (Ordinal numbers)</button><button class="tab-btn" data-tab="tab19">UNIT 20: Cách dùng OTHER, OTHERS, THE OTHER(S), ANOTHER</button><button class="tab-btn" data-tab="tab20">UNIT 21: Thì quá khứ đơn giản (Simple Past Tense)</button>
 </nav>
 <div class="layout">
   <main>
@@ -688,12 +633,21 @@ Một câu tiếng Anh <strong>bắt buộc phải có ít nhất một động 
 </table>
 <p>Đây là 3 giới từ thời gian <strong>quan trọng nhất</strong> trong tiếng Anh, cần nhớ theo bảng trên vì không dịch theo logic tiếng Việt được.</p>
 <h2>8. Trạng từ chỉ tần suất</h2>
-<p>Thứ tự mức độ thường gặp: <em>always</em> (luôn luôn, ~100%) &gt; <em>usually</em> (thường, ~80-90%) &gt; <em>often</em> (hay, thường, ~60-70%).</p>
+<p>Thứ tự mức độ thường gặp (từ nhiều đến ít, theo thang tần suất phần trăm ước lượng): <em>always</em> (luôn luôn, ~100%) &gt; <em>usually</em> (thường, ~80-90%) &gt; <em>often</em> (hay, thường, ~60-70%) &gt; ... &gt; <em>never</em> (không bao giờ, ~0%).</p>
 <p><strong>Vị trí:</strong> đứng <strong>trước</strong> động từ thường, nhưng đứng <strong>sau</strong> động từ "be":</p>
 <blockquote>
 <p><em>She </em><em>often</em><em> comes late.</em> (trước động từ thường "comes")<br />
 <em>She is </em><em>often</em><em> late.</em> (sau "be")</p>
 </blockquote>
+<p><strong>Never (adv) — trạng từ tần suất mang giá trị "0%":</strong></p>
+<ul>
+<li>Ở câu <strong>hiện tại</strong>: dịch là "không bao giờ".</li>
+<li>Ở câu <strong>quá khứ</strong>: dịch là "không hề" (nhấn mạnh việc chưa từng xảy ra một lần nào, dù đã có cơ hội/thời gian để xảy ra).</li>
+</ul>
+<blockquote>
+<p><em>I waited for him for 2 hours, but he </em><em>never</em><em> came.</em> (Tôi đã đợi anh ta 2 giờ, nhưng anh ta không hề đến.)</p>
+</blockquote>
+<p>Lưu ý: vì "never" đã mang nghĩa phủ định sẵn, câu có "never" <strong>không cần thêm "not"</strong> nữa (tránh phủ định 2 lần — xem lại nguyên tắc ở Unit 12).</p>
 <h2>9. Cách diễn đạt sự tồn tại: There is/are</h2>
 <p>Phân biệt 2 cách dùng "có":<br />
 - <strong>have</strong> — chỉ <strong>sở hữu</strong>: <em>I have a dog.</em> (tôi nuôi một con chó)<br />
@@ -2206,7 +2160,308 @@ A: <em>I'll go there tomorrow.</em> B: </strong><em>What if</em><em> it rains?</
 <p><em>the </em><em>first</em><em> day of school</em> (ngày đầu tiên đi học)<br />
 <em>the </em><em>third</em><em> floor</em> (tầng ba)</p>
 </blockquote>
-<p>Đây là điểm khác biệt quan trọng với số từ số lượng (one, two, three...) — số từ <strong>thứ tự luôn cần "the"</strong> khi làm thuộc ngữ, vì bản chất nó đang chỉ đến <strong>một vị trí xác định, duy nhất</strong> trong một chuỗi trình tự (không giống số lượng chỉ đếm số lượng chung).</p></div>
+<p>Đây là điểm khác biệt quan trọng với số từ số lượng (one, two, three...) — số từ <strong>thứ tự luôn cần "the"</strong> khi làm thuộc ngữ, vì bản chất nó đang chỉ đến <strong>một vị trí xác định, duy nhất</strong> trong một chuỗi trình tự (không giống số lượng chỉ đếm số lượng chung).</p>
+<p><strong>Khi danh từ đi kèm cần bổ nghĩa thêm ("N gì?"):</strong> dùng tính ngữ sau — <strong>prep + N</strong> (đã học ở các Unit trước), đặt ngay sau danh từ:</p>
+<blockquote>
+<p><em>This is the third </em><em>day</em><em> [of our stay in London].</em> ("of our stay in London" = tính ngữ sau, trả lời "ngày [của việc] gì?")</p>
+</blockquote>
+<p><strong>Cụm cố định "the first thing"</strong> = điều/việc/chuyện đầu tiên — thường đi kèm tính ngữ sau để nói rõ "đầu tiên trong việc gì":</p>
+<blockquote>
+<p><em>In the study of a language, pronunciation is </em><em>the first thing</em><em>.</em> (Trong việc học một ngôn ngữ, phát âm là điều đầu tiên [cần chú ý].)</p>
+</blockquote>
+<h3>b) Làm trạng từ chỉ thứ tự của hành động (liệt kê các bước, các ý)</h3>
+<p>Khi liệt kê lần lượt nhiều hành động/ý trong bài nói hoặc bài viết, dùng các trạng từ sau, đặt ở đầu câu (có dấu phẩy):</p>
+<table>
+<thead>
+<tr>
+<th>Trạng từ</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>First / Firstly</strong></td>
+<td>Thứ nhất, trước tiên</td>
+</tr>
+<tr>
+<td><strong>Second / Secondly</strong></td>
+<td>Thứ hai</td>
+</tr>
+<tr>
+<td><strong>Finally</strong></td>
+<td>Cuối cùng</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>First, boil the water. Second, add the tea leaves. Finally, let it steep for 3 minutes.</em></p>
+</blockquote>
+<p>Lưu ý: dạng có "-ly" (Firstly, Secondly) và dạng không có "-ly" (First, Second) dùng <strong>tương đương nhau</strong> khi liệt kê ý, không phân biệt nghĩa. Riêng <strong>Finally</strong> không có dạng "Finallyly" (không thêm -ly lần 2).</p>
+<h3>c) "The + số từ thứ tự + of + tháng" — cách nói ngày trong tháng</h3>
+<p>Đây là cách nói <strong>ngày tháng theo kiểu Anh (British)</strong>, tương đương với cách viết số + tháng phổ biến hơn trong văn viết:</p>
+<blockquote>
+<p><em>The </em><em>tenth</em><em> of May</em> ~ <em><strong>10th</strong> May</em> (ngày 10 tháng 5)</p>
+</blockquote>
+<h2>3. Cách dùng chữ TIME — một từ rất linh hoạt, cần phân biệt kỹ theo nghĩa</h2>
+<p>"Time" có 3 cách dùng khác hẳn nhau tùy vào việc nó là danh từ không đếm được, số ít đếm được, hay đếm được số nhiều — nhầm loại này sẽ dùng sai ngữ pháp đi theo (many/several/times...).</p>
+<table>
+<thead>
+<tr>
+<th>Dạng</th>
+<th>Nghĩa</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>time</strong> [U]</td>
+<td>thời gian (khái niệm chung, không đếm được)</td>
+<td><em>Time flies.</em> (Thời gian trôi nhanh.)</td>
+</tr>
+<tr>
+<td><strong>a time</strong> [C, số ít]</td>
+<td>một khoảng thời gian (ngắn)</td>
+<td><em>a short </em><em>time</em>** (một thời gian ngắn)</td>
+</tr>
+<tr>
+<td><strong>time(s)</strong> [C, đếm được]</td>
+<td>lần, lượt</td>
+<td><em>many </em><em>times</em><em>, some</em><em>times</em><em>, several </em><em>time(s)</em>**</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Các cụm cố định với "time" chỉ số lần:</strong></p>
+<ul>
+<li><strong>once</strong> /wʌns/ [N=adv] = một lần: <em>I have been there </em><em>once</em><em>.</em></li>
+<li><strong>twice</strong> /twaɪs/ [N=adv] = hai lần: <em>I have called her </em><em>twice</em><em>.</em></li>
+<li>Từ <strong>ba lần trở lên</strong> → dùng <strong>số từ + times</strong>: <em>three </em><em>times</em><em>, four </em><em>times</em><em>...</em></li>
+</ul>
+<p><strong>"at a time" và "at times" — dễ nhầm vì viết gần giống nhau nhưng nghĩa khác hẳn:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Cụm</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>at a time</strong></td>
+<td>vào cùng một lúc, đồng thời (~simultaneously)</td>
+</tr>
+<tr>
+<td><strong>at times</strong></td>
+<td>có lúc, có khi, đôi khi (~sometimes, occasionally)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>She can only focus on one task </em><em>at a time</em><em>.</em> (chỉ tập trung được một việc trong cùng một lúc)<br />
+<em><strong>At times</strong>, I feel very tired.</em> (đôi khi, tôi cảm thấy rất mệt)</p>
+</blockquote>
+<hr /></div><div class="tab-panel" id="tab19"><h1>UNIT 20: Cách dùng OTHER, OTHERS, THE OTHER(S), ANOTHER</h1>
+<p>Nhóm từ "khác" trong tiếng Anh có <strong>4 dạng khác nhau</strong>, tùy vào việc N là số ít/số nhiều, và có/không có "the" — dễ nhầm lẫn nhất trong nhóm từ chỉ định. Bảng tổng quan trước khi đi vào chi tiết:</p>
+<table>
+<thead>
+<tr>
+<th>Từ</th>
+<th>Vai trò</th>
+<th>Dùng khi</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>other</strong></td>
+<td>[attr] — đứng trước N số nhiều</td>
+<td>N chưa xác định, còn nhiều lựa chọn khác ngoài cái đã nêu</td>
+<td>(những)...khác</td>
+</tr>
+<tr>
+<td><strong>others</strong></td>
+<td>[pron] số nhiều</td>
+<td>thay cho "other + N", N chưa xác định</td>
+<td>những người/vật khác</td>
+</tr>
+<tr>
+<td><strong>the other(s)</strong></td>
+<td>[pron]</td>
+<td>trong 2 sự vật, một cái đã nói tới, "cái còn lại" là <strong>the other</strong> (số ít) / <strong>the others</strong> (số nhiều)</td>
+<td>cái/những cái còn lại</td>
+</tr>
+<tr>
+<td><strong>another</strong></td>
+<td>[attr]/[pron] — đứng trước N số ít</td>
+<td>thêm một cái nữa, ngoài cái đã có/đã nhắc</td>
+<td>một... khác/nữa</td>
+</tr>
+</tbody>
+</table>
+<h2>1. OTHER [attr] — đứng trước danh từ số nhiều</h2>
+<p>Chỉ những sự vật/người <strong>khác</strong> (ngoài cái/những cái đã nêu), số lượng còn lại là <strong>chưa xác định</strong> (không rõ có bao nhiêu, không giới hạn):</p>
+<blockquote>
+<p><em>She became, in </em><em>other words</em><em>, a good wife.</em> (nói cách khác — cụm cố định rất hay dùng khi diễn giải lại một ý)<br />
+<strong><em>Other people</em></strong> đọc là "(những) người khác" — số lượng người khác này không xác định là bao nhiêu.</p>
+</blockquote>
+<p><strong>Cụm cố định "every other + N số ít"</strong> = cách N một lần (bỏ qua 1, rồi tới 1):</p>
+<blockquote>
+<p><em>I do yoga </em><em>every other day</em><em>.</em> (tôi tập yoga cách ngày một lần — hôm nay tập, ngày mai nghỉ, hôm sau tập lại)</p>
+</blockquote>
+<p><strong>So sánh với "every + số từ + N số nhiều"</strong> = cách N (số nhiều) một lần, với khoảng cách do số từ quy định:</p>
+<blockquote>
+<p><em>We take a coffee break </em><em>every 2 hours</em><em>.</em> (chúng tôi nghỉ giải lao uống cà phê cách 2 giờ một lần)</p>
+</blockquote>
+<h2>2. OTHERS [pron] — số nhiều, không xác định</h2>
+<p>Dùng độc lập, <strong>thay cho cụm "other + N"</strong> đã ngầm hiểu từ ngữ cảnh (không cần lặp lại danh từ):</p>
+<blockquote>
+<p><em>Some people dream of success, </em><em>while</em><em> others wake up and work hard.</em> (một số người [chỉ] mơ về thành công, trong khi những người khác thức dậy và làm việc chăm chỉ)</p>
+</blockquote>
+<h2>3. THE OTHER / THE OTHERS [pron] — có "the", chỉ phần còn lại đã xác định</h2>
+<p>Khác hẳn "other/others" ở trên: dùng khi biết rõ <strong>tổng số sự vật đang nói tới</strong> (thường là 2 nhóm), một phần đã được nhắc tới, phần <strong>còn lại</strong> (đã xác định rõ, không phải "khác" mơ hồ nữa) gọi là:</p>
+<ul>
+<li><strong>the other</strong> [số ít] — khi chỉ có 2 sự vật, 1 đã nói, còn lại 1.</li>
+<li><strong>the others</strong> [số nhiều] — khi phần còn lại có nhiều hơn 1.</li>
+</ul>
+<blockquote>
+<p><em>You take the new books, and I take </em><em>the others</em><em>.</em> (Bạn lấy những cuốn sách mới, tôi lấy [những cuốn] còn lại — "the others" ở đây vì phần còn lại có nhiều cuốn sách khác nhau, không phải "khác" theo nghĩa chung mà là "phần còn lại đã biết rõ")</p>
+</blockquote>
+<h2>4. ANOTHER [attr]/[pron] — đứng trước N số ít</h2>
+<p>Nghĩa là "một...khác/nữa", luôn đi với <strong>danh từ số ít</strong> (khác với "other" ở mục 1 luôn đi với N số nhiều):</p>
+<blockquote>
+<p><em>This cake is so delicious. Can I have </em><em>another</em><em>?</em> (Cái bánh này ngon quá. Cho tôi thêm một cái [khác/nữa] được không?)</p>
+</blockquote>
+<p><strong>Mẹo phân biệt nhanh "other" và "another":</strong> cả hai đều mang nghĩa "khác", nhưng <strong>other + N số nhiều</strong>, còn <strong>another + N số ít</strong>. Ghi nhớ: an + other = an + other → "an" chỉ đi với số ít, nên "another" tự động chỉ dùng cho số ít.</p>
+<hr /></div><div class="tab-panel" id="tab20"><h1>UNIT 21: Thì quá khứ đơn giản (Simple Past Tense)</h1>
+<h2>I. Các từ/cụm từ chỉ thời điểm trong quá khứ</h2>
+<p>Trước khi học cách chia động từ, cần nhận diện được <strong>dấu hiệu nhận biết</strong> thì quá khứ đơn trong câu — đó là các từ/cụm từ chỉ một thời điểm <strong>đã qua và xong hẳn</strong> trong quá khứ.</p>
+<table>
+<thead>
+<tr>
+<th>Từ/cụm từ</th>
+<th>Loại</th>
+<th>Nghĩa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>yesterday</strong> /ˈjestədeɪ/</td>
+<td>[N] / [adv]</td>
+<td>ngày hôm qua / vào ngày hôm qua</td>
+</tr>
+<tr>
+<td><strong>last</strong> /lɑːst/</td>
+<td>[adj]</td>
+<td>vừa mới qua, gần đây (last year = năm ngoái)</td>
+</tr>
+<tr>
+<td><strong>ago</strong> /əˈgəʊ/</td>
+<td>[N=adv]</td>
+<td>cách đây... (chỉ một thời điểm đã qua trong quá khứ)</td>
+</tr>
+<tr>
+<td><strong>that day / that time</strong></td>
+<td></td>
+<td>hôm đó / lần đó</td>
+</tr>
+<tr>
+<td><strong>one day</strong></td>
+<td></td>
+<td>có một hôm (nếu dùng ở câu quá khứ) <em>hoặc</em> rồi có một ngày (nếu dùng ở câu tương lai)</td>
+</tr>
+<tr>
+<td><strong>once</strong></td>
+<td>[N=adv]</td>
+<td>một lần; hoặc: có một thời (quá khứ)</td>
+</tr>
+<tr>
+<td><strong>just now</strong></td>
+<td>[adv]</td>
+<td>đúng lúc này (hiện tại) <em>hoặc</em> vừa mới xong (quá khứ) — tùy động từ đi cùng</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Chi tiết và ví dụ:</strong></p>
+<blockquote>
+<p><em>Yesterday morning/afternoon/evening.</em> (sáng/chiều/tối hôm qua)<br />
+<em>She was here </em><em>yesterday</em><em>.</em></p>
+</blockquote>
+<p>So sánh <strong>yesterday</strong> với các cụm chỉ hiện tại tương ứng (dễ nhầm vì cấu trúc gần giống):<br />
+- <em>this morning</em> = sáng nay (chỉ hiện tại, hoặc quá khứ gần nếu đã qua buổi sáng đó trong ngày)<br />
+- <em>this afternoon</em> = chiều nay</p>
+<blockquote>
+<p><em>3 </em><em>years ago</em><strong> (cách đây 3 năm) — <em>long, long **ago</em></strong> (đã lâu, rất lâu về trước — dùng để mở đầu truyện cổ tích, kiểu "ngày xưa, ngày xửa ngày xưa")</p>
+</blockquote>
+<p><strong>"one day" mang 2 nghĩa hoàn toàn khác tùy thời của câu:</strong></p>
+<blockquote>
+<p><em>One day, a fox met a crow.</em> (Có một hôm — kể chuyện quá khứ)<br />
+<em>One day, you will understand.</em> (Rồi sẽ có một ngày — nói về tương lai)</p>
+</blockquote>
+<p>Tương tự, <strong>"one morning..."</strong> = vào một buổi sáng nọ (mở đầu kể chuyện).</p>
+<p><strong>"once" cũng có nhiều nghĩa:</strong></p>
+<blockquote>
+<p><em>I have met her </em><em>once</em><em>.</em> (một lần — chỉ số lần, giống "one time")<br />
+<em><strong>Once</strong>, there was a poor woodcutter...</em> (ngày xưa, đã có một thời... — mở đầu truyện, ~long ago)</p>
+</blockquote>
+<p><strong>"just now" — nghĩa đổi hẳn theo thì của động từ đi cùng:</strong></p>
+<blockquote>
+<p><em>I am busy </em><em>just now</em><em>.</em> (Tôi đang bận ngay lúc này — thì hiện tại, "just now" = ngay bây giờ)<br />
+<em>She went out </em><em>just now</em><em>.</em> (Cô ấy vừa mới ra ngoài xong — thì quá khứ, "just now" = vừa mới xong)</p>
+</blockquote>
+<h2>II. Dạng thức (cách thêm "-ed")</h2>
+<p>Đa số động từ chia quá khứ đơn bằng cách <strong>thêm "-ed"</strong> vào sau động từ nguyên thể (động từ có quy tắc — regular verbs):</p>
+<blockquote>
+<p><em>work → worked</em></p>
+</blockquote>
+<h2>III. Cách đọc "-ed"</h2>
+<p>Việc đọc "-ed" tùy vào <strong>âm cuối cùng</strong> của động từ gốc — quy tắc này rất quan trọng để nói đúng, không đọc "-ed" giống nhau ở mọi từ.</p>
+<table>
+<thead>
+<tr>
+<th>TH</th>
+<th>Âm cuối động từ gốc</th>
+<th>"-ed" đọc là</th>
+<th>Ví dụ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>nguyên âm hoặc phụ âm <strong>hữu thanh</strong></td>
+<td><strong>/d/</strong></td>
+<td><em>live → lived</em> /lɪvd/</td>
+</tr>
+<tr>
+<td>2</td>
+<td>phụ âm <strong>vô thanh</strong></td>
+<td><strong>/t/</strong></td>
+<td><em>work → worked</em> /wɜːkt/</td>
+</tr>
+<tr>
+<td>3</td>
+<td>động từ gốc đã tận cùng bằng âm <strong>/t/ hoặc /d/</strong> (khi viết ra có dạng "-ted"/"-ded")</td>
+<td><strong>/ɪd/</strong></td>
+<td><em>decide → decided</em> /dɪˈsaɪdɪd/ ; <em>invite → invited</em> /ɪnˈvaɪtɪd/</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Mẹo nhớ nhanh:</strong> TH3 xảy ra vì nếu đọc "-ed" là /d/ hoặc /t/ ngay sau một âm /t/ hoặc /d/ đã có sẵn ở cuối từ gốc, sẽ rất khó phát âm liền 2 âm giống nhau — nên tiếng Anh thêm âm đệm /ɪ/ ở giữa để dễ đọc hơn.</p>
+<h2>IV. Động từ bất quy tắc (Irregular verbs)</h2>
+<p>Không phải mọi động từ đều thêm "-ed" — có <strong>hơn 600 động từ bất quy tắc</strong> trong tiếng Anh (trong đó khoảng <strong>250 động từ thường dùng</strong> trong giao tiếp hàng ngày), dạng quá khứ của chúng phải <strong>học thuộc riêng từng từ</strong>, không theo quy tắc nào cả:</p>
+<blockquote>
+<p><em>to come → came</em><br />
+<em>to buy → bought</em></p>
+</blockquote>
+<p>👉 Đây là phần bắt buộc phải học thuộc lòng theo bảng động từ bất quy tắc (không thể đoán hay suy luận ra).</p>
+<h2>V. Cách dùng thì quá khứ đơn</h2>
+<p>Thì quá khứ đơn dùng để chỉ <strong>hành động, sự việc đã xảy ra và kết thúc hoàn toàn</strong> trong quá khứ — <strong>không còn liên quan gì đến hiện tại</strong>.</p>
+<blockquote>
+<p><em>I lived in Hai Phong for 2 years.</em> (Tôi đã sống ở Hải Phòng 2 năm — nhưng bây giờ không còn sống ở đó nữa, việc này đã kết thúc hẳn)</p>
+</blockquote>
+<p><strong>Ghi chú quan trọng khi dịch sang tiếng Việt:</strong> vì thì quá khứ đơn trong tiếng Anh <strong>không có khái niệm "đã" cố định</strong> như tiếng Việt hay nghĩ, khi dịch nên dịch theo <strong>dạng thức của hành động</strong> (đã xong hẳn, chưa xảy ra, đang xảy ra, thường xuyên xảy ra...) tùy vào ngữ cảnh — <strong>không nên mặc định dịch là "đã"</strong> vì đôi khi sẽ nghe rất gượng:</p>
+<blockquote>
+<p><em>He promised to come and he did.</em> (Anh ấy đã hứa sẽ đến, và anh ấy đã đến. — ở đây "did" thay cho "came", dịch là "đã đến" nghe hợp lý)<br />
+<em>I lived in Hai Phong for 2 years.</em> → nên dịch là "Tôi <strong>từng/có</strong> sống ở Hải Phòng 2 năm" (nhấn vào việc đó là một khoảng thời gian đã trải qua trong quá khứ) thay vì dịch cứng nhắc "Tôi đã sống..." nghe kém tự nhiên hơn trong một số ngữ cảnh.</p>
+</blockquote></div>
   </main>
 </div>
 <script>
@@ -2236,14 +2491,6 @@ A: <em>I'll go there tomorrow.</em> B: </strong><em>What if</em><em> it rains?</
       window.scrollTo({top: 0, behavior: 'instant'});
       closeNav();
     });
-  });
-
-  window.addEventListener('load', () => {
-    const splash = document.getElementById('nox-splash');
-    setTimeout(() => {
-      splash.classList.add('hide');
-      setTimeout(() => splash.remove(), 600);
-    }, 500);
   });
 </script>
 </body>
