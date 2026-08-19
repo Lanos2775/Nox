@@ -22,10 +22,11 @@ function defaultState() {
       flashcard: [defaultList("Danh sách 1")],
       writing: [defaultList("Danh sách 1")],
       dictionary: [defaultList("Danh sách 1")],
+      listening: [defaultList("Danh sách 1")],
       diary: [defaultDiaryList("Nhật ký 1")],
     },
-    selected: { flashcard: [], writing: [] },
-    activeWhList: { flashcard: null, writing: null, dictionary: null, diary: null },
+    selected: { flashcard: [], writing: [], listening: [] },
+    activeWhList: { flashcard: null, writing: null, dictionary: null, listening: null, diary: null },
     reminder: {
       enabled: false, autoRead: false, desktopNotify: false, mobileNotify: { enabled: false },
       background: { enabled: false, cycles: 1, intervalMin: 5 },
@@ -46,11 +47,16 @@ function loadState() {
     // basic shape guard
     if (!parsed.categories) return defaultState();
     if (!parsed.selected) parsed.selected = { flashcard: [], writing: [] };
-    if (!parsed.activeWhList) parsed.activeWhList = { flashcard: null, writing: null, dictionary: null, diary: null };
+    if (!parsed.activeWhList) parsed.activeWhList = { flashcard: null, writing: null, dictionary: null, listening: null, diary: null };
     if (!parsed.categories.diary || !parsed.categories.diary.length) {
       parsed.categories.diary = [defaultDiaryList("Nhật ký 1")];
     }
     if (!("diary" in parsed.activeWhList)) parsed.activeWhList.diary = null;
+    if (!parsed.categories.listening || !parsed.categories.listening.length) {
+      parsed.categories.listening = [defaultList("Danh sách 1")];
+    }
+    if (!("listening" in parsed.activeWhList)) parsed.activeWhList.listening = null;
+    if (!parsed.selected.listening) parsed.selected.listening = [];
     if (!parsed.reminder) parsed.reminder = { enabled: false };
     // backfill createdAt for lists saved before this field existed, preserving
     // their existing relative order
@@ -474,11 +480,13 @@ function switchTab(tab) {
   tabContents.forEach((c) => c.classList.toggle("hidden", c.dataset.content !== tab));
   if (tab === "flashcard") renderFlashcardTab();
   if (tab === "writing") renderWritingTab();
+  if (tab === "listening") renderNgheTab();
   if (tab === "warehouse") renderWarehouseTab();
   mobilePanelExpanded = false;
   updateMobilePanelVisibility();
 }
 tabButtons.forEach((btn) => btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+document.getElementById("warehouse-quick-open").addEventListener("click", () => switchTab("warehouse"));
 
 /* ============================================================
    THEME TOGGLE
@@ -629,7 +637,7 @@ function pickerContext(cat) {
 
 function openListPicker(cat) {
   listPickerCat = cat;
-  const titles = { flashcard: "Thẻ", writing: "Viết", "quiz-flashcard": "Thẻ (Quizz)", "quiz-dictionary": "Từ điển (Quizz)" };
+  const titles = { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", "quiz-flashcard": "Thẻ (Quizz)", "quiz-dictionary": "Từ điển (Quizz)" };
   listPickerTitle.textContent = titles[cat] || cat;
   const ctx = pickerContext(cat);
   ctx.ensureDefault();
@@ -656,6 +664,7 @@ function renderListPickerBody() {
       renderListPickerBody();
       if (listPickerCat === "flashcard") renderFlashcardTab();
       if (listPickerCat === "writing") renderWritingTab();
+      if (listPickerCat === "listening") renderNgheTab();
       if (listPickerCat === "quiz-flashcard" || listPickerCat === "quiz-dictionary") updateQuizCountSliderMax();
     });
     listPickerBody.appendChild(row);
@@ -2194,6 +2203,476 @@ const qtWriting = createQuickTranslateBar("qt");
 const qtFlashcard = createQuickTranslateBar("qt2");
 
 /* ============================================================
+   TAB: NGHE (LISTENING)
+   ============================================================ */
+// Dán 1 đoạn hội thoại/đoạn văn -> tách thành từng dòng {speaker, text}.
+// Dòng dạng "A: nội dung" thì tách nhãn người nói ra riêng (không tính vào
+// phần chấm điểm/TTS đọc). Dòng thường (không có "Tên:") thì cả dòng là 1 câu.
+function parseListeningBlob(raw) {
+  const lines = [];
+  raw.split(/\n\s*\n/).forEach((block) => {
+    block.split("\n").forEach((rawLine) => {
+      const line = rawLine.trim();
+      if (!line) return;
+      const m = line.match(/^([^:]{1,24}):\s*(.+)$/);
+      if (m) lines.push({ speaker: m[1].trim(), text: m[2].trim() });
+      else lines.push({ speaker: "", text: line });
+    });
+  });
+  return lines;
+}
+
+// Levenshtein ở mức TỪ (không phải ký tự) — dùng để chấm nới lỏng cho Nghe.
+function wordLevenshtein(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+// Dung sai theo % SỐ TỪ sai vẫn tính đúng — nới lỏng hơn Viết (Viết chấm theo
+// từng ký tự) vì nghe vốn khó hơn đọc. Dễ ~20%, Trung bình ~15%, Khó gần như
+// phải khớp tuyệt đối (0% dung sai, chỉ bỏ qua khác biệt hoa/thường & dấu câu).
+const NGHE_TOLERANCE_PCT = { easy: 0.2, medium: 0.15, hard: 0 };
+function ngheWordTolerance(wordCount) {
+  if (nghe.difficulty === "hard") return 0;
+  return Math.max(1, Math.round(wordCount * NGHE_TOLERANCE_PCT[nghe.difficulty]));
+}
+function ngheGradeLine(typed, target) {
+  const typedWords = normalizeAnswer(typed).split(" ").filter((w) => w.length);
+  const targetWords = normalizeAnswer(target).split(" ").filter((w) => w.length);
+  const dist = wordLevenshtein(typedWords, targetWords);
+  const pct = targetWords.length ? Math.max(0, Math.round((1 - dist / targetWords.length) * 100)) : 100;
+  return { pct, correct: dist <= ngheWordTolerance(targetWords.length) };
+}
+
+// Điểm hệ số & giới hạn nghe lại theo độ khó — cùng thang điểm với Viết theo
+// yêu cầu người dùng (Dễ +5/-2, Trung bình +15/-6, Khó +35/-14).
+const NGHE_DIFFICULTY_GAIN = { easy: 5, medium: 15, hard: 35 };
+const NGHE_DIFFICULTY_PENALTY = { easy: 2, medium: 6, hard: 14 };
+const NGHE_REPLAY_LIMIT = { easy: Infinity, medium: 3, hard: 1 };
+const NGHE_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Trung bình", hard: "Độ khó: Khó" };
+const NGHE_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
+
+const nghe = {
+  currentItemId: null,
+  listenCount: 0, // số lần chủ động bấm nghe câu đang làm (dòng active), reset mỗi khi đổi dòng active
+  difficulty: state.settings.ngheDifficulty || "medium",
+  difficultyLocked: false,
+  historyIndex: null, // đang lướt lại lịch sử câu sai bằng phím ↑/↓ (null = không lướt)
+};
+
+function ngheItemById(id) {
+  for (const l of getCategory("listening")) {
+    const found = l.items.find((i) => i.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+function ngheCurrentItem() {
+  return nghe.currentItemId ? ngheItemById(nghe.currentItemId) : null;
+}
+function ngheCurrentItems() {
+  return itemsFromLists("listening", state.selected.listening);
+}
+
+// Đảm bảo item có cấu trúc tiến độ (progress) hợp lệ & khớp số dòng hiện tại —
+// progress được lưu trong item (qua saveState) nên sống sót qua reload trang.
+function ngheEnsureProgress(item) {
+  if (!item) return null;
+  const n = item.lines.length;
+  let p = item.progress;
+  if (!p || !Array.isArray(p.lineStates) || p.lineStates.length !== n) {
+    p = {
+      cursor: 0,
+      maxReached: 0,
+      lineStates: item.lines.map(() => ({ done: false, skipped: false, attempts: [] })),
+      itemHadMistake: false,
+    };
+    item.progress = p;
+  }
+  return p;
+}
+
+function renderNgheSidebar() {
+  const box = document.getElementById("nghe-item-list");
+  box.innerHTML = "";
+  const items = ngheCurrentItems();
+  items.forEach((it, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "nghe-item-btn" + (nghe.currentItemId === it.id ? " active" : "");
+    const dotClass = it.status === "known" ? "dot-known" : it.status === "difficult" ? "dot-difficult" : "dot-learning";
+    const label = it.title || (it.lines[0] ? it.lines[0].text.slice(0, 16) + (it.lines[0].text.length > 16 ? "…" : "") : "");
+    btn.innerHTML = `<span>${idx + 1}. ${escapeHtml(label)}</span><span class="dot ${dotClass}"></span>`;
+    btn.addEventListener("click", () => ngheSelectItem(it.id));
+    box.appendChild(btn);
+  });
+  if (!items.length) {
+    box.innerHTML = `<div class="wh-preview-empty">Chưa có bài nào — vào Kho &gt; Nghe để thêm.</div>`;
+  }
+}
+
+function ngheSelectItem(id) {
+  nghe.currentItemId = id;
+  nghe.listenCount = 0;
+  nghe.difficultyLocked = false;
+  nghe.historyIndex = null;
+  const item = ngheItemById(id);
+  ngheEnsureProgress(item);
+  renderNgheSidebar();
+  updateNgheDifficultyBtn();
+  document.getElementById("nghe-answer-input").value = "";
+  renderNgheChat();
+  nghePlayCurrentLine(true);
+}
+
+function renderNgheChat() {
+  const scroll = document.getElementById("nghe-chat-scroll");
+  const empty = document.getElementById("nghe-chat-empty");
+  const item = ngheCurrentItem();
+  const titleEl = document.getElementById("nghe-current-title");
+  const dotEl = document.getElementById("nghe-current-dot");
+  scroll.querySelectorAll(".nghe-bubble-row").forEach((el) => el.remove());
+
+  if (!item) {
+    empty.classList.remove("hidden");
+    titleEl.textContent = "Chọn 1 bài ở thanh bên trái";
+    dotEl.className = "status-dot";
+    return;
+  }
+  empty.classList.add("hidden");
+  const progress = ngheEnsureProgress(item);
+  const items = ngheCurrentItems();
+  const idx = items.findIndex((i) => i.id === item.id);
+  const preview = item.title || (item.lines[0] ? item.lines[0].text.slice(0, 40) + (item.lines[0].text.length > 40 ? "…" : "") : "");
+  titleEl.textContent = (idx + 1) + ". " + preview;
+  dotEl.className = "status-dot dot " + (item.status === "known" ? "dot-known" : item.status === "difficult" ? "dot-difficult" : "dot-learning");
+
+  const allDone = progress.lineStates.every((ls) => ls.done);
+
+  item.lines.forEach((line, i) => {
+    if (i > progress.maxReached) return;
+    const lineState = progress.lineStates[i];
+    const isActive = i === progress.cursor;
+    scroll.appendChild(ngheBuildLeftBubble(line, lineState, i, isActive));
+    lineState.attempts.forEach((att) => {
+      scroll.appendChild(ngheBuildRightBubble(att.text, att.pct, isActive && !lineState.done));
+    });
+  });
+
+  if (allDone) {
+    const done = document.createElement("div");
+    done.className = "nghe-bubble-row nghe-system-msg";
+    done.textContent = "🎉 Hoàn thành bài này! Chọn bài khác ở thanh bên trái để luyện tiếp.";
+    scroll.appendChild(done);
+  }
+
+  scroll.scrollTop = scroll.scrollHeight;
+}
+
+function ngheBuildLeftBubble(line, lineState, lineIdx, isActive) {
+  const row = document.createElement("div");
+  row.className = "nghe-bubble-row left";
+  const avatar = document.createElement("div");
+  avatar.className = "nghe-avatar";
+  avatar.textContent = line.speaker ? line.speaker[0].toUpperCase() : "🔊";
+  const bubble = document.createElement("button");
+  bubble.type = "button";
+  const revealed = lineState.done;
+  bubble.className = "nghe-bubble nghe-bubble-left" + (revealed ? "" : " unrevealed");
+  if (revealed) {
+    bubble.textContent = line.text;
+  } else {
+    bubble.innerHTML = `<span class="nghe-play-icon">▶</span><span class="nghe-wave"></span>`;
+    if (lineState.skipped) {
+      const skipBadge = document.createElement("span");
+      skipBadge.className = "nghe-skip-badge";
+      skipBadge.title = "Câu đã bỏ qua — bấm để quay lại làm";
+      skipBadge.textContent = "⏭";
+      bubble.appendChild(skipBadge);
+    }
+    if (isActive) {
+      const limit = NGHE_REPLAY_LIMIT[nghe.difficulty];
+      if (limit !== Infinity) {
+        const badge = document.createElement("span");
+        badge.className = "nghe-replay-badge";
+        badge.textContent = "còn " + Math.max(0, limit - nghe.listenCount);
+        bubble.appendChild(badge);
+      }
+    }
+  }
+  bubble.addEventListener("click", () => ngheAttemptPlay(lineIdx));
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  return row;
+}
+
+function ngheBuildRightBubble(text, pct, clickable) {
+  const row = document.createElement("div");
+  row.className = "nghe-bubble-row right";
+  const pctSpan = document.createElement("span");
+  pctSpan.className = "nghe-pct";
+  pctSpan.textContent = pct + "%";
+  const bubble = document.createElement("div");
+  bubble.className = "nghe-bubble nghe-bubble-right wrong" + (clickable ? " clickable" : "");
+  bubble.textContent = text;
+  if (clickable) {
+    bubble.title = "Nhấp để dán lại câu này vào ô nhập";
+    bubble.addEventListener("click", () => {
+      const input = document.getElementById("nghe-answer-input");
+      input.value = text;
+      input.focus();
+      nghe.historyIndex = null;
+    });
+  }
+  row.appendChild(pctSpan);
+  row.appendChild(bubble);
+  return row;
+}
+
+// Bấm vào 1 bong bóng bên trái: nếu đã lộ đáp án -> nghe lại thoải mái;
+// nếu là dòng đang active -> nghe câu hiện tại; nếu là dòng đã bỏ qua/chưa
+// làm khác -> nhảy tới đó để làm tiếp (chèn đúng vị trí trong hội thoại).
+function ngheAttemptPlay(lineIdx) {
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const progress = ngheEnsureProgress(item);
+  const lineState = progress.lineStates[lineIdx];
+  if (lineState.done) {
+    playAudio(item.lines[lineIdx].text, "en-US");
+    return;
+  }
+  if (lineIdx === progress.cursor) {
+    nghePlayCurrentLine(false);
+  } else {
+    ngheJumpToLine(lineIdx);
+  }
+}
+
+function ngheJumpToLine(lineIdx) {
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const progress = ngheEnsureProgress(item);
+  if (progress.lineStates[lineIdx].done) return;
+  progress.cursor = lineIdx;
+  nghe.listenCount = 0;
+  nghe.difficultyLocked = false;
+  nghe.historyIndex = null;
+  saveState();
+  document.getElementById("nghe-answer-input").value = "";
+  renderNgheChat();
+  updateNgheDifficultyBtn();
+  document.getElementById("nghe-answer-input").focus();
+  nghePlayCurrentLine(true);
+}
+
+function nghePlayCurrentLine(isAuto) {
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const progress = ngheEnsureProgress(item);
+  const cursor = progress.cursor;
+  if (progress.lineStates[cursor] && progress.lineStates[cursor].done) return;
+  const limit = NGHE_REPLAY_LIMIT[nghe.difficulty];
+  if (!isAuto) {
+    if (limit !== Infinity && nghe.listenCount >= limit) {
+      showToast("Đã hết lượt nghe lại cho câu này ở độ khó hiện tại.");
+      return;
+    }
+    nghe.listenCount++;
+    if (!nghe.difficultyLocked) {
+      nghe.difficultyLocked = true;
+      updateNgheDifficultyBtn();
+    }
+    renderNgheChat();
+  }
+  playAudio(item.lines[cursor].text, "en-US");
+}
+
+function ngheResolveLine(outcome) {
+  // outcome: "correct" | "revealed" | "skip"
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const progress = ngheEnsureProgress(item);
+  const idx = progress.cursor;
+  const lineState = progress.lineStates[idx];
+  if (!lineState || lineState.done) return;
+
+  if (outcome === "skip") {
+    lineState.skipped = true; // vẫn chưa xong — trung lập, không cộng/trừ điểm
+  } else {
+    lineState.done = true;
+    if (outcome === "revealed" || (outcome === "correct" && lineState.attempts.length)) progress.itemHadMistake = true;
+    if (outcome === "correct") {
+      logStudyAction("listening", true, NGHE_DIFFICULTY_GAIN[nghe.difficulty], NGHE_DIFFICULTY_PENALTY[nghe.difficulty]);
+    } else if (outcome === "revealed") {
+      logStudyAction("listening", false, NGHE_DIFFICULTY_GAIN[nghe.difficulty], NGHE_DIFFICULTY_PENALTY[nghe.difficulty]);
+    }
+  }
+
+  // Tìm dòng tiếp theo cần làm: ưu tiên các dòng phía sau chưa xong, hết thì
+  // vòng lại tìm dòng đã bỏ qua trước đó (để "quay lại đoạn bỏ qua").
+  let next = -1;
+  for (let i = idx + 1; i < item.lines.length; i++) {
+    if (!progress.lineStates[i].done) { next = i; break; }
+  }
+  if (next === -1) {
+    for (let i = 0; i < idx; i++) {
+      if (!progress.lineStates[i].done) { next = i; break; }
+    }
+  }
+
+  if (next === -1) {
+    item.status = progress.itemHadMistake ? "difficult" : "known";
+  } else {
+    progress.cursor = next;
+    if (next > progress.maxReached) progress.maxReached = next;
+  }
+
+  nghe.listenCount = 0;
+  nghe.difficultyLocked = false;
+  nghe.historyIndex = null;
+  saveState();
+  document.getElementById("nghe-answer-input").value = "";
+  renderNgheChat();
+  renderNgheSidebar();
+  updateNgheDifficultyBtn();
+  if (next !== -1) nghePlayCurrentLine(true);
+}
+
+function ngheSubmitAnswer() {
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const progress = ngheEnsureProgress(item);
+  const lineState = progress.lineStates[progress.cursor];
+  if (!lineState || lineState.done) return;
+  const input = document.getElementById("nghe-answer-input");
+  const typed = input.value.trim();
+  if (!typed) return;
+  if (!nghe.difficultyLocked) {
+    nghe.difficultyLocked = true;
+    updateNgheDifficultyBtn();
+  }
+  const target = item.lines[progress.cursor].text;
+  const { pct, correct } = ngheGradeLine(typed, target);
+  if (correct) {
+    ngheResolveLine("correct");
+  } else {
+    lineState.attempts.push({ text: typed, pct });
+    input.value = "";
+    nghe.historyIndex = null;
+    saveState();
+    renderNgheChat();
+  }
+}
+
+document.getElementById("nghe-answer-input").addEventListener("input", (e) => {
+  nghe.historyIndex = null;
+  if (e.target.value.length > 0 && !nghe.difficultyLocked) {
+    nghe.difficultyLocked = true;
+    updateNgheDifficultyBtn();
+  }
+});
+document.getElementById("nghe-answer-input").addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    nghePlayCurrentLine(false);
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    ngheSubmitAnswer();
+  } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+    const item = ngheCurrentItem();
+    if (!item) return;
+    const progress = ngheEnsureProgress(item);
+    const lineState = progress.lineStates[progress.cursor];
+    const atts = lineState ? lineState.attempts : [];
+    if (!atts.length) return;
+    e.preventDefault();
+    if (e.key === "ArrowUp") {
+      nghe.historyIndex = nghe.historyIndex === null ? atts.length - 1 : Math.max(0, nghe.historyIndex - 1);
+      e.target.value = atts[nghe.historyIndex].text;
+    } else {
+      if (nghe.historyIndex === null) return;
+      if (nghe.historyIndex < atts.length - 1) {
+        nghe.historyIndex++;
+        e.target.value = atts[nghe.historyIndex].text;
+      } else {
+        nghe.historyIndex = null;
+        e.target.value = "";
+      }
+    }
+  }
+});
+document.getElementById("nghe-show-answer-btn").addEventListener("click", () => {
+  if (!ngheCurrentItem()) return;
+  ngheResolveLine("revealed");
+});
+document.getElementById("nghe-skip-btn").addEventListener("click", () => {
+  if (!ngheCurrentItem()) return;
+  ngheResolveLine("skip");
+});
+document.getElementById("nghe-reset-progress-btn").addEventListener("click", async () => {
+  const item = ngheCurrentItem();
+  if (!item) return;
+  const ok = await showConfirm("Xoá toàn bộ lịch sử làm bài này (các câu đúng/sai đã lưu) và làm lại từ đầu?");
+  if (!ok) return;
+  item.progress = {
+    cursor: 0,
+    maxReached: 0,
+    lineStates: item.lines.map(() => ({ done: false, skipped: false, attempts: [] })),
+    itemHadMistake: false,
+  };
+  item.status = "new";
+  nghe.listenCount = 0;
+  nghe.difficultyLocked = false;
+  nghe.historyIndex = null;
+  saveState();
+  document.getElementById("nghe-answer-input").value = "";
+  renderNgheChat();
+  renderNgheSidebar();
+  updateNgheDifficultyBtn();
+  nghePlayCurrentLine(true);
+  showToast("Đã đặt lại bài này từ đầu.");
+});
+
+function updateNgheDifficultyBtn() {
+  const btn = document.getElementById("nghe-difficulty-toggle");
+  btn.textContent = NGHE_DIFFICULTY_LABELS[nghe.difficulty] + (nghe.difficultyLocked ? " 🔒" : "");
+  btn.classList.remove("difficulty-easy", "difficulty-medium", "difficulty-hard");
+  btn.classList.add("difficulty-" + nghe.difficulty);
+  btn.classList.toggle("locked", nghe.difficultyLocked);
+  btn.title = nghe.difficultyLocked
+    ? "Đã bắt đầu làm câu này — sang câu tiếp theo mới đổi được độ khó"
+    : "Bấm để đổi độ khó: Dễ → Trung bình → Khó";
+}
+document.getElementById("nghe-difficulty-toggle").addEventListener("click", () => {
+  if (nghe.difficultyLocked) {
+    showToast("Đã bắt đầu làm câu này — sang câu tiếp theo mới đổi được độ khó nhé.");
+    return;
+  }
+  nghe.difficulty = NGHE_DIFFICULTY_CYCLE[nghe.difficulty];
+  state.settings.ngheDifficulty = nghe.difficulty;
+  saveState();
+  updateNgheDifficultyBtn();
+});
+updateNgheDifficultyBtn();
+
+function renderNgheTab() {
+  ensureSelected("listening");
+  renderNgheSidebar();
+  renderNgheChat();
+}
+
+document.getElementById("nghe-choose-list").addEventListener("click", () => openListPicker("listening"));
+
+/* ============================================================
    TAB 3: QUIZZ
    ============================================================ */
 const quiz = {
@@ -2619,7 +3098,7 @@ document.addEventListener("keydown", (e) => {
 const wh = { cat: "flashcard" };
 
 function whCatLabel(cat) {
-  return { flashcard: "Thẻ", writing: "Viết", dictionary: "Từ điển", diary: "Nhật Ký", stats: "Thống kê" }[cat];
+  return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", diary: "Nhật Ký", stats: "Thống kê" }[cat];
 }
 
 document.querySelectorAll("[data-wh-cat]").forEach((btn) => {
@@ -2688,17 +3167,19 @@ function renderWarehouseTab() {
   });
 
   const isDiary = wh.cat === "diary";
+  const isListening = wh.cat === "listening";
   document.getElementById("wh-table-wrap").classList.toggle("compact-cols", wh.cat !== "dictionary");
-  document.getElementById("wh-table-wrap").classList.toggle("hidden", isDiary);
+  document.getElementById("wh-table-wrap").classList.toggle("hidden", isDiary || isListening);
   document.getElementById("wh-diary-preview").classList.toggle("hidden", !isDiary);
+  document.getElementById("wh-listening-view").classList.toggle("hidden", !isListening);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isDiary);
-  document.getElementById("wh-legend").classList.toggle("hidden", isDiary);
+  document.getElementById("wh-legend").classList.toggle("hidden", isDiary || isListening);
   document.getElementById("wh-reminder-toggle").classList.toggle("hidden", !canRemind);
   document.getElementById("wh-reminder-toggle").classList.toggle("active", state.reminder.enabled);
   document.getElementById("wh-reminder-read-toggle").classList.toggle("hidden", !canRemind);
   document.getElementById("wh-reminder-read-toggle").classList.toggle("active", state.reminder.autoRead);
 
-  if (!isDiary) {
+  if (!isDiary && !isListening) {
     const legendMap = {
       flashcard: ["Đang học", "Đã biết", "Khó"],
       writing: ["Chưa làm", "Làm đúng", "Làm sai"],
@@ -2713,6 +3194,8 @@ function renderWarehouseTab() {
   document.getElementById("wh-current-list-title").textContent = activeList ? activeList.name : "—";
   if (isDiary) {
     renderDiaryPreview();
+  } else if (isListening) {
+    renderWhListeningView();
   } else {
     renderWhTable();
   }
@@ -3028,6 +3511,14 @@ function whShowPreviewView() {
 document.getElementById("wh-add-items").addEventListener("click", () => {
   const list = whActiveList();
   if (!list) return;
+  if (wh.cat === "listening") {
+    whListeningEditingId = null;
+    document.getElementById("wh-listening-add-list-name").textContent = "— " + list.name;
+    document.getElementById("wh-listening-add-textarea").value = "";
+    whListeningShowInputView();
+    document.getElementById("wh-listening-add-overlay").classList.remove("hidden");
+    return;
+  }
   document.getElementById("wh-add-list-name").textContent = "— " + list.name;
   const textarea = document.getElementById("wh-add-textarea");
   textarea.value = "";
@@ -3134,6 +3625,160 @@ document.getElementById("wh-add-ok").addEventListener("click", () => {
   else showToast(`Đã thêm ${added} mục.`);
 });
 
+/* ---- Kho > Nghe: thêm/sửa 1 bài (nhiều dòng hội thoại) ---- */
+let whListeningPreviewLines = [];
+let whListeningEditingId = null; // null = đang thêm bài mới, có id = đang sửa bài cũ
+
+function whListeningShowInputView() {
+  document.getElementById("wh-listening-add-preview-view").classList.add("hidden");
+  document.getElementById("wh-listening-add-input-view").classList.remove("hidden");
+  updateWhListeningTitleRow();
+}
+function whListeningShowPreviewView() {
+  document.getElementById("wh-listening-add-input-view").classList.add("hidden");
+  document.getElementById("wh-listening-add-preview-view").classList.remove("hidden");
+  updateWhListeningTitleRow();
+}
+function renderWhListeningPreview() {
+  const box = document.getElementById("wh-listening-preview-list");
+  box.innerHTML = "";
+  document.getElementById("wh-listening-preview-hint").textContent =
+    `Xem trước ${whListeningPreviewLines.length} câu — có thể chỉnh sửa/xoá từng dòng rồi nhấn OK để lưu.`;
+  if (!whListeningPreviewLines.length) {
+    box.innerHTML = `<div class="wh-preview-empty">Không có dòng nào để xem trước.</div>`;
+    return;
+  }
+  whListeningPreviewLines.forEach((ln, idx) => {
+    const row = document.createElement("div");
+    row.className = "wh-preview-row nghe-preview-row";
+    row.innerHTML = `<input class="wh-preview-speaker" value="${escapeHtml(ln.speaker)}" placeholder="Tên (bỏ trống nếu không có)">
+       <textarea class="wh-preview-en">${escapeHtml(ln.text)}</textarea>
+       <button class="wh-preview-remove" title="Bỏ dòng này">🗑</button>`;
+    row.querySelector(".wh-preview-remove").addEventListener("click", () => {
+      whListeningPreviewLines.splice(idx, 1);
+      renderWhListeningPreview();
+    });
+    box.appendChild(row);
+  });
+}
+document.getElementById("wh-listening-add-close").addEventListener("click", () => {
+  document.getElementById("wh-listening-add-overlay").classList.add("hidden");
+  whListeningEditingId = null;
+});
+document.getElementById("wh-listening-add-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "wh-listening-add-overlay") {
+    document.getElementById("wh-listening-add-overlay").classList.add("hidden");
+    whListeningEditingId = null;
+  }
+});
+function updateWhListeningTitleRow() {
+  const row = document.getElementById("wh-listening-item-title-row");
+  const btn = document.getElementById("wh-listening-item-title-btn");
+  if (!whListeningEditingId) { row.classList.add("hidden"); return; }
+  const list = whActiveList();
+  const item = list && list.items.find((i) => i.id === whListeningEditingId);
+  if (!item) { row.classList.add("hidden"); return; }
+  const idx = list.items.findIndex((i) => i.id === item.id);
+  btn.textContent = item.title || ("Bài " + (idx + 1));
+  row.classList.remove("hidden");
+}
+document.getElementById("wh-listening-item-title-btn").addEventListener("click", async () => {
+  if (!whListeningEditingId) return;
+  const list = whActiveList();
+  const item = list && list.items.find((i) => i.id === whListeningEditingId);
+  if (!item) return;
+  const idx = list.items.findIndex((i) => i.id === item.id);
+  const name = await showPrompt("Đổi tên bài nghe", item.title || ("Bài " + (idx + 1)));
+  if (!name) return;
+  item.title = name.trim();
+  saveState();
+  updateWhListeningTitleRow();
+  renderWhListeningView();
+  if (typeof renderNgheSidebar === "function") renderNgheSidebar();
+  if (typeof renderNgheChat === "function") renderNgheChat();
+});
+document.getElementById("wh-listening-add-clear").addEventListener("click", () => {
+  document.getElementById("wh-listening-add-textarea").value = "";
+});
+document.getElementById("wh-listening-add-confirm").addEventListener("click", () => {
+  const raw = document.getElementById("wh-listening-add-textarea").value;
+  if (!raw.trim()) { showToast("Chưa có nội dung để chuyển."); return; }
+  whListeningPreviewLines = parseListeningBlob(raw);
+  if (!whListeningPreviewLines.length) { showToast("Không nhận diện được dòng nào."); return; }
+  renderWhListeningPreview();
+  whListeningShowPreviewView();
+});
+document.getElementById("wh-listening-add-back").addEventListener("click", whListeningShowInputView);
+document.getElementById("wh-listening-add-ok").addEventListener("click", () => {
+  const list = whActiveList();
+  if (!list) return;
+  const rows = document.querySelectorAll("#wh-listening-preview-list .nghe-preview-row");
+  const lines = [];
+  rows.forEach((row) => {
+    const speaker = row.querySelector(".wh-preview-speaker").value.trim();
+    const text = row.querySelector(".wh-preview-en").value.trim();
+    if (text) lines.push({ speaker, text });
+  });
+  if (!lines.length) { showToast("Không có câu hợp lệ nào để lưu."); return; }
+  if (whListeningEditingId) {
+    const item = list.items.find((i) => i.id === whListeningEditingId);
+    if (item) item.lines = lines;
+    whListeningEditingId = null;
+  } else {
+    list.items.push({ id: uid(), lines, status: "new", createdAt: Date.now() });
+  }
+  saveState();
+  document.getElementById("wh-listening-add-overlay").classList.add("hidden");
+  renderWhListeningView();
+  showToast(`Đã lưu bài (${lines.length} câu).`);
+});
+
+function openWhListeningEdit(itemId) {
+  const list = whActiveList();
+  const item = list.items.find((i) => i.id === itemId);
+  if (!item) return;
+  whListeningEditingId = itemId;
+  whListeningPreviewLines = item.lines.map((l) => ({ speaker: l.speaker, text: l.text }));
+  document.getElementById("wh-listening-add-list-name").textContent = "— " + list.name;
+  renderWhListeningPreview();
+  whListeningShowPreviewView();
+  document.getElementById("wh-listening-add-overlay").classList.remove("hidden");
+}
+
+function renderWhListeningView() {
+  const list = whActiveList();
+  const grid = document.getElementById("wh-listening-grid");
+  grid.innerHTML = "";
+  if (!list || !list.items.length) {
+    grid.innerHTML = `<div class="wh-preview-empty">Chưa có bài nào — bấm "Thêm vào" để dán bài hội thoại đầu tiên.</div>`;
+    return;
+  }
+  list.items.forEach((item, idx) => {
+    const card = document.createElement("div");
+    card.className = "nghe-wh-card";
+    const dotClass = item.status === "known" ? "dot-known" : item.status === "difficult" ? "dot-difficult" : "dot-learning";
+    const preview = item.lines[0] ? item.lines[0].text.slice(0, 60) : "";
+    const title = item.title || ("Bài " + (idx + 1));
+    card.innerHTML = `
+      <div class="nghe-wh-card-head">
+        <span class="dot ${dotClass}"></span>
+        <span class="nghe-wh-card-title">${escapeHtml(title)} — ${item.lines.length} câu</span>
+      </div>
+      <div class="nghe-wh-card-preview">${escapeHtml(preview)}${item.lines[0] && item.lines[0].text.length > 60 ? "…" : ""}</div>
+      <div class="nghe-wh-card-actions">
+        <button class="nghe-wh-card-delete" title="Xoá">🗑</button>
+      </div>`;
+    card.addEventListener("click", () => openWhListeningEdit(item.id));
+    card.querySelector(".nghe-wh-card-delete").addEventListener("click", (e) => {
+      e.stopPropagation();
+      list.items.splice(list.items.findIndex((i) => i.id === item.id), 1);
+      saveState();
+      renderWhListeningView();
+    });
+    grid.appendChild(card);
+  });
+}
+
 /* ---- Edit item modal ---- */
 const whEditOverlay = document.getElementById("wh-edit-overlay");
 let whEditItemId = null;
@@ -3222,7 +3867,15 @@ document.getElementById("wh-export-txt").addEventListener("click", () => {
   let txt = "";
   lists.forEach((l) => {
     txt += `# ${l.name}\n`;
-    l.items.forEach((i) => (txt += `${i.en} - ${i.vi}\n`));
+    if (wh.cat === "listening") {
+      l.items.forEach((it, idx) => {
+        txt += `## Bài ${idx + 1}\n`;
+        it.lines.forEach((ln) => (txt += ln.speaker ? `${ln.speaker}: ${ln.text}\n` : `${ln.text}\n`));
+        txt += "\n";
+      });
+    } else {
+      l.items.forEach((i) => (txt += `${i.en} - ${i.vi}\n`));
+    }
     txt += "\n";
   });
   download(`nox-${wh.cat}.txt`, txt, "text/plain");
@@ -3232,7 +3885,15 @@ document.getElementById("wh-export-copy").addEventListener("click", () => {
   let txt = "";
   lists.forEach((l) => {
     txt += `# ${l.name}\n`;
-    l.items.forEach((i) => (txt += `${i.en} - ${i.vi}\n`));
+    if (wh.cat === "listening") {
+      l.items.forEach((it, idx) => {
+        txt += `## Bài ${idx + 1}\n`;
+        it.lines.forEach((ln) => (txt += ln.speaker ? `${ln.speaker}: ${ln.text}\n` : `${ln.text}\n`));
+        txt += "\n";
+      });
+    } else {
+      l.items.forEach((i) => (txt += `${i.en} - ${i.vi}\n`));
+    }
     txt += "\n";
   });
   navigator.clipboard.writeText(txt).then(() => showToast("Đã sao chép vào clipboard!"));
@@ -3283,11 +3944,23 @@ document.getElementById("wh-import-file").addEventListener("change", (e) => {
         const lists = Array.isArray(data) ? data : [data];
         lists.forEach((l) => {
           const newList = defaultList(l.name || "Danh sách nhập");
-          (l.items || []).forEach((i) => newList.items.push({ id: uid(), en: i.en, vi: i.vi, status: "new" }));
+          (l.items || []).forEach((i) => {
+            if (wh.cat === "listening") {
+              if (Array.isArray(i.lines) && i.lines.length) {
+                newList.items.push({ id: uid(), lines: i.lines, status: "new", createdAt: Date.now() });
+              }
+            } else {
+              newList.items.push({ id: uid(), en: i.en, vi: i.vi, status: "new" });
+            }
+          });
           getCategory(wh.cat).push(newList);
           state.activeWhList[wh.cat] = newList.id;
           listsCreated++;
         });
+      } else if (wh.cat === "listening") {
+        showToast('Nghe chỉ nhập được file .json (xuất từ chính Nox) — dán trực tiếp bằng nút "Thêm vào" cho file .txt.');
+        e.target.value = "";
+        return;
       } else {
         const blocks = parseTxtIntoLists(reader.result);
         blocks.forEach((block) => {
@@ -4211,6 +4884,29 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.21",
+    changes: [
+      "Kho > Nghe: sửa lỗi giao diện popup Thêm/Sửa bài nghe bị tràn khung (ô dán văn bản nhỏ, nút Chuyển/OK bị đẩy khỏi màn hình)",
+      "Kho > Nghe: bỏ nút sửa riêng, giờ nhấp thẳng vào thẻ bài là mở popup sửa; thu nhỏ nút xoá",
+      "Kho > Nghe: thêm đổi tên từng bài — nhấp vào tên bài trong popup sửa để đặt tên riêng (thay vì luôn là \"Bài N\")",
+      "Nghe: không tự xoá các câu gõ sai khi sang câu tiếp theo nữa — giữ lại toàn bộ lịch sử đúng/sai của bài, chỉ mất khi bấm nút Đặt lại (⟲) cạnh Độ khó",
+      "Nghe: tiến độ làm bài (câu đã xong, câu đang làm, các lần gõ sai) được lưu lại — tắt/mở lại trang vẫn tiếp tục đúng chỗ đang học",
+      "Nghe: sửa nút Skip — bỏ qua không còn lộ đáp án ngay, câu bị bỏ qua vẫn ở dạng chưa nghe (có nhãn ⏭), nhấp lại vào là quay về làm tiếp đúng vị trí đó",
+      "Nghe: nhấp vào câu mình từng gõ sai (hoặc phím ↑/↓) để dán lại y nguyên câu đó vào ô nhập, tiện sửa tiếp",
+    ],
+  },
+  {
+    version: "2.20",
+    changes: [
+      "Thêm tab \"Nghe\" mới — luyện nghe chép chính tả kiểu chat hội thoại, dùng giọng đọc TTS có sẵn (không cần audio thật)",
+      "Kho: thêm category \"Nghe\" để dán đoạn hội thoại/đoạn văn, tự tách từng câu (nhận diện nhãn người nói dạng \"A: ...\")",
+      "Chấm điểm Nghe nới lỏng theo % số từ (không phải từng ký tự như Viết) — Dễ ~20% dung sai, Trung bình ~15%, Khó gần như tuyệt đối",
+      "Nghe có 3 độ khó Dễ/Trung bình/Khó riêng (không chung với Viết) — ảnh hưởng dung sai chấm điểm, số lần nghe lại mỗi câu (Dễ không giới hạn/Trung bình 3 lần/Khó 1 lần) và điểm Hệ số (+5/+15/+35), khoá đổi độ khó giữa chừng câu giống Viết",
+      "Header: nút 🔔 nhắc từ nhanh dời vào Cài đặt > Nhắc từ; vị trí đó giờ là nút 🗄️ mở nhanh Kho",
+      "Tab chính đổi thành Thẻ / Viết / Nghe / Quizz — Kho không còn nằm trong hàng tab nữa",
+    ],
+  },
+  {
     version: "2.19",
     changes: [
       "Fix bug độ khó Khó: sau vài từ tự dưng không hiện nữa dù gõ đúng — do đáp án bám theo (hỗ trợ nhiều đáp án) bị đổi giữa chừng khi gõ, giờ khoá cứng 1 đáp án ngay từ đầu câu",
@@ -4489,11 +5185,13 @@ function scheduleReminderAutoOn() {
 function setReminderEnabled(on) {
   state.reminder.enabled = on;
   saveState();
-  document.querySelectorAll("#wh-reminder-toggle, #quick-reminder-toggle").forEach((b) => b.classList.toggle("active", on));
+  document.getElementById("wh-reminder-toggle").classList.toggle("active", on);
+  const quickToggle = document.getElementById("settings-reminder-quick-toggle");
+  if (quickToggle) quickToggle.checked = on;
   if (on) {
     clearReminderAutoOnTimer();
     if (!reminderEligibleItems().length) {
-      showToast("Hãy bật nhắc từ (🔔) cho ít nhất một danh sách trong lưới bên trái trước.");
+      showToast("Hãy bật nhắc từ cho ít nhất một danh sách trong lưới bên trái trước.");
     }
     startReminderCycle();
     scheduleReminderAutoOff();
@@ -4506,8 +5204,8 @@ function setReminderEnabled(on) {
 function toggleGlobalReminder() {
   setReminderEnabled(!state.reminder.enabled);
 }
-document.getElementById("quick-reminder-toggle").addEventListener("click", toggleGlobalReminder);
-document.getElementById("quick-reminder-toggle").classList.toggle("active", state.reminder.enabled);
+document.getElementById("settings-reminder-quick-toggle").addEventListener("change", toggleGlobalReminder);
+document.getElementById("settings-reminder-quick-toggle").checked = state.reminder.enabled;
 
 /* ============================================================
    MOBILE — TỰ ẨN BẢNG ĐIỀU KHIỂN (trừ tab Quizz)

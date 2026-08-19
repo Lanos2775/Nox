@@ -44,7 +44,7 @@
       <h1 class="brand">Nox<span class="brand-momentum hidden" id="brand-momentum">0</span></h1>
       <div class="sidebar-header-right">
         <button class="diary-quick-btn" id="diary-quick-open" title="Nhật ký nhanh">📔</button>
-        <button class="bell-pill-btn" id="quick-reminder-toggle" title="Bật/tắt nhắc từ nhanh">🔔</button>
+        <button class="bell-pill-btn" id="warehouse-quick-open" title="Kho">🗄️</button>
         <button class="settings-gear-btn" id="settings-open" title="Cài đặt">⚙️</button>
       </div>
     </div>
@@ -52,8 +52,8 @@
     <nav class="main-tabs">
       <button class="main-tab-btn active" data-tab="flashcard">Thẻ</button>
       <button class="main-tab-btn" data-tab="writing">Viết</button>
+      <button class="main-tab-btn" data-tab="listening">Nghe</button>
       <button class="main-tab-btn" data-tab="quiz">Quizz</button>
-      <button class="main-tab-btn" data-tab="warehouse">Kho</button>
     </nav>
 
     <button class="mobile-panel-toggle hidden" id="mobile-panel-toggle">▾ Hiện tuỳ chọn</button>
@@ -112,6 +112,15 @@
         </div>
         <button class="block-btn" id="wr-reset-status">Đặt lại trạng thái</button>
         <button class="block-btn primary" id="wr-choose-list">Chọn danh sách</button>
+      </div>
+    </div>
+
+    <!-- ---- Sidebar: Listening (Nghe) ---- -->
+    <div class="sidebar-panel hidden" data-panel="listening">
+      <div class="panel-section">
+        <div class="section-label">Chọn bài</div>
+        <div class="nghe-item-list" id="nghe-item-list"></div>
+        <button class="block-btn primary" id="nghe-choose-list">Chọn danh sách</button>
       </div>
     </div>
 
@@ -204,6 +213,24 @@
 
   <!-- ============ MAIN CONTENT ============ -->
   <main class="main-content">
+
+    <!-- ---- Listening (Nghe) main: giao diện chat ---- -->
+    <section class="tab-content hidden" data-content="listening">
+      <div class="nghe-chat-header">
+        <span class="status-dot" id="nghe-current-dot"></span>
+        <span class="nghe-current-title" id="nghe-current-title">Chọn 1 bài ở thanh bên trái</span>
+        <button class="pill-btn-outline" id="nghe-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
+        <button class="nghe-reset-btn" id="nghe-reset-progress-btn" title="Xoá lịch sử làm bài này, làm lại từ đầu">⟲</button>
+      </div>
+      <div class="nghe-chat-scroll" id="nghe-chat-scroll">
+        <div class="nghe-chat-empty" id="nghe-chat-empty">Chọn 1 bài ở thanh bên trái để bắt đầu luyện nghe</div>
+      </div>
+      <div class="nghe-input-bar">
+        <input type="text" id="nghe-answer-input" class="nghe-answer-input" placeholder="Gõ câu bạn nghe được rồi Enter để gửi ...">
+        <button class="nghe-input-icon-btn" id="nghe-show-answer-btn" title="Xem đáp án (tính là sai)">?</button>
+        <button class="nghe-input-icon-btn" id="nghe-skip-btn" title="Bỏ qua câu này (trung lập, không cộng/trừ điểm)">Skip</button>
+      </div>
+    </section>
 
     <!-- ---- Flashcard main ---- -->
     <section class="tab-content" data-content="flashcard">
@@ -312,6 +339,7 @@
         <span class="wh-topbar-label">Kho</span>
         <button class="wh-cat-btn active" data-wh-cat="flashcard">Thẻ</button>
         <button class="wh-cat-btn" data-wh-cat="writing">Viết</button>
+        <button class="wh-cat-btn" data-wh-cat="listening">Nghe</button>
         <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
         <button class="wh-cat-btn" data-wh-cat="stats" id="wh-cat-stats-btn">Thống kê</button>
         <button class="wh-cat-btn" data-wh-cat="diary" id="wh-cat-diary-btn">Nhật Ký</button>
@@ -331,6 +359,10 @@
           <span></span>
         </div>
         <div class="wh-table" id="wh-table"></div>
+      </div>
+
+      <div class="wh-listening-view hidden" id="wh-listening-view">
+        <div class="wh-listening-grid" id="wh-listening-grid"></div>
       </div>
 
       <div class="wh-diary-preview hidden" id="wh-diary-preview">
@@ -403,6 +435,37 @@
       <div class="btn-row-2">
         <button class="pill-btn primary flex-1" id="wh-add-ok">OK — Thêm vào danh sách</button>
         <button class="pill-btn-outline flex-1" id="wh-add-back">← Quay lại</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: Thêm bài Nghe (Kho) ============ -->
+<div class="overlay hidden" id="wh-listening-add-overlay">
+  <div class="modal-panel wh-add-modal">
+    <div class="popup-header">
+      <span>Thêm bài nghe <span id="wh-listening-add-list-name"></span></span>
+      <button class="popup-close" id="wh-listening-add-close">✕</button>
+    </div>
+    <div class="wh-listening-title-row hidden" id="wh-listening-item-title-row">
+      <span>Tên bài:</span>
+      <button type="button" class="nghe-item-title-edit" id="wh-listening-item-title-btn" title="Nhấp để đổi tên bài nghe">Bài 1</button>
+    </div>
+
+    <div id="wh-listening-add-input-view">
+      <textarea class="modal-textarea" id="wh-listening-add-textarea" placeholder='Dán cả đoạn hội thoại vào đây, mỗi lượt thoại 1 dòng (cách nhau bằng dòng trống), dạng:&#10;&#10;A: Hi, I would like to know my credit balance.&#10;&#10;B: Of course. May I have your credit card number?&#10;&#10;Nếu bài chỉ có 1 người đọc (không phải hội thoại), mỗi dòng vẫn là 1 câu luyện riêng, không cần ghi tên trước dấu ":"'></textarea>
+      <div class="btn-row-2">
+        <button class="pill-btn primary flex-1" id="wh-listening-add-confirm">Chuyển</button>
+        <button class="pill-btn-outline flex-1" id="wh-listening-add-clear">Xóa</button>
+      </div>
+    </div>
+
+    <div id="wh-listening-add-preview-view" class="hidden">
+      <div class="wh-preview-hint" id="wh-listening-preview-hint">Xem trước — có thể chỉnh sửa từng câu trước khi thêm vào danh sách.</div>
+      <div class="wh-preview-list" id="wh-listening-preview-list"></div>
+      <div class="btn-row-2">
+        <button class="pill-btn primary flex-1" id="wh-listening-add-ok">OK — Thêm vào danh sách</button>
+        <button class="pill-btn-outline flex-1" id="wh-listening-add-back">← Quay lại</button>
       </div>
     </div>
   </div>
@@ -664,6 +727,10 @@
 
       <div class="settings-section">
         <div class="section-label">Nhắc từ</div>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-reminder-quick-toggle">
+          <span>Bật nhắc từ</span>
+        </label>
         <label class="settings-slider-row">
           <span>Popup hiện tối thiểu</span>
           <input type="range" id="settings-reminder-min-display" min="5" max="60" value="10">
