@@ -334,7 +334,7 @@
     </section>
 
     <!-- ---- Warehouse (Kho) main ---- -->
-    <section class="tab-content hidden" data-content="warehouse">
+    <section class="tab-content hidden wh-tab" data-content="warehouse">
       <div class="wh-topbar">
         <span class="wh-topbar-label">Kho</span>
         <button class="wh-cat-btn active" data-wh-cat="flashcard">Thẻ</button>
@@ -347,55 +347,59 @@
 
       <div class="wh-list-title" id="wh-current-list-title">Danh sách 1</div>
 
-      <div class="wh-table-wrap" id="wh-table-wrap">
-        <div class="wh-table-header" id="wh-table-header">
-          <span></span>
-          <span>Tiếng Anh</span>
-          <span class="wh-col-ipa">Phiên âm</span>
-          <span class="wh-col-pos">Loại từ</span>
-          <span></span>
-          <span>Tiếng Việt</span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="wh-table" id="wh-table"></div>
-      </div>
-
-      <div class="wh-listening-view hidden" id="wh-listening-view">
-        <div class="wh-listening-grid" id="wh-listening-grid"></div>
-      </div>
-
-      <div class="wh-diary-preview hidden" id="wh-diary-preview">
-        <div class="wh-diary-preview-content" id="wh-diary-preview-content"></div>
-        <button class="block-btn primary" id="wh-diary-open-editor">✎ Mở để viết</button>
-      </div>
-
-      <div class="wh-stats-view hidden" id="wh-stats-view">
-        <div class="wh-stats-chart-card">
-          <div class="wh-stats-chart-header">
-            <span>Hệ số</span>
-            <span class="wh-stats-momentum-val" id="wh-stats-momentum-val">0</span>
+      <div class="wh-scroll-area" id="wh-scroll-area">
+        <div class="wh-table-wrap" id="wh-table-wrap">
+          <div class="wh-table-header" id="wh-table-header">
+            <span></span>
+            <span>Tiếng Anh</span>
+            <span class="wh-col-ipa">Phiên âm</span>
+            <span class="wh-col-pos">Loại từ</span>
+            <span></span>
+            <span>Tiếng Việt</span>
+            <span></span>
+            <span></span>
           </div>
-          <div id="wh-stats-chart" class="wh-stats-chart"></div>
+          <div class="wh-table" id="wh-table"></div>
         </div>
-        <div class="wh-stats-snapshot" id="wh-stats-snapshot"></div>
+
+        <div class="wh-listening-view hidden" id="wh-listening-view">
+          <div class="wh-listening-grid" id="wh-listening-grid"></div>
+        </div>
+
+        <div class="wh-diary-preview hidden" id="wh-diary-preview">
+          <div class="wh-diary-preview-content" id="wh-diary-preview-content"></div>
+          <button class="block-btn primary" id="wh-diary-open-editor">✎ Mở để viết</button>
+        </div>
+
+        <div class="wh-stats-view hidden" id="wh-stats-view">
+          <div class="wh-stats-chart-card">
+            <div class="wh-stats-chart-header">
+              <span>Hệ số</span>
+              <span class="wh-stats-momentum-val" id="wh-stats-momentum-val">0</span>
+            </div>
+            <div id="wh-stats-chart" class="wh-stats-chart"></div>
+          </div>
+          <div class="wh-stats-snapshot" id="wh-stats-snapshot"></div>
+        </div>
       </div>
 
-      <div class="wh-toolbar" id="wh-toolbar">
-        <div class="wh-toolbar-right">
-          <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
-          <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
-          <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊 Đọc tự động</button>
-          <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
-          <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
-          <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
+      <div class="wh-bottom-bar" id="wh-bottom-bar">
+        <div class="wh-toolbar" id="wh-toolbar">
+          <div class="wh-toolbar-right">
+            <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊 Đọc tự động</button>
+            <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
+            <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
+            <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
+          </div>
         </div>
-      </div>
 
-      <div class="wh-legend" id="wh-legend">
-        <div class="legend-item"><span class="dot dot-learning"></span><span id="wh-legend-1">Đang học</span></div>
-        <div class="legend-item"><span class="dot dot-known"></span><span id="wh-legend-2">Đã biết</span></div>
-        <div class="legend-item"><span class="dot dot-difficult"></span><span id="wh-legend-3">Khó</span></div>
+        <div class="wh-legend" id="wh-legend">
+          <div class="legend-item"><span class="dot dot-learning"></span><span id="wh-legend-1">Đang học</span></div>
+          <div class="legend-item"><span class="dot dot-known"></span><span id="wh-legend-2">Đã biết</span></div>
+          <div class="legend-item"><span class="dot dot-difficult"></span><span id="wh-legend-3">Khó</span></div>
+        </div>
       </div>
     </section>
 
@@ -443,8 +447,8 @@
 <!-- ============ MODAL: Thêm bài Nghe (Kho) ============ -->
 <div class="overlay hidden" id="wh-listening-add-overlay">
   <div class="modal-panel wh-add-modal">
-    <div class="popup-header">
-      <span>Thêm bài nghe <span id="wh-listening-add-list-name"></span></span>
+    <div class="popup-header wh-listening-add-header">
+      <span class="hidden" id="wh-listening-add-list-name"></span>
       <button class="popup-close" id="wh-listening-add-close">✕</button>
     </div>
     <div class="wh-listening-title-row hidden" id="wh-listening-item-title-row">
@@ -461,7 +465,6 @@
     </div>
 
     <div id="wh-listening-add-preview-view" class="hidden">
-      <div class="wh-preview-hint" id="wh-listening-preview-hint">Xem trước — có thể chỉnh sửa từng câu trước khi thêm vào danh sách.</div>
       <div class="wh-preview-list" id="wh-listening-preview-list"></div>
       <div class="btn-row-2">
         <button class="pill-btn primary flex-1" id="wh-listening-add-ok">OK — Thêm vào danh sách</button>

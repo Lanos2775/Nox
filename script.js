@@ -2302,6 +2302,10 @@ function ngheEnsureProgress(item) {
   return p;
 }
 
+function ngheItemLabel(item, idx) {
+  return item.title || ("Bài " + (idx + 1));
+}
+
 function renderNgheSidebar() {
   const box = document.getElementById("nghe-item-list");
   box.innerHTML = "";
@@ -2310,8 +2314,7 @@ function renderNgheSidebar() {
     const btn = document.createElement("button");
     btn.className = "nghe-item-btn" + (nghe.currentItemId === it.id ? " active" : "");
     const dotClass = it.status === "known" ? "dot-known" : it.status === "difficult" ? "dot-difficult" : "dot-learning";
-    const label = it.title || (it.lines[0] ? it.lines[0].text.slice(0, 16) + (it.lines[0].text.length > 16 ? "…" : "") : "");
-    btn.innerHTML = `<span>${idx + 1}. ${escapeHtml(label)}</span><span class="dot ${dotClass}"></span>`;
+    btn.innerHTML = `<span>${idx + 1}. ${escapeHtml(ngheItemLabel(it, idx))}</span><span class="dot ${dotClass}"></span>`;
     btn.addEventListener("click", () => ngheSelectItem(it.id));
     box.appendChild(btn);
   });
@@ -2352,7 +2355,7 @@ function renderNgheChat() {
   const progress = ngheEnsureProgress(item);
   const items = ngheCurrentItems();
   const idx = items.findIndex((i) => i.id === item.id);
-  const preview = item.title || (item.lines[0] ? item.lines[0].text.slice(0, 40) + (item.lines[0].text.length > 40 ? "…" : "") : "");
+  const preview = ngheItemLabel(item, idx);
   titleEl.textContent = (idx + 1) + ". " + preview;
   dotEl.className = "status-dot dot " + (item.status === "known" ? "dot-known" : item.status === "difficult" ? "dot-difficult" : "dot-learning");
 
@@ -3125,12 +3128,18 @@ function renderWarehouseTab() {
   document.getElementById("wh-sidebar-list-section").classList.toggle("hidden", isStats);
   document.getElementById("wh-stats-sidebar-note").classList.toggle("hidden", !isStats);
   document.getElementById("wh-current-list-title").classList.toggle("hidden", isStats);
-  document.getElementById("wh-stats-view").classList.toggle("hidden", !isStats);
-  document.getElementById("wh-table-wrap").classList.toggle("hidden", isStats);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isStats);
   document.getElementById("wh-legend").classList.toggle("hidden", isStats);
+  document.getElementById("wh-bottom-bar").classList.toggle("hidden", isStats);
+  // Luôn ẩn hết các khung con trước — chỉ khung đúng với wh.cat hiện tại mới
+  // được hiện lại bên dưới. Tránh trường hợp 1 khung bị "kẹt" hiện ra khi
+  // chuyển cat (vd: bài Nghe bị chèn sang lúc xem Thống kê).
+  document.getElementById("wh-stats-view").classList.add("hidden");
+  document.getElementById("wh-table-wrap").classList.add("hidden");
+  document.getElementById("wh-diary-preview").classList.add("hidden");
+  document.getElementById("wh-listening-view").classList.add("hidden");
   if (isStats) {
-    document.getElementById("wh-diary-preview").classList.add("hidden");
+    document.getElementById("wh-stats-view").classList.remove("hidden");
     renderStatsTab();
     return;
   }
@@ -3174,6 +3183,7 @@ function renderWarehouseTab() {
   document.getElementById("wh-listening-view").classList.toggle("hidden", !isListening);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isDiary);
   document.getElementById("wh-legend").classList.toggle("hidden", isDiary || isListening);
+  document.getElementById("wh-bottom-bar").classList.toggle("hidden", isDiary);
   document.getElementById("wh-reminder-toggle").classList.toggle("hidden", !canRemind);
   document.getElementById("wh-reminder-toggle").classList.toggle("active", state.reminder.enabled);
   document.getElementById("wh-reminder-read-toggle").classList.toggle("hidden", !canRemind);
@@ -3642,8 +3652,6 @@ function whListeningShowPreviewView() {
 function renderWhListeningPreview() {
   const box = document.getElementById("wh-listening-preview-list");
   box.innerHTML = "";
-  document.getElementById("wh-listening-preview-hint").textContent =
-    `Xem trước ${whListeningPreviewLines.length} câu — có thể chỉnh sửa/xoá từng dòng rồi nhấn OK để lưu.`;
   if (!whListeningPreviewLines.length) {
     box.innerHTML = `<div class="wh-preview-empty">Không có dòng nào để xem trước.</div>`;
     return;
@@ -3746,6 +3754,9 @@ function openWhListeningEdit(itemId) {
 }
 
 function renderWhListeningView() {
+  // Chỉ vẽ khi đang thực sự ở Kho > Nghe — chặn trường hợp có nơi khác gọi
+  // nhầm hàm này lúc đang xem cat khác (vd Thống kê) khiến thẻ "Bài" bị chèn.
+  if (wh.cat !== "listening") return;
   const list = whActiveList();
   const grid = document.getElementById("wh-listening-grid");
   grid.innerHTML = "";
@@ -3757,14 +3768,12 @@ function renderWhListeningView() {
     const card = document.createElement("div");
     card.className = "nghe-wh-card";
     const dotClass = item.status === "known" ? "dot-known" : item.status === "difficult" ? "dot-difficult" : "dot-learning";
-    const preview = item.lines[0] ? item.lines[0].text.slice(0, 60) : "";
     const title = item.title || ("Bài " + (idx + 1));
     card.innerHTML = `
       <div class="nghe-wh-card-head">
         <span class="dot ${dotClass}"></span>
         <span class="nghe-wh-card-title">${escapeHtml(title)} — ${item.lines.length} câu</span>
       </div>
-      <div class="nghe-wh-card-preview">${escapeHtml(preview)}${item.lines[0] && item.lines[0].text.length > 60 ? "…" : ""}</div>
       <div class="nghe-wh-card-actions">
         <button class="nghe-wh-card-delete" title="Xoá">🗑</button>
       </div>`;
@@ -4883,6 +4892,16 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.22",
+    changes: [
+      "Nghe: sửa lỗi khung chat khi nhắn nhiều bị kéo dài ra thay vì cuộn — giờ khung có chiều cao cố định theo màn hình, chỉ phần tin nhắn cuộn, thanh nhập câu luôn cố định phía dưới",
+      "Nghe: sidebar chọn bài & tiêu đề giờ lấy đúng tên bài đã đặt trong Kho (\"Bài N\" hoặc tên tuỳ chỉnh), không còn lấy câu đầu tiên làm tên nữa",
+      "Kho > Nghe: bỏ dòng chữ \"Thêm bài nghe — Danh sách...\" và \"Xem trước N câu...\" trong popup, bỏ luôn dòng xem trước câu đầu ở thẻ bài trong lưới",
+      "Kho: toàn bộ nội dung danh sách/thẻ giờ cuộn riêng bên trong khung cố định theo màn hình, khu vực nút Xoá hết / Tiến độ / Đặt lại / Thêm vào và chú thích màu luôn cố định ở đáy khung, không bị trôi theo danh sách dài",
+      "Sửa lỗi khi chuyển sang tab Thống kê, các thẻ bài của Nghe bị chèn/hiện lẫn vào giao diện (ẩn cứng toàn bộ khung con trước khi vẽ lại đúng khung của mục đang chọn)",
+    ],
+  },
   {
     version: "2.21",
     changes: [
