@@ -475,6 +475,7 @@ const sidebarPanels = document.querySelectorAll(".sidebar-panel");
 const tabContents = document.querySelectorAll(".tab-content");
 
 function switchTab(tab) {
+  if (typeof ngheStopFullPlay === "function") ngheStopFullPlay();
   tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
   sidebarPanels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== tab));
   tabContents.forEach((c) => c.classList.toggle("hidden", c.dataset.content !== tab));
@@ -1982,6 +1983,97 @@ function playAudio(word, lang = "en-US") {
   return utterance;
 }
 
+/* ---- Chọn giọng đọc khác nhau cho từng người nói trong hội thoại (Nghe),
+   để nghe giống 1 cuộc trò chuyện thật hơn là 1 giọng đọc đều đều ---- */
+let ngheCachedVoices = [];
+function ngheLoadVoices() {
+  if (typeof speechSynthesis === "undefined") return;
+  ngheCachedVoices = speechSynthesis.getVoices() || [];
+}
+if (typeof speechSynthesis !== "undefined") {
+  ngheLoadVoices();
+  speechSynthesis.onvoiceschanged = ngheLoadVoices;
+}
+function ngheGetEnglishVoices() {
+  if (!ngheCachedVoices.length) ngheLoadVoices();
+  const en = ngheCachedVoices.filter((v) => v.lang && v.lang.toLowerCase().startsWith("en"));
+  return en.length ? en : ngheCachedVoices;
+}
+const ngheSpeakerVoiceAssign = {};
+let ngheVoiceAssignCount = 0;
+function ngheGetVoiceForSpeaker(speaker) {
+  const voices = ngheGetEnglishVoices();
+  if (!voices.length) return null;
+  const key = (speaker || "").trim().toLowerCase() || "_default";
+  if (!(key in ngheSpeakerVoiceAssign)) {
+    ngheSpeakerVoiceAssign[key] = ngheVoiceAssignCount % voices.length;
+    ngheVoiceAssignCount++;
+  }
+  return voices[ngheSpeakerVoiceAssign[key]];
+}
+// Sinh 1 số 0..1 ổn định theo tên người nói — dùng để lệch nhẹ tốc độ/cao độ
+// giữa các nhân vật, cho cảm giác nhấn nhá tự nhiên hơn thay vì đều một tông.
+function ngheSpeakerSeed(speaker) {
+  const s = (speaker || "").trim();
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
+  return (h % 100) / 100;
+}
+
+let ngheFullPlayToken = null;
+function ngheStopFullPlay() {
+  if (!ngheFullPlayToken) return;
+  ngheFullPlayToken = null;
+  speechSynthesis.cancel();
+  const btn = document.getElementById("nghe-play-all-btn");
+  if (btn) { btn.textContent = "▶"; btn.classList.remove("playing"); }
+}
+function ngheToggleFullPlay() {
+  const item = ngheCurrentItem();
+  if (!item || !item.lines.length) return;
+  const btn = document.getElementById("nghe-play-all-btn");
+  if (ngheFullPlayToken) {
+    ngheStopFullPlay();
+    return;
+  }
+  const token = {};
+  ngheFullPlayToken = token;
+  btn.textContent = "⏹";
+  btn.classList.add("playing");
+  ngheSpeakLinesSequentially(item.lines, 0, token, () => {
+    if (ngheFullPlayToken === token) {
+      ngheFullPlayToken = null;
+      btn.textContent = "▶";
+      btn.classList.remove("playing");
+    }
+  });
+}
+function ngheSpeakLinesSequentially(lines, idx, token, onDone) {
+  if (ngheFullPlayToken !== token || idx >= lines.length) {
+    onDone();
+    return;
+  }
+  const line = lines[idx];
+  const utter = new SpeechSynthesisUtterance(line.text);
+  utter.lang = "en-US";
+  const voice = ngheGetVoiceForSpeaker(line.speaker);
+  if (voice) utter.voice = voice;
+  const seed = ngheSpeakerSeed(line.speaker);
+  utter.rate = 0.92 + seed * 0.1;   // ~0.92–1.02, mỗi người nói 1 tốc độ hơi khác
+  utter.pitch = 0.9 + seed * 0.25;  // ~0.9–1.15, mỗi người nói 1 cao độ hơi khác
+  const vol = (state.settings && typeof state.settings.ttsVolume === "number" ? state.settings.ttsVolume : 100) / 100;
+  utter.volume = Math.min(1, Math.max(0, vol));
+  const next = () => {
+    if (ngheFullPlayToken !== token) { onDone(); return; }
+    const pause = 420 + Math.random() * 260; // khoảng nghỉ giữa các lượt thoại, giống hội thoại thật
+    setTimeout(() => ngheSpeakLinesSequentially(lines, idx + 1, token, onDone), pause);
+  };
+  utter.onend = next;
+  utter.onerror = next;
+  speechSynthesis.speak(utter);
+}
+document.getElementById("nghe-play-all-btn").addEventListener("click", ngheToggleFullPlay);
+
 const VI_DIACRITIC_REGEX = /[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
 function detectIsVietnamese(text) {
   return VI_DIACRITIC_REGEX.test(text || "");
@@ -2324,6 +2416,7 @@ function renderNgheSidebar() {
 }
 
 function ngheSelectItem(id) {
+  ngheStopFullPlay();
   nghe.currentItemId = id;
   nghe.listenCount = 0;
   nghe.difficultyLocked = false;
@@ -2334,7 +2427,7 @@ function ngheSelectItem(id) {
   updateNgheDifficultyBtn();
   document.getElementById("nghe-answer-input").value = "";
   renderNgheChat();
-  nghePlayCurrentLine(true);
+  // Không tự động đọc khi vừa chuyển sang bài khác — người học tự bấm nghe.
 }
 
 function renderNgheChat() {
@@ -2450,6 +2543,7 @@ function ngheAttemptPlay(lineIdx) {
   const progress = ngheEnsureProgress(item);
   const lineState = progress.lineStates[lineIdx];
   if (lineState.done) {
+    ngheStopFullPlay();
     playAudio(item.lines[lineIdx].text, "en-US");
     return;
   }
@@ -2480,6 +2574,7 @@ function ngheJumpToLine(lineIdx) {
 function nghePlayCurrentLine(isAuto) {
   const item = ngheCurrentItem();
   if (!item) return;
+  ngheStopFullPlay();
   const progress = ngheEnsureProgress(item);
   const cursor = progress.cursor;
   if (progress.lineStates[cursor] && progress.lineStates[cursor].done) return;
@@ -4892,6 +4987,15 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.23",
+    changes: [
+      "Nghe: thêm nút ▶ cạnh tên bài / độ khó để đọc toàn bộ đoạn hội thoại một lượt",
+      "Nghe: tắt tự động đọc khi vừa chuyển sang bài khác — chỉ đọc khi tự bấm",
+      "Nghe: mỗi người nói trong hội thoại giờ dùng 1 giọng đọc riêng (nếu máy có nhiều giọng tiếng Anh), có lệch nhẹ tốc độ/cao độ và khoảng nghỉ giữa các lượt thoại để nghe tự nhiên hơn",
+      "Kho > Nghe: đổi vị trí 2 nút trong popup thêm bài (nút phụ sang trái, nút chính sang phải), rút gọn nút xác nhận chỉ còn chữ \"OK\"",
+    ],
+  },
   {
     version: "2.22",
     changes: [

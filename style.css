@@ -1426,6 +1426,8 @@ button{touch-action:manipulation;}
   display:flex;align-items:center;justify-content:center;
 }
 .nghe-reset-btn:hover{background:var(--accent-soft);color:var(--text);transform:rotate(-40deg);}
+#nghe-play-all-btn:hover{transform:none;background:var(--accent-soft);color:var(--text);}
+#nghe-play-all-btn.playing{background:var(--accent);color:var(--accent-text);border-color:var(--accent);}
 
 /* ---- Kho > Nghe: lưới thẻ từng bài ---- */
 .wh-listening-view{

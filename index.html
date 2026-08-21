@@ -219,6 +219,7 @@
       <div class="nghe-chat-header">
         <span class="status-dot" id="nghe-current-dot"></span>
         <span class="nghe-current-title" id="nghe-current-title">Chọn 1 bài ở thanh bên trái</span>
+        <button class="nghe-reset-btn" id="nghe-play-all-btn" title="Đọc toàn bộ đoạn hội thoại">▶</button>
         <button class="pill-btn-outline" id="nghe-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
         <button class="nghe-reset-btn" id="nghe-reset-progress-btn" title="Xoá lịch sử làm bài này, làm lại từ đầu">⟲</button>
       </div>
@@ -459,16 +460,16 @@
     <div id="wh-listening-add-input-view">
       <textarea class="modal-textarea" id="wh-listening-add-textarea" placeholder='Dán cả đoạn hội thoại vào đây, mỗi lượt thoại 1 dòng (cách nhau bằng dòng trống), dạng:&#10;&#10;A: Hi, I would like to know my credit balance.&#10;&#10;B: Of course. May I have your credit card number?&#10;&#10;Nếu bài chỉ có 1 người đọc (không phải hội thoại), mỗi dòng vẫn là 1 câu luyện riêng, không cần ghi tên trước dấu ":"'></textarea>
       <div class="btn-row-2">
-        <button class="pill-btn primary flex-1" id="wh-listening-add-confirm">Chuyển</button>
         <button class="pill-btn-outline flex-1" id="wh-listening-add-clear">Xóa</button>
+        <button class="pill-btn primary flex-1" id="wh-listening-add-confirm">Chuyển</button>
       </div>
     </div>
 
     <div id="wh-listening-add-preview-view" class="hidden">
       <div class="wh-preview-list" id="wh-listening-preview-list"></div>
       <div class="btn-row-2">
-        <button class="pill-btn primary flex-1" id="wh-listening-add-ok">OK — Thêm vào danh sách</button>
         <button class="pill-btn-outline flex-1" id="wh-listening-add-back">← Quay lại</button>
+        <button class="pill-btn primary flex-1" id="wh-listening-add-ok">OK</button>
       </div>
     </div>
   </div>
