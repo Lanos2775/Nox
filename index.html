@@ -220,6 +220,7 @@
         <span class="status-dot" id="nghe-current-dot"></span>
         <span class="nghe-current-title" id="nghe-current-title">Chọn 1 bài ở thanh bên trái</span>
         <button class="nghe-reset-btn" id="nghe-play-all-btn" title="Đọc toàn bộ đoạn hội thoại">▶</button>
+        <button class="nghe-reset-btn" id="nghe-voice-settings-btn" title="Chọn giọng đọc">🎙</button>
         <button class="pill-btn-outline" id="nghe-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
         <button class="nghe-reset-btn" id="nghe-reset-progress-btn" title="Xoá lịch sử làm bài này, làm lại từ đầu">⟲</button>
       </div>
@@ -509,6 +510,20 @@
     <label class="radio-row"><input type="radio" name="wh-export-scope" value="current"> Chỉ danh sách đang được mở</label>
     <input type="file" id="wh-import-file" accept=".json,.txt" style="display:none;">
     <button class="block-btn" id="wh-import-btn" style="margin-top:12px;">Tải File lên</button>
+  </div>
+</div>
+
+<!-- ============ MODAL: Chọn giọng đọc (Nghe) ============ -->
+<div class="overlay hidden" id="nghe-voice-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Giọng đọc</span>
+      <button class="popup-close" id="nghe-voice-close">✕</button>
+    </div>
+    <label class="radio-row"><input type="radio" name="nghe-voice-mode" value="multi" id="nghe-voice-mode-multi"> Nhiều giọng đọc — mỗi người nói 1 giọng khác nhau</label>
+    <label class="radio-row"><input type="radio" name="nghe-voice-mode" value="single" id="nghe-voice-mode-single"> 1 giọng đọc cho tất cả</label>
+    <select class="text-input" id="nghe-voice-select" style="margin-top:10px;"></select>
+    <p class="wh-preview-empty" id="nghe-voice-empty-note" style="margin-top:8px;">Không tìm thấy giọng tiếng Anh nào trên thiết bị này.</p>
   </div>
 </div>
 

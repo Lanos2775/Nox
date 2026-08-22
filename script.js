@@ -33,7 +33,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium" },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "" },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     bubblePos: null,
   };
@@ -2019,6 +2019,43 @@ function ngheSpeakerSeed(speaker) {
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 997;
   return (h % 100) / 100;
 }
+// Chọn giọng đọc theo cài đặt hiện tại: "single" = luôn dùng 1 giọng người dùng
+// chọn sẵn; "multi" (mặc định) = mỗi người nói trong hội thoại 1 giọng riêng.
+function ngheVoiceMode() {
+  return (state.settings && state.settings.ngheVoiceMode) || "multi";
+}
+function ngheResolveVoice(speaker) {
+  const voices = ngheGetEnglishVoices();
+  if (!voices.length) return null;
+  if (ngheVoiceMode() === "single") {
+    const uri = state.settings && state.settings.ngheSingleVoiceURI;
+    const found = uri && voices.find((v) => v.voiceURI === uri);
+    return found || voices[0];
+  }
+  return ngheGetVoiceForSpeaker(speaker);
+}
+// Đọc 1 câu duy nhất (dùng khi luyện từng câu) — vẫn áp dụng đúng giọng/tông
+// theo người nói & cài đặt giọng đọc, giống hệt lúc bấm "đọc toàn bộ".
+function ngheSpeakLine(text, speaker) {
+  const w = (text || "").trim();
+  if (!w) return;
+  const utter = new SpeechSynthesisUtterance(w);
+  utter.lang = "en-US";
+  const voice = ngheResolveVoice(speaker);
+  if (voice) utter.voice = voice;
+  if (ngheVoiceMode() === "single") {
+    utter.rate = 0.95;
+    utter.pitch = 1;
+  } else {
+    const seed = ngheSpeakerSeed(speaker);
+    utter.rate = 0.92 + seed * 0.1;
+    utter.pitch = 0.9 + seed * 0.25;
+  }
+  const vol = (state.settings && typeof state.settings.ttsVolume === "number" ? state.settings.ttsVolume : 100) / 100;
+  utter.volume = Math.min(1, Math.max(0, vol));
+  speechSynthesis.speak(utter);
+  return utter;
+}
 
 let ngheFullPlayToken = null;
 function ngheStopFullPlay() {
@@ -2056,11 +2093,16 @@ function ngheSpeakLinesSequentially(lines, idx, token, onDone) {
   const line = lines[idx];
   const utter = new SpeechSynthesisUtterance(line.text);
   utter.lang = "en-US";
-  const voice = ngheGetVoiceForSpeaker(line.speaker);
+  const voice = ngheResolveVoice(line.speaker);
   if (voice) utter.voice = voice;
-  const seed = ngheSpeakerSeed(line.speaker);
-  utter.rate = 0.92 + seed * 0.1;   // ~0.92–1.02, mỗi người nói 1 tốc độ hơi khác
-  utter.pitch = 0.9 + seed * 0.25;  // ~0.9–1.15, mỗi người nói 1 cao độ hơi khác
+  if (ngheVoiceMode() === "single") {
+    utter.rate = 0.95;
+    utter.pitch = 1;
+  } else {
+    const seed = ngheSpeakerSeed(line.speaker);
+    utter.rate = 0.92 + seed * 0.1;   // ~0.92–1.02, mỗi người nói 1 tốc độ hơi khác
+    utter.pitch = 0.9 + seed * 0.25;  // ~0.9–1.15, mỗi người nói 1 cao độ hơi khác
+  }
   const vol = (state.settings && typeof state.settings.ttsVolume === "number" ? state.settings.ttsVolume : 100) / 100;
   utter.volume = Math.min(1, Math.max(0, vol));
   const next = () => {
@@ -2073,6 +2115,54 @@ function ngheSpeakLinesSequentially(lines, idx, token, onDone) {
   speechSynthesis.speak(utter);
 }
 document.getElementById("nghe-play-all-btn").addEventListener("click", ngheToggleFullPlay);
+
+/* ---- Popup chọn giọng đọc (1 giọng cho tất cả / mỗi người nói 1 giọng) ---- */
+function ngheOpenVoiceOverlay() {
+  ngheLoadVoices();
+  const mode = ngheVoiceMode();
+  document.getElementById("nghe-voice-mode-multi").checked = mode === "multi";
+  document.getElementById("nghe-voice-mode-single").checked = mode === "single";
+  const select = document.getElementById("nghe-voice-select");
+  const voices = ngheGetEnglishVoices();
+  const emptyNote = document.getElementById("nghe-voice-empty-note");
+  select.innerHTML = "";
+  if (!voices.length) {
+    emptyNote.classList.remove("hidden");
+    select.classList.add("hidden");
+  } else {
+    emptyNote.classList.add("hidden");
+    select.classList.remove("hidden");
+    voices.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.voiceURI;
+      opt.textContent = v.name + (v.lang ? ` (${v.lang})` : "");
+      select.appendChild(opt);
+    });
+    const savedUri = state.settings && state.settings.ngheSingleVoiceURI;
+    if (savedUri && voices.some((v) => v.voiceURI === savedUri)) select.value = savedUri;
+  }
+  select.disabled = mode !== "single";
+  document.getElementById("nghe-voice-overlay").classList.remove("hidden");
+}
+document.getElementById("nghe-voice-settings-btn").addEventListener("click", ngheOpenVoiceOverlay);
+document.getElementById("nghe-voice-close").addEventListener("click", () => {
+  document.getElementById("nghe-voice-overlay").classList.add("hidden");
+});
+document.getElementById("nghe-voice-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "nghe-voice-overlay") document.getElementById("nghe-voice-overlay").classList.add("hidden");
+});
+[document.getElementById("nghe-voice-mode-multi"), document.getElementById("nghe-voice-mode-single")].forEach((radio) => {
+  radio.addEventListener("change", () => {
+    const mode = document.getElementById("nghe-voice-mode-single").checked ? "single" : "multi";
+    state.settings.ngheVoiceMode = mode;
+    document.getElementById("nghe-voice-select").disabled = mode !== "single";
+    saveState();
+  });
+});
+document.getElementById("nghe-voice-select").addEventListener("change", (e) => {
+  state.settings.ngheSingleVoiceURI = e.target.value;
+  saveState();
+});
 
 const VI_DIACRITIC_REGEX = /[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
 function detectIsVietnamese(text) {
@@ -2458,9 +2548,9 @@ function renderNgheChat() {
     if (i > progress.maxReached) return;
     const lineState = progress.lineStates[i];
     const isActive = i === progress.cursor;
-    scroll.appendChild(ngheBuildLeftBubble(line, lineState, i, isActive));
+    scroll.appendChild(ngheBuildLeftBubble(line, lineState, i, isActive, item));
     lineState.attempts.forEach((att) => {
-      scroll.appendChild(ngheBuildRightBubble(att.text, att.pct, isActive && !lineState.done));
+      scroll.appendChild(ngheBuildRightBubble(att, isActive && !lineState.done));
     });
   });
 
@@ -2474,12 +2564,14 @@ function renderNgheChat() {
   scroll.scrollTop = scroll.scrollHeight;
 }
 
-function ngheBuildLeftBubble(line, lineState, lineIdx, isActive) {
+function ngheBuildLeftBubble(line, lineState, lineIdx, isActive, item) {
   const row = document.createElement("div");
   row.className = "nghe-bubble-row left";
   const avatar = document.createElement("div");
   avatar.className = "nghe-avatar";
   avatar.textContent = line.speaker ? line.speaker[0].toUpperCase() : "🔊";
+  const wrap = document.createElement("div");
+  wrap.className = "nghe-left-wrap";
   const bubble = document.createElement("button");
   bubble.type = "button";
   const revealed = lineState.done;
@@ -2506,25 +2598,84 @@ function ngheBuildLeftBubble(line, lineState, lineIdx, isActive) {
     }
   }
   bubble.addEventListener("click", () => ngheAttemptPlay(lineIdx));
+  wrap.appendChild(bubble);
+
+  // Nút dịch — ẩn theo mặc định, chỉ hiện khi di chuột vào câu đã lộ đáp án.
+  // Bản dịch chỉ lưu trong bộ nhớ phiên làm việc (ngheSessionTranslations),
+  // mất hẳn khi tải lại trang.
+  if (revealed && item) {
+    const cacheKey = item.id + "_" + lineIdx;
+    const tSpan = document.createElement("span");
+    tSpan.className = "nghe-translate-result";
+    const cached = ngheSessionTranslations[cacheKey];
+    if (cached) tSpan.textContent = cached;
+
+    const tBtn = document.createElement("button");
+    tBtn.type = "button";
+    tBtn.className = "nghe-translate-btn";
+    tBtn.title = "Dịch câu này sang Tiếng Việt";
+    tBtn.textContent = "🌐";
+    tBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      ngheToggleTranslate(cacheKey, line.text, tSpan);
+    });
+    wrap.appendChild(tBtn);
+    wrap.appendChild(tSpan);
+  }
+
   row.appendChild(avatar);
-  row.appendChild(bubble);
+  row.appendChild(wrap);
   return row;
 }
 
-function ngheBuildRightBubble(text, pct, clickable) {
+// Bộ nhớ đệm bản dịch — chỉ tồn tại trong phiên làm việc hiện tại (biến JS
+// thường, không lưu vào state/localStorage), tải lại trang là mất.
+const ngheSessionTranslations = {};
+async function ngheToggleTranslate(cacheKey, text, tSpan) {
+  if (tSpan.classList.contains("show")) {
+    tSpan.classList.remove("show");
+    return;
+  }
+  if (ngheSessionTranslations[cacheKey]) {
+    tSpan.textContent = ngheSessionTranslations[cacheKey];
+    tSpan.classList.add("show");
+    return;
+  }
+  tSpan.textContent = "Đang dịch...";
+  tSpan.classList.add("show", "loading");
+  try {
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|vi&de=nox-app@example.com`);
+    const data = await res.json();
+    const translated = data && data.responseData && data.responseData.translatedText;
+    tSpan.classList.remove("loading");
+    if (translated) {
+      const clean = translated.trim();
+      ngheSessionTranslations[cacheKey] = clean;
+      tSpan.textContent = clean;
+    } else {
+      tSpan.textContent = "Không dịch được.";
+    }
+  } catch (err) {
+    tSpan.classList.remove("loading");
+    tSpan.textContent = "Lỗi mạng — thử lại.";
+  }
+}
+
+function ngheBuildRightBubble(attempt, clickable) {
   const row = document.createElement("div");
   row.className = "nghe-bubble-row right";
   const pctSpan = document.createElement("span");
   pctSpan.className = "nghe-pct";
-  pctSpan.textContent = pct + "%";
+  pctSpan.textContent = attempt.correct ? "✓" : attempt.pct + "%";
   const bubble = document.createElement("div");
-  bubble.className = "nghe-bubble nghe-bubble-right wrong" + (clickable ? " clickable" : "");
-  bubble.textContent = text;
-  if (clickable) {
+  const isClickable = clickable && !attempt.correct;
+  bubble.className = "nghe-bubble nghe-bubble-right " + (attempt.correct ? "correct" : "wrong") + (isClickable ? " clickable" : "");
+  bubble.textContent = attempt.text;
+  if (isClickable) {
     bubble.title = "Nhấp để dán lại câu này vào ô nhập";
     bubble.addEventListener("click", () => {
       const input = document.getElementById("nghe-answer-input");
-      input.value = text;
+      input.value = attempt.text;
       input.focus();
       nghe.historyIndex = null;
     });
@@ -2544,7 +2695,7 @@ function ngheAttemptPlay(lineIdx) {
   const lineState = progress.lineStates[lineIdx];
   if (lineState.done) {
     ngheStopFullPlay();
-    playAudio(item.lines[lineIdx].text, "en-US");
+    ngheSpeakLine(item.lines[lineIdx].text, item.lines[lineIdx].speaker);
     return;
   }
   if (lineIdx === progress.cursor) {
@@ -2591,7 +2742,7 @@ function nghePlayCurrentLine(isAuto) {
     }
     renderNgheChat();
   }
-  playAudio(item.lines[cursor].text, "en-US");
+  ngheSpeakLine(item.lines[cursor].text, item.lines[cursor].speaker);
 }
 
 function ngheResolveLine(outcome) {
@@ -2607,7 +2758,7 @@ function ngheResolveLine(outcome) {
     lineState.skipped = true; // vẫn chưa xong — trung lập, không cộng/trừ điểm
   } else {
     lineState.done = true;
-    if (outcome === "revealed" || (outcome === "correct" && lineState.attempts.length)) progress.itemHadMistake = true;
+    if (outcome === "revealed" || (outcome === "correct" && lineState.attempts.some((a) => !a.correct))) progress.itemHadMistake = true;
     if (outcome === "correct") {
       logStudyAction("listening", true, NGHE_DIFFICULTY_GAIN[nghe.difficulty], NGHE_DIFFICULTY_PENALTY[nghe.difficulty]);
     } else if (outcome === "revealed") {
@@ -2661,6 +2812,7 @@ function ngheSubmitAnswer() {
   const target = item.lines[progress.cursor].text;
   const { pct, correct } = ngheGradeLine(typed, target);
   if (correct) {
+    lineState.attempts.push({ text: typed, pct: 100, correct: true });
     ngheResolveLine("correct");
   } else {
     lineState.attempts.push({ text: typed, pct });
@@ -4987,6 +5139,15 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.24",
+    changes: [
+      "Nghe: sửa lỗi đổi giọng chỉ có tác dụng lúc bấm \"đọc toàn bộ\" — giờ nghe từng câu lúc làm bài cũng đúng giọng/tông theo người nói",
+      "Nghe: thêm nút 🎙 cạnh nút đọc toàn bộ, mở popup chọn kiểu giọng đọc — 1 giọng cho tất cả (chọn được giọng cụ thể) hoặc nhiều giọng (mỗi người nói 1 giọng khác nhau)",
+      "Nghe: giữ lại cả câu mình gõ đúng trong khung chat (bong bóng xanh riêng), không chỉ hiện đáp án gốc bên trái nữa",
+      "Nghe: hover vào câu đáp án (bên trái) hiện nút 🌐 dịch nhanh sang Tiếng Việt ngay cạnh câu đó (chữ mờ, không khung) — chỉ lưu trong phiên làm việc, tải lại trang là mất",
+    ],
+  },
   {
     version: "2.23",
     changes: [
