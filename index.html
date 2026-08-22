@@ -61,57 +61,30 @@
     <!-- ---- Sidebar: Flashcard controls ---- -->
     <div class="sidebar-panel" data-panel="flashcard">
       <div class="stat-grid">
-        <div class="stat-box"><span class="stat-num" id="fc-stat-total">0</span><span class="stat-label">Tổng thẻ</span></div>
-        <div class="stat-box stat-learning"><span class="stat-num" id="fc-stat-learning">0</span><span class="stat-label">Đang học</span></div>
-        <div class="stat-box stat-known"><span class="stat-num" id="fc-stat-known">0</span><span class="stat-label">Đã biết</span></div>
-        <div class="stat-box stat-difficult"><span class="stat-num" id="fc-stat-difficult">0</span><span class="stat-label">Khó</span></div>
+        <button type="button" class="stat-box active" data-filter="all"><span class="stat-num" id="fc-stat-total">0</span><span class="stat-label">Tổng thẻ</span></button>
+        <button type="button" class="stat-box stat-learning" data-filter="learning"><span class="stat-num" id="fc-stat-learning">0</span><span class="stat-label">Đang học</span></button>
+        <button type="button" class="stat-box stat-known" data-filter="known"><span class="stat-num" id="fc-stat-known">0</span><span class="stat-label">Đã biết</span></button>
+        <button type="button" class="stat-box stat-difficult" data-filter="difficult"><span class="stat-num" id="fc-stat-difficult">0</span><span class="stat-label">Khó</span></button>
       </div>
 
       <div class="panel-section">
-        <div class="section-label">Quản lý thẻ</div>
-        <input type="text" id="fc-search" class="text-input" placeholder="Tìm thẻ ...">
-        <div class="btn-row-2">
-          <button class="pill-btn active" data-filter="all">Tất cả</button>
-          <button class="pill-btn" data-filter="learning">Đang học</button>
-        </div>
-        <div class="btn-row-2">
-          <button class="pill-btn" data-filter="known">Đã biết</button>
-          <button class="pill-btn" data-filter="difficult">Khó</button>
-        </div>
-        <div class="btn-row-2">
-          <button class="pill-btn-outline" id="fc-sort-az">Sắp xếp A-Z</button>
-          <button class="pill-btn-outline" id="fc-shuffle">Xáo trộn</button>
-        </div>
-        <button class="block-btn" id="fc-reset-status">Đặt lại trạng thái</button>
-        <button class="block-btn primary" id="fc-choose-list">Chọn danh sách</button>
+        <div class="section-label">Chọn danh sách</div>
+        <div class="nghe-item-list" id="fc-list-quickselect"></div>
       </div>
     </div>
 
     <!-- ---- Sidebar: Writing controls ---- -->
     <div class="sidebar-panel hidden" data-panel="writing">
       <div class="stat-grid">
-        <div class="stat-box"><span class="stat-num" id="wr-stat-total">0</span><span class="stat-label">Tổng câu</span></div>
-        <div class="stat-box stat-learning"><span class="stat-num" id="wr-stat-undone">0</span><span class="stat-label">Chưa làm</span></div>
-        <div class="stat-box stat-known"><span class="stat-num" id="wr-stat-correct">0</span><span class="stat-label">Làm đúng</span></div>
-        <div class="stat-box stat-difficult"><span class="stat-num" id="wr-stat-wrong">0</span><span class="stat-label">Làm sai</span></div>
+        <button type="button" class="stat-box" data-wfilter="all"><span class="stat-num" id="wr-stat-total">0</span><span class="stat-label">Tổng câu</span></button>
+        <button type="button" class="stat-box stat-learning active" data-wfilter="undone"><span class="stat-num" id="wr-stat-undone">0</span><span class="stat-label">Chưa làm</span></button>
+        <button type="button" class="stat-box stat-known" data-wfilter="correct"><span class="stat-num" id="wr-stat-correct">0</span><span class="stat-label">Làm đúng</span></button>
+        <button type="button" class="stat-box stat-difficult" data-wfilter="wrong"><span class="stat-num" id="wr-stat-wrong">0</span><span class="stat-label">Làm sai</span></button>
       </div>
 
       <div class="panel-section">
-        <div class="section-label">Quản lý câu</div>
-        <div class="btn-row-2">
-          <button class="pill-btn" data-wfilter="all">Tất cả</button>
-          <button class="pill-btn active" data-wfilter="undone">Chưa làm</button>
-        </div>
-        <div class="btn-row-2">
-          <button class="pill-btn" data-wfilter="correct">Làm đúng</button>
-          <button class="pill-btn" data-wfilter="wrong">Làm sai</button>
-        </div>
-        <div class="btn-row-2">
-          <button class="pill-btn-outline" id="wr-sort-az">Sắp xếp A-Z</button>
-          <button class="pill-btn-outline" id="wr-shuffle">Xáo trộn</button>
-        </div>
-        <button class="block-btn" id="wr-reset-status">Đặt lại trạng thái</button>
-        <button class="block-btn primary" id="wr-choose-list">Chọn danh sách</button>
+        <div class="section-label">Chọn danh sách</div>
+        <div class="nghe-item-list" id="wr-list-quickselect"></div>
       </div>
     </div>
 
@@ -236,7 +209,10 @@
 
     <!-- ---- Flashcard main ---- -->
     <section class="tab-content" data-content="flashcard">
-      <div class="active-list-label" id="fc-active-label">Danh sách: —</div>
+      <div class="active-list-bar">
+        <div class="active-list-label" id="fc-active-label">Danh sách: —</div>
+        <button class="list-shuffle-btn" id="fc-shuffle" title="Xáo trộn thứ tự thẻ">⇌</button>
+      </div>
       <div class="flashcard-stage">
         <button class="nav-arrow" id="fc-prev" data-no-click-sound>‹</button>
         <div class="flashcard" id="fc-card">
@@ -256,6 +232,8 @@
         <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊</button>
       </div>
 
+      <input type="text" id="fc-search" class="text-input fc-inline-search" placeholder="Tìm thẻ ...">
+
       <div class="quick-translate-bar" id="quick-translate-bar-2">
         <input type="text" id="qt2-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
         <button class="qt-swap-btn" id="qt2-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
@@ -267,7 +245,10 @@
 
     <!-- ---- Writing main ---- -->
     <section class="tab-content hidden" data-content="writing">
-      <div class="active-list-label" id="wr-active-label">Danh sách: —</div>
+      <div class="active-list-bar">
+        <div class="active-list-label" id="wr-active-label">Danh sách: —</div>
+        <button class="list-shuffle-btn" id="wr-shuffle" title="Xáo trộn thứ tự câu">⇌</button>
+      </div>
       <div class="writing-card">
         <div class="writing-prompt" id="wr-prompt">Chọn danh sách để bắt đầu</div>
       </div>

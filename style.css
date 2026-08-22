@@ -83,6 +83,8 @@ input,textarea{font-family:inherit;}
   box-shadow:var(--shadow);
   padding:16px;
   height:fit-content;
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
   position:sticky;
   top:20px;
 }
@@ -377,7 +379,10 @@ input,textarea{font-family:inherit;}
   padding:10px 6px;
   text-align:center;
   display:flex;flex-direction:column;gap:2px;
+  background:var(--panel);color:var(--text);font-family:inherit;cursor:pointer;
+  transition:border-color .15s,background .15s;
 }
+.stat-box:hover{border-color:var(--accent);}
 .stat-num{font-size:1.15rem;font-weight:800;}
 .stat-label{font-size:.7rem;color:var(--text-muted);font-weight:600;}
 .stat-learning .stat-num{color:var(--learning);}
@@ -515,15 +520,39 @@ input,textarea{font-family:inherit;}
   padding:22px;
   min-width:0;
 }
-.active-list-label{
+.active-list-bar{
+  display:flex;align-items:center;gap:6px;margin-bottom:20px;
   border:1.5px solid var(--border);
   border-radius:var(--radius-md);
-  padding:10px 16px;
+  padding:10px 8px 10px 16px;
+}
+.active-list-label{
+  flex:1;min-width:0;
   font-weight:600;
   font-size:.9rem;
-  margin-bottom:20px;
   color:var(--text-muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+.list-shuffle-btn{
+  flex-shrink:0;
+  border:none;background:transparent;
+  color:var(--text-muted);font-size:1.05rem;
+  width:32px;height:32px;border-radius:var(--radius-sm);
+  display:flex;align-items:center;justify-content:center;
+}
+.list-shuffle-btn:hover{background:var(--accent-soft);color:var(--accent);}
+.list-shuffle-btn:active{transform:scale(.9);}
+
+/* ---- Thẻ: ô tìm thẻ nằm ngay trên thanh dịch nhanh ---- */
+.fc-inline-search{
+  max-width:420px;margin:20px auto 6px;display:block;
+}
+#quick-translate-bar-2{margin-top:10px;}
+
+/* ---- 4 ô thống kê giờ kiêm luôn nút lọc (thay cho hàng nút cũ) ---- */
+.stat-box.active{border-color:var(--accent);background:var(--accent-soft);}
+
+/* ---- Chọn danh sách nhanh (Thẻ / Viết) — tái dùng kiểu của Nghe, xem thêm ở .nghe-item-list ---- */
 
 /* ---- Flashcard ---- */
 .flashcard-stage{
@@ -1302,7 +1331,7 @@ button{touch-action:manipulation;}
     padding-left:calc(12px + env(safe-area-inset-left));
     padding-right:calc(12px + env(safe-area-inset-right));
   }
-  .sidebar{width:100%;position:static;}
+  .sidebar{width:100%;position:static;max-height:60vh;}
   .wh-list-grid{max-height:none;}
   .quiz-choice-grid{grid-template-columns:1fr;}
 

@@ -675,13 +675,42 @@ document.getElementById("list-picker-close").addEventListener("click", () => lis
 listPickerOverlay.addEventListener("click", (e) => {
   if (e.target === listPickerOverlay) listPickerOverlay.classList.add("hidden");
 });
-document.getElementById("fc-choose-list").addEventListener("click", () => openListPicker("flashcard"));
-document.getElementById("wr-choose-list").addEventListener("click", () => openListPicker("writing"));
 
 function escapeHtml(str) {
   const d = document.createElement("div");
   d.textContent = str == null ? "" : String(str);
   return d.innerHTML;
+}
+
+// Chọn nhanh danh sách active (Thẻ / Viết) — thay cho popup "Chọn danh sách" cũ,
+// hiển thị ngay 1 hàng danh sách để bấm chọn/bỏ chọn, giống kiểu bên Nghe.
+function renderListQuickSelect(cat, containerId, onChange) {
+  ensureSelected(cat);
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  const lists = getCategory(cat);
+  if (!lists.length) {
+    box.innerHTML = `<div class="wh-preview-empty">Chưa có danh sách nào — vào Kho để thêm.</div>`;
+    return;
+  }
+  lists.forEach((list) => {
+    const btn = document.createElement("button");
+    const selected = state.selected[cat].includes(list.id);
+    btn.className = "nghe-item-btn" + (selected ? " active" : "");
+    btn.innerHTML = `<span>${escapeHtml(list.name)}</span><span>${selected ? "✓" : ""}</span>`;
+    btn.addEventListener("click", () => {
+      const arr = state.selected[cat];
+      const idx = arr.indexOf(list.id);
+      if (idx >= 0) {
+        if (arr.length > 1) arr.splice(idx, 1);
+      } else {
+        arr.push(list.id);
+      }
+      saveState();
+      onChange();
+    });
+    box.appendChild(btn);
+  });
 }
 
 /* ============================================================
@@ -796,6 +825,7 @@ function renderFlashcardTab() {
   ensureSelected("flashcard");
   const lists = getCategory("flashcard").filter((l) => state.selected.flashcard.includes(l.id));
   document.getElementById("fc-active-label").textContent = "Danh sách: " + (lists.map((l) => l.name).join(", ") || "—");
+  renderListQuickSelect("flashcard", "fc-list-quickselect", renderFlashcardTab);
 
   const all = itemsFromLists("flashcard", state.selected.flashcard);
   document.getElementById("fc-stat-total").textContent = all.length;
@@ -1190,20 +1220,10 @@ document.getElementById("fc-search").addEventListener("input", (e) => {
   rebuildFcQueue(false);
   renderFcCard();
 });
-document.getElementById("fc-sort-az").addEventListener("click", () => {
-  fc.queue.sort((a, b) => fcItemById(a).en.localeCompare(fcItemById(b).en));
-  fc.index = 0;
-  renderFcCard();
-});
 document.getElementById("fc-shuffle").addEventListener("click", () => {
   fc.queue = shuffleArr(fc.queue);
   fc.index = 0;
   renderFcCard();
-});
-document.getElementById("fc-reset-status").addEventListener("click", () => {
-  itemsFromLists("flashcard", state.selected.flashcard).forEach((i) => (i.status = "new"));
-  saveState();
-  renderFlashcardTab();
 });
 
 /* ============================================================
@@ -1366,6 +1386,7 @@ function renderWritingTab() {
   ensureSelected("writing");
   const lists = getCategory("writing").filter((l) => state.selected.writing.includes(l.id));
   document.getElementById("wr-active-label").textContent = "Danh sách: " + (lists.map((l) => l.name).join(", ") || "—");
+  renderListQuickSelect("writing", "wr-list-quickselect", renderWritingTab);
 
   const all = itemsFromLists("writing", state.selected.writing);
   document.getElementById("wr-stat-total").textContent = all.length;
@@ -1405,6 +1426,33 @@ function wrGoNext() {
   resetWrQuestionState();
   renderWrQuestion();
 }
+
+function wrGoPrev() {
+  if (!wr.queue.length) return;
+  wr.index = (wr.index - 1 + wr.queue.length) % wr.queue.length;
+  resetWrQuestionState();
+  renderWrQuestion();
+}
+
+// Chuyển nhanh câu bằng phím mũi tên trái/phải (không cần nút bấm riêng).
+// Nếu đang gõ dở trong ô trả lời (còn chữ) thì mũi tên vẫn di chuyển con trỏ
+// bình thường; chỉ chuyển câu khi ô trả lời đang trống hoặc không có focus.
+function writingTabVisible() {
+  const el = document.querySelector('.tab-content[data-content="writing"]');
+  return el && !el.classList.contains("hidden");
+}
+document.addEventListener("keydown", (e) => {
+  if (!writingTabVisible() || anyOverlayOpen()) return;
+  if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
+  if (isTypingTarget()) {
+    const el = document.activeElement;
+    const isAnswerBox = el && el.id === "wr-answer-input";
+    if (!isAnswerBox || el.value.length > 0) return;
+  }
+  e.preventDefault();
+  if (e.code === "ArrowLeft") wrGoPrev();
+  else wrGoNext();
+});
 
 function renderWrQuestion() {
   const item = currentWrItem();
@@ -1780,22 +1828,11 @@ document.querySelectorAll('[data-wfilter]').forEach((btn) => {
     renderWrQuestion();
   });
 });
-document.getElementById("wr-sort-az").addEventListener("click", () => {
-  wr.queue.sort((a, b) => wrItemById(a).en.localeCompare(wrItemById(b).en));
-  wr.index = 0;
-  resetWrQuestionState();
-  renderWrQuestion();
-});
 document.getElementById("wr-shuffle").addEventListener("click", () => {
   wr.queue = shuffleArr(wr.queue);
   wr.index = 0;
   resetWrQuestionState();
   renderWrQuestion();
-});
-document.getElementById("wr-reset-status").addEventListener("click", () => {
-  itemsFromLists("writing", state.selected.writing).forEach((i) => (i.status = "new"));
-  saveState();
-  renderWritingTab();
 });
 
 // selecting text inside the prompt auto-fills & translates it in the writing tab's quick-translate bar
@@ -5139,6 +5176,24 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.26",
+    changes: [
+      "Thẻ & Viết: bảng điều khiển giờ tự cuộn riêng khi có nhiều danh sách, không kéo cả trang phải cuộn theo nữa",
+      "Thẻ & Viết: nút Xáo trộn lồng thẳng vào thanh tên danh sách (không tách khung riêng), đổi sang icon đơn giản hơn",
+      "Thẻ: chỉnh lại khoảng cách ô \"Tìm thẻ\" — cách xa hàng nút phía trên, sát lại gần thanh dịch hơn, và giảm bớt độ dài ô",
+    ],
+  },
+  {
+    version: "2.25",
+    changes: [
+      "Thẻ & Viết: bỏ hàng nút lọc/sắp xếp/đặt lại trạng thái/chọn danh sách cũ dưới mục \"Quản lý\" — 4 ô thống kê giờ kiêm luôn nút lọc (bấm để lọc Tất cả/Đang học/Đã biết/Khó), bỏ hẳn nút sắp xếp A-Z",
+      "Thẻ & Viết: nút Xáo trộn giờ là icon 🔀 nằm ngay trên thanh tên danh sách, góc phải",
+      "Thẻ & Viết: bỏ nút \"Chọn danh sách\" dạng popup — thay bằng hàng danh sách hiện sẵn để bấm chọn nhanh, giống kiểu bên Nghe",
+      "Thẻ: chuyển ô \"Tìm thẻ\" từ thanh bên sang nằm ngay trên thanh dịch nhanh trong màn hình chính",
+      "Viết: thêm chuyển nhanh câu bằng phím mũi tên trái/phải (không cần nút bấm riêng)",
+    ],
+  },
   {
     version: "2.24",
     changes: [
