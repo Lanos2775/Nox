@@ -8,6 +8,13 @@ function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 }
 
+// Khoá ngày dạng "YYYY-MM-DD" theo giờ địa phương — dùng để reset số phút học
+// mỗi ngày (thời gian học Viết/Nghe ở tab Thống kê).
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
 function defaultList(name) {
   return { id: uid(), name, items: [], createdAt: Date.now(), reminderEnabled: false };
 }
@@ -35,6 +42,7 @@ function defaultState() {
     },
     settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "" },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
+    studyTime: { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 },
     bubblePos: null,
   };
 }
@@ -111,6 +119,16 @@ function loadState() {
       parsed.studyMomentum.history.forEach((p) => { p.t += tzOffsetSec; });
     }
     parsed.studyMomentum._tzFixed = true;
+    if (!parsed.studyTime) parsed.studyTime = { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 };
+    if (parsed.studyTime.writingSec === undefined) parsed.studyTime.writingSec = 0;
+    if (parsed.studyTime.listeningSec === undefined) parsed.studyTime.listeningSec = 0;
+    if (parsed.studyTime.writingGoalMin === undefined) parsed.studyTime.writingGoalMin = 60;
+    if (parsed.studyTime.listeningGoalMin === undefined) parsed.studyTime.listeningGoalMin = 60;
+    if (parsed.studyTime.date !== todayKey()) {
+      parsed.studyTime.date = todayKey();
+      parsed.studyTime.writingSec = 0;
+      parsed.studyTime.listeningSec = 0;
+    }
     return parsed;
   } catch (e) {
     return defaultState();
@@ -442,17 +460,13 @@ function fireStudyIdleWarning() {
   }
 }
 
-/* ---- Xem nhanh hệ số cạnh chữ "Nox" ---- */
+/* ---- Xem nhanh hệ số cạnh chữ "Nox" ----
+   Tính năng "Thống kê > Hệ số" đang tạm ẩn (đã thay giao diện Thống kê bằng
+   vòng tròn mục tiêu) — luôn ẩn badge này bất kể cài đặt cũ của người dùng. */
 function updateBrandMomentumQuickview() {
   const el = document.getElementById("brand-momentum");
   if (!el) return;
-  const on = !!(state.settings && state.settings.momentumQuickview);
-  el.classList.toggle("hidden", !on);
-  if (!on) return;
-  const score = state.studyMomentum.score;
-  el.textContent = score.toFixed(1);
-  el.classList.toggle("positive", score > 0);
-  el.classList.toggle("negative", score < 0);
+  el.classList.add("hidden");
 }
 
 /* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
@@ -466,6 +480,58 @@ function applyMomentumThemeSync() {
   const positive = state.studyMomentum.score >= 0;
   document.body.style.setProperty("--border", positive ? "#22c55e" : "#ef4444");
 }
+
+/* ============================================================
+   THỜI GIAN HỌC (tab Thống kê — 2 vòng tròn mục tiêu Viết/Nghe)
+   - Đếm số giây thực tế người dùng đang ở tab Viết hoặc Nghe, ĐANG mở trình
+     duyệt (visibilitychange), mỗi giây +1. Reset về 0 mỗi khi sang ngày mới.
+   - Ghi localStorage định kỳ (không gọi saveState() mỗi giây để tránh làm
+     "trôi" mãi bộ đếm chờ đồng bộ cloud — xem scheduleCloudPush); lưu đầy đủ
+     (kèm đẩy lên cloud) khi rời tab/ẩn trang/trước khi đóng trang.
+   ============================================================ */
+function ensureStudyTimeToday() {
+  if (!state.studyTime) {
+    state.studyTime = { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 };
+    return;
+  }
+  const key = todayKey();
+  if (state.studyTime.date !== key) {
+    state.studyTime.date = key;
+    state.studyTime.writingSec = 0;
+    state.studyTime.listeningSec = 0;
+  }
+}
+function currentTrackedStudyCat() {
+  if (document.visibilityState !== "visible") return null;
+  const activeBtn = document.querySelector(".main-tab-btn.active");
+  const tab = activeBtn ? activeBtn.dataset.tab : null;
+  if (tab === "writing" || tab === "listening") return tab;
+  return null;
+}
+let studyTimeTickCount = 0;
+function studyTimeTick() {
+  ensureStudyTimeToday();
+  const cat = currentTrackedStudyCat();
+  if (cat) {
+    if (cat === "writing") state.studyTime.writingSec += 1;
+    else state.studyTime.listeningSec += 1;
+    studyTimeTickCount++;
+    if (studyTimeTickCount >= 10) {
+      studyTimeTickCount = 0;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+  }
+  if (wh.cat === "stats" && !document.getElementById("wh-stats-view").classList.contains("hidden")) {
+    updateRingLiveValues();
+  }
+}
+setInterval(studyTimeTick, 1000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveState();
+});
+window.addEventListener("beforeunload", () => {
+  try { saveState(); } catch (e) { /* ignore */ }
+});
 
 /* ============================================================
    TAB SWITCHING
@@ -998,6 +1064,16 @@ function playMomentumWarnSound() {
   if (vol <= 0) return;
   sfxTone(520, null, 0.14, "sine", 0.5, vol, 0);
   sfxTone(520, null, 0.14, "sine", 0.5, vol, 0.22);
+}
+/* Âm thanh nhẹ khi vòng tròn mục tiêu ở Thống kê "bung ra" — 3 nốt lên dần,
+   phát khi người dùng mở xem tab Thống kê (delay lệch nhau giữa 2 vòng). */
+function playRingRevealSound(delay) {
+  const vol = getSfxVolume();
+  if (vol <= 0) return;
+  const d = delay || 0;
+  sfxTone(440, null, 0.12, "sine", 0.35, vol, d);
+  sfxTone(560, null, 0.12, "sine", 0.32, vol, d + 0.08);
+  sfxTone(700, null, 0.18, "sine", 0.3, vol, d + 0.16);
 }
 
 /* Âm khi bấm nút — gắn cho hầu hết các <button>, trừ những nút đã có
@@ -3587,10 +3663,11 @@ function renderWarehouseTab() {
 }
 
 /* ============================================================
-   TAB THỐNG KÊ (Kho > Thống kê)
+   TAB THỐNG KÊ (Kho > Thống kê) — vòng tròn mục tiêu Viết/Nghe
+   (tính năng cũ "Hệ số"/biểu đồ đà học tạm ẩn — statsSnapshotForCat vẫn
+   dùng lại cho 3 vạch hoàn thành Viết/Nghe/Thẻ bên dưới)
    ============================================================ */
-let statsChartInstance = null;
-let statsSeriesInstance = null;
+const RING_CIRCUMFERENCE = 2 * Math.PI * 88; // r=88, khớp bán kính trong SVG
 
 function statsSnapshotForCat(cat) {
   const items = allItems(cat);
@@ -3601,102 +3678,180 @@ function statsSnapshotForCat(cat) {
   return { total, known, difficult, fresh };
 }
 
-function renderStatsSnapshot() {
-  const box = document.getElementById("wh-stats-snapshot");
-  box.innerHTML = "";
-  [
-    { cat: "flashcard", title: "Thẻ", knownLabel: "Đã biết", difficultLabel: "Khó", freshLabel: "Đang học" },
-    { cat: "writing", title: "Viết", knownLabel: "Làm đúng", difficultLabel: "Làm sai", freshLabel: "Chưa làm" },
-    { cat: "dictionary", title: "Từ điển", knownLabel: "Đã biết", difficultLabel: "Khó", freshLabel: "Đang học" },
-  ].forEach((cfg) => {
-    const s = statsSnapshotForCat(cfg.cat);
-    const pctKnown = s.total ? Math.round((s.known / s.total) * 100) : 0;
-    const pctDifficult = s.total ? (s.difficult / s.total) * 100 : 0;
-    const pctFresh = s.total ? (s.fresh / s.total) * 100 : 0;
-    const card = document.createElement("div");
-    card.className = "wh-stats-card";
-    card.innerHTML = `
-      <div class="wh-stats-card-title">${cfg.title}</div>
-      <div class="wh-stats-card-total">${s.total} mục · ${pctKnown}% ${cfg.knownLabel.toLowerCase()}</div>
-      <div class="wh-stats-card-bar">
-        <span class="seg-known" style="width:${(s.total ? (s.known / s.total) * 100 : 0)}%"></span>
-        <span class="seg-difficult" style="width:${pctDifficult}%"></span>
-        <span class="seg-new" style="width:${pctFresh}%"></span>
-      </div>
-      <div class="wh-stats-card-legend">
-        <span><span class="dot" style="background:#22c55e"></span>${cfg.knownLabel}: ${s.known}</span>
-        <span><span class="dot" style="background:#ef4444"></span>${cfg.difficultLabel}: ${s.difficult}</span>
-        <span><span class="dot" style="background:var(--text-muted)"></span>${cfg.freshLabel}: ${s.fresh}</span>
-      </div>`;
-    box.appendChild(card);
-  });
+let ringEditMode = false;
+
+function ringGoalMin(cat) {
+  ensureStudyTimeToday();
+  return cat === "writing" ? state.studyTime.writingGoalMin : state.studyTime.listeningGoalMin;
+}
+function ringMinutesDone(cat) {
+  ensureStudyTimeToday();
+  const sec = cat === "writing" ? state.studyTime.writingSec : state.studyTime.listeningSec;
+  return sec / 60;
 }
 
-function renderStatsMomentumChart() {
-  const m = state.studyMomentum;
-  const valEl = document.getElementById("wh-stats-momentum-val");
-  valEl.textContent = m.score.toFixed(1);
-  valEl.classList.toggle("positive", m.score > 0);
-  valEl.classList.toggle("negative", m.score < 0);
-
-  const container = document.getElementById("wh-stats-chart");
-  if (typeof LightweightCharts === "undefined") {
-    container.innerHTML = `<div class="wh-stats-card-title" style="padding:20px 0;">Không tải được thư viện biểu đồ — cần kết nối mạng ở lần mở đầu tiên.</div>`;
-    return;
-  }
-  if (!m.history.length) {
-    container.innerHTML = `<div class="wh-stats-card-title" style="padding:20px 0;">Chưa có dữ liệu. Bắt đầu học ở Thẻ / Viết / Quizz để bắt đầu ghi.</div>`;
-    return;
-  }
-
-  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-
-  if (!statsChartInstance) {
-    container.innerHTML = "";
-    statsChartInstance = LightweightCharts.createChart(container, {
-      layout: { background: { color: "transparent" }, textColor: cssVar("--text-muted") || "#888" },
-      grid: {
-        vertLines: { color: cssVar("--border") || "#333" },
-        horzLines: { color: cssVar("--border") || "#333" },
-      },
-      rightPriceScale: { borderVisible: false },
-      timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-      autoSize: true,
-    });
-    statsSeriesInstance = statsChartInstance.addBaselineSeries({
-      baseValue: { type: "price", price: 0 },
-      topLineColor: "rgba(34,197,94,1)",
-      topFillColor1: "rgba(34,197,94,0.28)",
-      topFillColor2: "rgba(34,197,94,0.05)",
-      bottomLineColor: "rgba(239,68,68,1)",
-      bottomFillColor1: "rgba(239,68,68,0.05)",
-      bottomFillColor2: "rgba(239,68,68,0.28)",
-      lineWidth: 2,
-    });
-  } else {
-    statsChartInstance.applyOptions({
-      layout: { background: { color: "transparent" }, textColor: cssVar("--text-muted") || "#888" },
-      grid: {
-        vertLines: { color: cssVar("--border") || "#333" },
-        horzLines: { color: cssVar("--border") || "#333" },
-      },
-    });
-  }
-
-  statsSeriesInstance.setData(m.history.map((p) => ({ time: p.t, value: p.score })));
-  statsChartInstance.timeScale().fitContent();
-  requestAnimationFrame(() => {
-    if (statsChartInstance && container.clientWidth) {
-      statsChartInstance.resize(container.clientWidth, container.clientHeight || 300);
-      statsChartInstance.timeScale().fitContent();
+/* Cập nhật số phút hiện trong vòng tròn khi đang xem tab Thống kê (mỗi giây)
+   — chỉ cập nhật số + vòng, KHÔNG chạy lại hiệu ứng "bung ra" ban đầu. */
+function updateRingLiveValues() {
+  ["writing", "listening"].forEach((cat) => {
+    const minutesDone = ringMinutesDone(cat);
+    const goal = Math.max(1, ringGoalMin(cat));
+    const pct = Math.min(1, minutesDone / goal);
+    const ring = document.getElementById("ring-progress-" + cat);
+    if (ring) ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
+    const valEl = document.getElementById("ring-value-" + cat);
+    if (valEl) valEl.textContent = Math.floor(minutesDone);
+    if (!ringEditMode) {
+      const goalEl = document.getElementById("ring-goal-label-" + cat);
+      if (goalEl) goalEl.textContent = goal + " phút";
     }
   });
 }
 
+// Đếm số tăng dần từ 0 -> target, đồng bộ với hiệu ứng "bung ra" của vòng tròn.
+function animateRingNumber(el, target, duration) {
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.floor(target * eased);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+/* Hiệu ứng "bung ra" cho vòng tròn mỗi khi người dùng MỞ tab Thống kê — vòng
+   chạy từ 0% lên đúng % hiện tại + số phút đếm lên + phát âm thanh nhẹ. */
+function renderStatsRings(animate) {
+  ["writing", "listening"].forEach((cat, idx) => {
+    const minutesDone = Math.floor(ringMinutesDone(cat));
+    const goal = Math.max(1, ringGoalMin(cat));
+    const pct = Math.min(1, minutesDone / goal);
+    const ring = document.getElementById("ring-progress-" + cat);
+    const valEl = document.getElementById("ring-value-" + cat);
+    const goalEl = document.getElementById("ring-goal-label-" + cat);
+    if (goalEl && !ringEditMode) goalEl.textContent = goal + " phút";
+
+    if (animate && ring) {
+      ring.style.transition = "none";
+      ring.style.strokeDashoffset = RING_CIRCUMFERENCE;
+      valEl.textContent = "0";
+      // buộc reflow rồi mới bật lại transition, để hiệu ứng chạy từ 0
+      void ring.getBoundingClientRect();
+      ring.style.transition = "";
+      requestAnimationFrame(() => {
+        ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
+        ring.classList.remove("ring-pop");
+        void ring.getBoundingClientRect();
+        ring.classList.add("ring-pop");
+      });
+      animateRingNumber(valEl, minutesDone, 1000);
+      playRingRevealSound(idx * 0.12);
+    } else if (ring) {
+      ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
+      valEl.textContent = minutesDone;
+    }
+  });
+}
+
+function renderProgressBars() {
+  const box = document.getElementById("wh-progress-bars");
+  box.innerHTML = "";
+  [
+    { cat: "writing", label: "Viết" },
+    { cat: "listening", label: "Nghe" },
+    { cat: "flashcard", label: "Thẻ" },
+  ].forEach((cfg) => {
+    const s = statsSnapshotForCat(cfg.cat);
+    const pct = s.total ? Math.round((s.known / s.total) * 100) : 0;
+    const row = document.createElement("div");
+    row.className = "wh-progress-bar-row";
+    row.innerHTML = `
+      <span class="wh-progress-bar-label">${cfg.label}</span>
+      <span class="wh-progress-bar-track"><span class="wh-progress-bar-done" style="width:0%"></span></span>
+      <span class="wh-progress-bar-pct">${pct}%</span>`;
+    box.appendChild(row);
+    requestAnimationFrame(() => {
+      row.querySelector(".wh-progress-bar-done").style.width = pct + "%";
+    });
+  });
+}
+
+function renderRingGoalEditors() {
+  ["writing", "listening"].forEach((cat) => {
+    let holder = document.getElementById("ring-goal-label-" + cat);
+    if (ringEditMode) {
+      if (holder.tagName !== "INPUT") {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "5";
+        input.max = "600";
+        input.step = "5";
+        input.className = "ring-goal-input";
+        input.id = "ring-goal-label-" + cat;
+        input.value = ringGoalMin(cat);
+        input.addEventListener("input", () => {
+          const v = Math.max(5, Math.min(600, parseInt(input.value, 10) || 5));
+          setRingGoal(cat, v, false);
+        });
+        input.addEventListener("blur", () => {
+          const v = Math.max(5, Math.min(600, parseInt(input.value, 10) || 5));
+          setRingGoal(cat, v, true);
+        });
+        holder.replaceWith(input);
+      }
+    } else if (holder.tagName === "INPUT") {
+      const span = document.createElement("span");
+      span.className = "ring-goal-label";
+      span.id = "ring-goal-label-" + cat;
+      span.textContent = ringGoalMin(cat) + " phút";
+      holder.replaceWith(span);
+    }
+  });
+}
+
+function setRingGoal(cat, minutes, persist) {
+  ensureStudyTimeToday();
+  if (cat === "writing") state.studyTime.writingGoalMin = minutes;
+  else state.studyTime.listeningGoalMin = minutes;
+  updateRingLiveValues();
+  if (persist) saveState();
+}
+
+document.getElementById("ring-adjust-btn").addEventListener("click", () => {
+  ringEditMode = !ringEditMode;
+  document.getElementById("ring-adjust-btn").classList.toggle("active", ringEditMode);
+  document.getElementById("ring-edit-hint").classList.toggle("hidden", !ringEditMode);
+  renderRingGoalEditors();
+  if (!ringEditMode) saveState();
+});
+
+// Lăn chuột trên vòng tròn để tăng/giảm mục tiêu — chỉ hoạt động khi đang ở
+// chế độ chỉnh (đã bấm nút ở giữa 2 vòng tròn).
+document.querySelectorAll(".ring-goal-item").forEach((el) => {
+  el.addEventListener("wheel", (e) => {
+    if (!ringEditMode) return;
+    e.preventDefault();
+    const cat = el.dataset.ringCat;
+    const cur = ringGoalMin(cat);
+    const next = Math.max(5, Math.min(600, cur + (e.deltaY < 0 ? 5 : -5)));
+    setRingGoal(cat, next, false);
+    const holder = document.getElementById("ring-goal-label-" + cat);
+    if (holder && holder.tagName === "INPUT") holder.value = next;
+    clearTimeout(el._wheelSaveTimer);
+    el._wheelSaveTimer = setTimeout(() => saveState(), 400);
+  }, { passive: false });
+});
+
 function renderStatsTab() {
-  renderStatsSnapshot();
-  renderStatsMomentumChart();
+  ensureStudyTimeToday();
+  ringEditMode = false;
+  document.getElementById("ring-adjust-btn").classList.remove("active");
+  document.getElementById("ring-edit-hint").classList.add("hidden");
+  renderRingGoalEditors();
+  renderStatsRings(true);
+  renderProgressBars();
 }
 
 function renderDiaryPreview() {

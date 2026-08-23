@@ -361,14 +361,43 @@
         </div>
 
         <div class="wh-stats-view hidden" id="wh-stats-view">
-          <div class="wh-stats-chart-card">
-            <div class="wh-stats-chart-header">
-              <span>Hệ số</span>
-              <span class="wh-stats-momentum-val" id="wh-stats-momentum-val">0</span>
+          <div class="ring-stats-row">
+            <div class="ring-goal-item" data-ring-cat="writing">
+              <div class="ring-svg-wrap">
+                <svg class="ring-svg" viewBox="0 0 200 200">
+                  <circle class="ring-track" cx="100" cy="100" r="88"></circle>
+                  <circle class="ring-progress ring-progress-writing" id="ring-progress-writing" cx="100" cy="100" r="88"></circle>
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-unit">phút</span>
+                  <span class="ring-value" id="ring-value-writing">0</span>
+                  <span class="ring-goal-label" id="ring-goal-label-writing" data-cat="writing">0 phút</span>
+                </div>
+              </div>
+              <div class="ring-cat-name">Viết</div>
             </div>
-            <div id="wh-stats-chart" class="wh-stats-chart"></div>
+
+            <button type="button" class="ring-adjust-btn" id="ring-adjust-btn" title="Chỉnh mục tiêu" aria-label="Chỉnh mục tiêu"></button>
+
+            <div class="ring-goal-item" data-ring-cat="listening">
+              <div class="ring-svg-wrap">
+                <svg class="ring-svg" viewBox="0 0 200 200">
+                  <circle class="ring-track" cx="100" cy="100" r="88"></circle>
+                  <circle class="ring-progress ring-progress-listening" id="ring-progress-listening" cx="100" cy="100" r="88"></circle>
+                </svg>
+                <div class="ring-center">
+                  <span class="ring-unit">phút</span>
+                  <span class="ring-value" id="ring-value-listening">0</span>
+                  <span class="ring-goal-label" id="ring-goal-label-listening" data-cat="listening">0 phút</span>
+                </div>
+              </div>
+              <div class="ring-cat-name">Nghe</div>
+            </div>
           </div>
-          <div class="wh-stats-snapshot" id="wh-stats-snapshot"></div>
+
+          <div class="ring-edit-hint hidden" id="ring-edit-hint">Nhập số phút mục tiêu, hoặc lăn chuột trên mỗi vòng tròn để tăng/giảm</div>
+
+          <div class="wh-progress-bars" id="wh-progress-bars"></div>
         </div>
       </div>
 
@@ -815,7 +844,7 @@
         </label>
       </div>
 
-      <div class="settings-section">
+      <div class="settings-section hidden" id="settings-section-momentum">
         <div class="section-label">Hệ số</div>
         <label class="settings-checkbox-row">
           <input type="checkbox" id="settings-momentum-system-notify">
