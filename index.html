@@ -69,7 +69,7 @@
 
       <div class="panel-section">
         <div class="section-label">Chọn danh sách</div>
-        <div class="nghe-item-list" id="fc-list-quickselect"></div>
+        <div class="nghe-item-list list-quickselect-scroll" id="fc-list-quickselect"></div>
       </div>
     </div>
 
@@ -84,7 +84,7 @@
 
       <div class="panel-section">
         <div class="section-label">Chọn danh sách</div>
-        <div class="nghe-item-list" id="wr-list-quickselect"></div>
+        <div class="nghe-item-list list-quickselect-scroll" id="wr-list-quickselect"></div>
       </div>
     </div>
 
@@ -229,7 +229,7 @@
         <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
         <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
         <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
-        <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊</button>
+        <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊︎</button>
       </div>
 
       <input type="text" id="fc-search" class="text-input fc-inline-search" placeholder="Tìm thẻ ...">
@@ -237,42 +237,48 @@
       <div class="quick-translate-bar" id="quick-translate-bar-2">
         <input type="text" id="qt2-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
         <button class="qt-swap-btn" id="qt2-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
-        <div class="qt-box qt-result-box" id="qt2-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
-        <button class="qt-play-btn" id="qt2-play" title="Phát âm từ tiếng Anh">🔊</button>
-        <button class="qt-save-btn" id="qt2-save" title="Lưu nhanh vào Từ điển">🔖</button>
+        <div class="qt-result-wrap">
+          <div class="qt-box qt-result-box" id="qt2-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
+          <button class="qt-play-btn" id="qt2-play" title="Phát âm từ tiếng Anh">🔊︎</button>
+          <button class="qt-save-btn" id="qt2-save" title="Lưu nhanh vào Từ điển">🔖</button>
+        </div>
       </div>
     </section>
 
     <!-- ---- Writing main ---- -->
     <section class="tab-content hidden" data-content="writing">
-      <div class="active-list-bar">
-        <div class="active-list-label" id="wr-active-label">Danh sách: —</div>
-        <button class="list-shuffle-btn" id="wr-shuffle" title="Xáo trộn thứ tự câu">⇌</button>
-      </div>
-      <div class="writing-card">
-        <div class="writing-prompt" id="wr-prompt">Chọn danh sách để bắt đầu</div>
-      </div>
-      <div class="writing-feedback-block">
-        <div class="feedback-header">
-          <span>Phản hồi trực tiếp</span>
-        </div>
-        <div class="feedback-grid" id="wr-feedback-grid"></div>
-      </div>
-      <textarea class="writing-answer-input" id="wr-answer-input" placeholder="Nhập câu trả lời tiếng anh tại đây ... (Enter để kiểm tra / sang câu tiếp theo)"></textarea>
-      <div class="writing-btn-grid">
-        <button class="pill-btn-outline" id="wr-show-char">Hiện chữ tiếp theo (Tab)</button>
-        <button class="pill-btn-outline" id="wr-show-word">Hiện từ tiếp theo</button>
+      <div class="nghe-chat-header">
+        <span class="status-dot" id="wr-current-dot"></span>
+        <span class="nghe-current-title" id="wr-current-title">Chọn danh sách để bắt đầu</span>
         <button class="pill-btn-outline" id="wr-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
+        <button class="nghe-reset-btn" id="wr-shuffle" title="Xáo trộn thứ tự câu">⟲</button>
       </div>
 
-      <div class="quick-translate-bar" id="quick-translate-bar">
+      <div class="nghe-chat-scroll" id="wr-chat-scroll">
+        <div class="nghe-chat-empty" id="wr-chat-empty">Chọn danh sách để bắt đầu luyện viết</div>
+      </div>
+
+      <div class="wr-quicksave-words hidden" id="wr-quicksave-words"></div>
+
+      <div class="quick-translate-bar hidden" id="quick-translate-bar">
         <input type="text" id="qt-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
         <button class="qt-swap-btn" id="qt-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
-        <div class="qt-box qt-result-box" id="qt-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
-        <button class="qt-play-btn" id="qt-play" title="Phát âm từ tiếng Anh">🔊</button>
-        <button class="qt-save-btn" id="qt-save" title="Lưu nhanh vào Từ điển">🔖</button>
+        <div class="qt-result-wrap">
+          <div class="qt-box qt-result-box" id="qt-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
+          <button class="qt-play-btn" id="qt-play" title="Phát âm từ tiếng Anh">🔊︎</button>
+          <button class="qt-save-btn" id="qt-save" title="Lưu nhanh vào Từ điển">🔖</button>
+        </div>
       </div>
-      <div class="wr-quicksave-words hidden" id="wr-quicksave-words"></div>
+
+      <div class="wr-typing-dots-row">
+        <span class="wr-typing-dots hidden" id="wr-typing-dots"><span></span><span></span><span></span></span>
+      </div>
+
+      <div class="nghe-input-bar">
+        <input type="text" id="wr-answer-input" class="nghe-answer-input" placeholder="Nhập câu trả lời tiếng Anh ... (Enter để kiểm tra)">
+        <button class="nghe-input-icon-btn" id="wr-translate-toggle-btn" title="Bật/tắt thanh dịch nhanh (Alt phải)">⇄</button>
+        <button class="nghe-input-icon-btn" id="wr-hint-btn" title="Gợi ý từ tiếp theo">?</button>
+      </div>
     </section>
 
     <!-- ---- Quiz main ---- -->
@@ -293,7 +299,7 @@
 
       <div class="quiz-question-block hidden" id="quiz-question-block">
         <div class="quiz-listen-hint hidden" id="quiz-listen-hint">
-          <span class="quiz-listen-icon">🔊</span>
+          <span class="quiz-listen-icon">🔊︎</span>
           <span id="quiz-listen-label">Nhấn Space để nghe</span>
           <span class="quiz-listen-count" id="quiz-listen-remaining"></span>
         </div>
@@ -371,7 +377,7 @@
           <div class="wh-toolbar-right">
             <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
             <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
-            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊 Đọc tự động</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊︎ Đọc tự động</button>
             <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
             <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
             <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
