@@ -1313,7 +1313,7 @@ document.getElementById("fc-shuffle").addEventListener("click", () => {
    TAB 2: VIẾT (WRITING)
    ============================================================ */
 const wr = {
-  filter: "undone",
+  filter: "all",
   queue: [],
   cursor: 0,
   maxReached: 0,
@@ -1877,6 +1877,14 @@ document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     wrSubmitAnswer();
+    return;
+  }
+  if (e.key === "Fn") {
+    // Phím tắt dùng gợi ý — LƯU Ý: nhiều bàn phím/hệ điều hành (đặc biệt
+    // Windows) không gửi sự kiện cho phím Fn tới trình duyệt (bị chặn ở
+    // tầng firmware), nên phím tắt này có thể không hoạt động trên mọi máy.
+    e.preventDefault();
+    wrUseHint();
     return;
   }
   if (e.key === "ArrowUp" || e.key === "ArrowDown") {

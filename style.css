@@ -636,7 +636,7 @@ input,textarea{font-family:inherit;}
 
 /* Chấm "đang gõ" thay cho phản hồi trực tiếp bằng chữ — nằm phía trên bên
    phải thanh nhập câu trả lời, chỉ hiện khi độ khó cho phép + đang có chữ. */
-.wr-typing-dots-row{display:flex;justify-content:flex-end;padding:0 6px 4px;min-height:14px;}
+.wr-typing-dots-row{display:flex;justify-content:flex-start;padding:0 6px 4px;min-height:14px;}
 .wr-typing-dots{display:flex;gap:4px;}
 .wr-typing-dots.hidden{display:none;}
 .wr-typing-dots span{
