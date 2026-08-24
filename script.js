@@ -1882,7 +1882,10 @@ function wrUseHint() {
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
-  const cur = wrHintRevealLen[item.id] || 0;
+  // Vị trí bắt đầu gợi ý = xa nhất giữa (a) phần đã lộ qua gợi ý trước đó và
+  // (b) phần người dùng đã TỰ gõ trong ô nhập — tránh việc gợi ý quay lại
+  // từ đầu câu khi bạn đã gõ tay được một đoạn mà chưa dùng gợi ý lần nào.
+  const cur = Math.max(wrHintRevealLen[item.id] || 0, input.value.length);
   let nextSpace = answer.indexOf(" ", cur);
   if (nextSpace === -1) nextSpace = answer.length;
   else nextSpace += 1;
