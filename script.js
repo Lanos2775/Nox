@@ -3689,9 +3689,22 @@ function ringMinutesDone(cat) {
   const sec = cat === "writing" ? state.studyTime.writingSec : state.studyTime.listeningSec;
   return sec / 60;
 }
+function formatHours(minutes) {
+  return (minutes / 60).toFixed(minutes < 600 ? 1 : 0) + "h";
+}
 
-/* Cập nhật số phút hiện trong vòng tròn khi đang xem tab Thống kê (mỗi giây)
-   — chỉ cập nhật số + vòng, KHÔNG chạy lại hiệu ứng "bung ra" ban đầu. */
+/* Số nhỏ bên dưới (giờ) — luôn tính từ MỘT giá trị phút cho trước, dùng
+   chung cho cả 2 trường hợp: đang xem tiến độ (phút đã học) hoặc đang
+   chỉnh mục tiêu (phút mục tiêu đang gõ/lăn chuột). */
+function syncHourDisplay(cat, minutes) {
+  const hourEl = document.getElementById("ring-hours-" + cat);
+  if (hourEl) hourEl.textContent = formatHours(minutes);
+}
+
+/* Cập nhật vòng tròn + số phút khi đang xem tab Thống kê (mỗi giây) — chỉ
+   cập nhật số + vòng, KHÔNG chạy lại hiệu ứng "bung ra" ban đầu. Khi đang ở
+   chế độ chỉnh mục tiêu thì bỏ qua phần số (input đang được người dùng gõ),
+   chỉ vẫn cập nhật vòng tròn để xem trước % theo mục tiêu mới ngay lập tức. */
 function updateRingLiveValues() {
   ["writing", "listening"].forEach((cat) => {
     const minutesDone = ringMinutesDone(cat);
@@ -3699,11 +3712,10 @@ function updateRingLiveValues() {
     const pct = Math.min(1, minutesDone / goal);
     const ring = document.getElementById("ring-progress-" + cat);
     if (ring) ring.style.strokeDashoffset = RING_CIRCUMFERENCE * (1 - pct);
-    const valEl = document.getElementById("ring-value-" + cat);
-    if (valEl) valEl.textContent = Math.floor(minutesDone);
     if (!ringEditMode) {
-      const goalEl = document.getElementById("ring-goal-label-" + cat);
-      if (goalEl) goalEl.textContent = goal + " phút";
+      const valEl = document.getElementById("ring-value-" + cat);
+      if (valEl) valEl.textContent = Math.floor(minutesDone);
+      syncHourDisplay(cat, minutesDone);
     }
   });
 }
@@ -3722,7 +3734,8 @@ function animateRingNumber(el, target, duration) {
 }
 
 /* Hiệu ứng "bung ra" cho vòng tròn mỗi khi người dùng MỞ tab Thống kê — vòng
-   chạy từ 0% lên đúng % hiện tại + số phút đếm lên + phát âm thanh nhẹ. */
+   chạy từ 0% lên đúng % hiện tại + số phút đếm lên + phát âm thanh nhẹ.
+   Số to = phút đã học, số nhỏ bên dưới = quy đổi ra giờ. */
 function renderStatsRings(animate) {
   ["writing", "listening"].forEach((cat, idx) => {
     const minutesDone = Math.floor(ringMinutesDone(cat));
@@ -3730,8 +3743,7 @@ function renderStatsRings(animate) {
     const pct = Math.min(1, minutesDone / goal);
     const ring = document.getElementById("ring-progress-" + cat);
     const valEl = document.getElementById("ring-value-" + cat);
-    const goalEl = document.getElementById("ring-goal-label-" + cat);
-    if (goalEl && !ringEditMode) goalEl.textContent = goal + " phút";
+    syncHourDisplay(cat, minutesDone);
 
     if (animate && ring) {
       ring.style.transition = "none";
@@ -3778,9 +3790,11 @@ function renderProgressBars() {
   });
 }
 
+/* Bật/tắt chế độ chỉnh mục tiêu — khi bật, số TO (phút) trong vòng tròn biến
+   thành ô nhập; số NHỎ (giờ) bên dưới tự quy đổi theo mỗi khi số phút đổi. */
 function renderRingGoalEditors() {
   ["writing", "listening"].forEach((cat) => {
-    let holder = document.getElementById("ring-goal-label-" + cat);
+    let holder = document.getElementById("ring-value-" + cat);
     if (ringEditMode) {
       if (holder.tagName !== "INPUT") {
         const input = document.createElement("input");
@@ -3789,24 +3803,29 @@ function renderRingGoalEditors() {
         input.max = "600";
         input.step = "5";
         input.className = "ring-goal-input";
-        input.id = "ring-goal-label-" + cat;
+        input.id = "ring-value-" + cat;
         input.value = ringGoalMin(cat);
         input.addEventListener("input", () => {
           const v = Math.max(5, Math.min(600, parseInt(input.value, 10) || 5));
           setRingGoal(cat, v, false);
+          syncHourDisplay(cat, v);
         });
         input.addEventListener("blur", () => {
           const v = Math.max(5, Math.min(600, parseInt(input.value, 10) || 5));
+          input.value = v;
           setRingGoal(cat, v, true);
+          syncHourDisplay(cat, v);
         });
         holder.replaceWith(input);
       }
+      syncHourDisplay(cat, ringGoalMin(cat));
     } else if (holder.tagName === "INPUT") {
       const span = document.createElement("span");
-      span.className = "ring-goal-label";
-      span.id = "ring-goal-label-" + cat;
-      span.textContent = ringGoalMin(cat) + " phút";
+      span.className = "ring-value";
+      span.id = "ring-value-" + cat;
+      span.textContent = Math.floor(ringMinutesDone(cat));
       holder.replaceWith(span);
+      syncHourDisplay(cat, ringMinutesDone(cat));
     }
   });
 }
@@ -3828,7 +3847,7 @@ document.getElementById("ring-adjust-btn").addEventListener("click", () => {
 });
 
 // Lăn chuột trên vòng tròn để tăng/giảm mục tiêu — chỉ hoạt động khi đang ở
-// chế độ chỉnh (đã bấm nút ở giữa 2 vòng tròn).
+// chế độ chỉnh (đã bấm nút ở giữa 2 vòng tròn). Số giờ bên dưới tự quy đổi.
 document.querySelectorAll(".ring-goal-item").forEach((el) => {
   el.addEventListener("wheel", (e) => {
     if (!ringEditMode) return;
@@ -3837,8 +3856,9 @@ document.querySelectorAll(".ring-goal-item").forEach((el) => {
     const cur = ringGoalMin(cat);
     const next = Math.max(5, Math.min(600, cur + (e.deltaY < 0 ? 5 : -5)));
     setRingGoal(cat, next, false);
-    const holder = document.getElementById("ring-goal-label-" + cat);
+    const holder = document.getElementById("ring-value-" + cat);
     if (holder && holder.tagName === "INPUT") holder.value = next;
+    syncHourDisplay(cat, next);
     clearTimeout(el._wheelSaveTimer);
     el._wheelSaveTimer = setTimeout(() => saveState(), 400);
   }, { passive: false });
