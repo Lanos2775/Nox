@@ -40,7 +40,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "" },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "", wrHintKey: "AltLeft", wrTranslateKey: "F2" },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     studyTime: { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 },
     bubblePos: null,
@@ -129,6 +129,8 @@ function loadState() {
       parsed.studyTime.writingSec = 0;
       parsed.studyTime.listeningSec = 0;
     }
+    if (!parsed.settings.wrHintKey) parsed.settings.wrHintKey = "AltLeft";
+    if (!parsed.settings.wrTranslateKey) parsed.settings.wrTranslateKey = "F2";
     return parsed;
   } catch (e) {
     return defaultState();
@@ -1326,6 +1328,7 @@ const wr = {
 // ĐÚNG mới được giữ lại vĩnh viễn (trong item.wrProgress, có saveState).
 const wrAttempts = {};       // itemId -> [{text, pct}] các lần gõ sai của câu đang làm dở
 const wrHintCount = {};      // itemId -> số lần đã dùng gợi ý
+const wrHintRevealLen = {};  // itemId -> số ký tự đáp án đã "lộ" qua gợi ý (độc lập với ô nhập)
 const wrEnterCount = {};     // itemId -> số lần đã bấm Enter (chỉ đếm ở độ khó Khó)
 const wrSessionSkipped = {}; // itemId -> true nếu đã hết lượt Enter ở độ khó Khó, tạm bỏ qua trong phiên này
 
@@ -1568,9 +1571,14 @@ function writingTabVisible() {
 }
 document.addEventListener("keydown", (e) => {
   if (!writingTabVisible() || anyOverlayOpen()) return;
-  if (e.code === "AltRight") {
+  if (e.code === state.settings.wrTranslateKey) {
     e.preventDefault();
     wrToggleTranslateBar();
+    return;
+  }
+  if (e.code === state.settings.wrHintKey) {
+    e.preventDefault();
+    wrUseHint();
     return;
   }
   if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
@@ -1582,6 +1590,78 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
   if (e.code === "ArrowLeft") wrGoPrev();
   else wrGoNext();
+});
+
+/* ============================================================
+   Cài đặt phím tắt cho Viết (gợi ý / mở thanh dịch) — người dùng tự gán
+   phím mình muốn trong Cài đặt > Phím tắt (Viết).
+   ============================================================ */
+function keybindLabel(code) {
+  if (!code) return "?";
+  const map = {
+    AltLeft: "Alt trái", AltRight: "Alt phải",
+    ControlLeft: "Ctrl trái", ControlRight: "Ctrl phải",
+    ShiftLeft: "Shift trái", ShiftRight: "Shift phải",
+    Tab: "Tab", Space: "Space", Enter: "Enter", Escape: "Esc",
+    CapsLock: "Caps Lock", Backquote: "`", Backslash: "\\",
+    ArrowLeft: "←", ArrowRight: "→", ArrowUp: "↑", ArrowDown: "↓",
+  };
+  if (map[code]) return map[code];
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code;
+  if (code.startsWith("Key")) return code.slice(3);
+  if (code.startsWith("Digit")) return code.slice(5);
+  if (code.startsWith("Numpad")) return "Numpad " + code.slice(6);
+  return code;
+}
+function updateKeybindButtons() {
+  document.getElementById("settings-keybind-hint").textContent = keybindLabel(state.settings.wrHintKey);
+  document.getElementById("settings-keybind-translate").textContent = keybindLabel(state.settings.wrTranslateKey);
+}
+let keybindListening = null; // "wrHintKey" | "wrTranslateKey" | null
+function startKeybindCapture(action, btn) {
+  document.querySelectorAll(".keybind-btn").forEach((b) => {
+    b.classList.remove("listening");
+    if (b.dataset.action === "wrHintKey") b.textContent = keybindLabel(state.settings.wrHintKey);
+    if (b.dataset.action === "wrTranslateKey") b.textContent = keybindLabel(state.settings.wrTranslateKey);
+  });
+  keybindListening = action;
+  btn.classList.add("listening");
+  btn.textContent = "Nhấn phím...";
+}
+document.querySelectorAll(".keybind-btn").forEach((btn) => {
+  btn.addEventListener("click", () => startKeybindCapture(btn.dataset.action, btn));
+});
+// Bắt phím ở pha capture để chặn được cả những phím trình duyệt có thể can
+// thiệp trước (ví dụ Tab, F2, Alt) — chỉ hoạt động khi đang ở chế độ chờ gán.
+document.addEventListener("keydown", (e) => {
+  if (!keybindListening) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.code === "Escape") {
+    const btn = document.querySelector(`.keybind-btn[data-action="${keybindListening}"]`);
+    keybindListening = null;
+    updateKeybindButtons();
+    if (btn) btn.classList.remove("listening");
+    return;
+  }
+  const otherAction = keybindListening === "wrHintKey" ? "wrTranslateKey" : "wrHintKey";
+  if (state.settings[otherAction] === e.code) {
+    showToast("Phím này đang được gán cho hành động khác rồi.");
+    return;
+  }
+  const btn = document.querySelector(`.keybind-btn[data-action="${keybindListening}"]`);
+  state.settings[keybindListening] = e.code;
+  saveState();
+  keybindListening = null;
+  updateKeybindButtons();
+  if (btn) btn.classList.remove("listening");
+}, true);
+document.getElementById("settings-keybind-reset").addEventListener("click", () => {
+  state.settings.wrHintKey = "AltLeft";
+  state.settings.wrTranslateKey = "F2";
+  saveState();
+  updateKeybindButtons();
+  showToast("Đã đặt lại phím tắt mặc định.");
 });
 
 /* ============================================================
@@ -1678,19 +1758,31 @@ function wrBuildAnswerBubble(attempt, clickable) {
   row.className = "nghe-bubble-row right";
   const pctSpan = document.createElement("span");
   pctSpan.className = "nghe-pct";
-  pctSpan.textContent = attempt.correct ? "✓" : attempt.pct + "%";
+  pctSpan.textContent = attempt.isHint ? "💡" : (attempt.correct ? "✓" : attempt.pct + "%");
   const bubble = document.createElement("div");
   const isClickable = clickable && !attempt.correct;
-  bubble.className = "nghe-bubble nghe-bubble-right " + (attempt.correct ? "correct" : "wrong") + (isClickable ? " clickable" : "");
+  bubble.className = "nghe-bubble nghe-bubble-right " + (attempt.isHint ? "hint" : (attempt.correct ? "correct" : "wrong")) + (isClickable ? " clickable" : "");
   bubble.textContent = attempt.text;
   if (isClickable) {
-    bubble.title = "Nhấp để dán lại câu này vào ô nhập";
-    bubble.addEventListener("click", () => {
-      const input = document.getElementById("wr-answer-input");
-      input.value = attempt.text;
-      input.focus();
-      wr.historyIndex = null;
-    });
+    if (attempt.isHint) {
+      bubble.title = "Nhấp để chèn từ gợi ý này vào ô nhập";
+      bubble.addEventListener("click", () => {
+        const input = document.getElementById("wr-answer-input");
+        const sep = input.value && !/\s$/.test(input.value) ? " " : "";
+        input.value = input.value + sep + attempt.text;
+        input.focus();
+        wr.historyIndex = null;
+        wrUpdateTypingDots();
+      });
+    } else {
+      bubble.title = "Nhấp để dán lại câu này vào ô nhập";
+      bubble.addEventListener("click", () => {
+        const input = document.getElementById("wr-answer-input");
+        input.value = attempt.text;
+        input.focus();
+        wr.historyIndex = null;
+      });
+    }
   }
   row.appendChild(pctSpan);
   row.appendChild(bubble);
@@ -1706,6 +1798,7 @@ function wrRedoItem(itemId, idx) {
   item.status = "new";
   delete wrAttempts[itemId];
   delete wrHintCount[itemId];
+  delete wrHintRevealLen[itemId];
   delete wrEnterCount[itemId];
   delete wrSessionSkipped[itemId];
   saveState();
@@ -1763,8 +1856,11 @@ function wrToggleTranslateBar(forceShow) {
 document.getElementById("wr-translate-toggle-btn").addEventListener("click", () => wrToggleTranslateBar());
 
 /* ============================================================
-   Gợi ý (nút ?) — hiện dần từng từ tiếp theo ngay trong ô nhập,
-   giới hạn theo độ khó; khoá hẳn ở độ khó Khó.
+   Gợi ý (nút ? / phím tắt) — mỗi lần dùng gửi 1 bong bóng chat riêng chứa
+   từ tiếp theo, KHÔNG điền trực tiếp vào ô nhập (ô nhập vẫn giữ nguyên
+   những gì người dùng đang tự gõ). Các bong bóng gợi ý tự biến mất khỏi
+   khung chat ngay khi câu được làm đúng (renderWrChat chỉ hiện đáp án đúng
+   cho câu đã "done", không hiện lại các attempt/gợi ý cũ nữa).
    ============================================================ */
 function wrUseHint() {
   const item = currentWrItem();
@@ -1786,14 +1882,16 @@ function wrUseHint() {
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
-  const cur = input.value.length;
+  const cur = wrHintRevealLen[item.id] || 0;
   let nextSpace = answer.indexOf(" ", cur);
   if (nextSpace === -1) nextSpace = answer.length;
   else nextSpace += 1;
-  input.value = input.value + answer.slice(cur, Math.max(nextSpace, cur + 1));
+  const word = answer.slice(cur, Math.max(nextSpace, cur + 1));
+  if (!word.trim()) return; // đã lộ hết đáp án, không còn gì để gợi ý thêm
+  wrHintRevealLen[item.id] = cur + word.length;
   wrHintCount[item.id] = used + 1;
-  wr.historyIndex = null;
-  wrUpdateTypingDots();
+  (wrAttempts[item.id] = wrAttempts[item.id] || []).push({ text: word.trim(), isHint: true });
+  renderWrChat();
 }
 document.getElementById("wr-hint-btn").addEventListener("click", wrUseHint);
 
@@ -1877,14 +1975,6 @@ document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
     wrSubmitAnswer();
-    return;
-  }
-  if (e.key === "Fn") {
-    // Phím tắt dùng gợi ý — LƯU Ý: nhiều bàn phím/hệ điều hành (đặc biệt
-    // Windows) không gửi sự kiện cho phím Fn tới trình duyệt (bị chặn ở
-    // tầng firmware), nên phím tắt này có thể không hoạt động trên mọi máy.
-    e.preventDefault();
-    wrUseHint();
     return;
   }
   if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -4818,6 +4908,7 @@ function updateSettingsSyncUI() {
 document.getElementById("settings-open").addEventListener("click", () => {
   updateSettingsSyncUI();
   document.getElementById("settings-sync-code-input").value = syncCode || "";
+  updateKeybindButtons();
   document.getElementById("settings-overlay").classList.remove("hidden");
 });
 document.getElementById("settings-close").addEventListener("click", () => {

@@ -322,6 +322,25 @@ input,textarea{font-family:inherit;}
 .settings-slider-row span:first-child{flex-shrink:0;width:130px;}
 .settings-slider-row input[type="range"]{flex:1;accent-color:var(--accent);}
 .settings-slider-val{width:40px;text-align:right;color:var(--text-muted);font-size:.78rem;flex-shrink:0;}
+
+.settings-keybind-row{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:10px;font-size:.85rem;
+}
+.keybind-btn{
+  min-width:96px;text-align:center;
+  padding:6px 12px;font-size:.8rem;font-weight:700;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--panel);color:var(--text);cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.keybind-btn:hover{background:var(--accent-soft);border-color:var(--accent);}
+.keybind-btn.listening{
+  background:var(--accent);color:var(--accent-text);border-color:var(--accent);
+  animation:keybind-pulse 1s ease-in-out infinite;
+}
+@keyframes keybind-pulse{0%,100%{opacity:1;}50%{opacity:.55;}}
+.settings-keybind-reset{margin-top:2px;font-size:.78rem;padding:6px 14px;}
 .version-info-body{max-height:60vh;overflow-y:auto;font-size:.85rem;line-height:1.6;}
 .version-entry{margin-bottom:16px;}
 .version-entry:last-child{margin-bottom:0;}
@@ -1513,6 +1532,9 @@ button{touch-action:manipulation;}
 .nghe-bubble-right{background:var(--accent);color:var(--accent-text);border-color:var(--accent);border-bottom-right-radius:4px;}
 .nghe-bubble-right.wrong{background:var(--difficult-soft);color:var(--difficult);border-color:var(--difficult);}
 .nghe-bubble-right.correct{background:var(--known-soft);color:var(--known);border-color:var(--known);}
+.nghe-bubble-right.hint{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);border-style:dashed;}
+.nghe-bubble-right.hint.clickable{cursor:pointer;}
+.nghe-bubble-right.hint.clickable:hover{filter:brightness(1.06);text-decoration:underline;}
 .nghe-bubble-right.wrong.clickable{cursor:pointer;}
 .nghe-bubble-right.wrong.clickable:hover{filter:brightness(1.06);text-decoration:underline;}
 .nghe-pct{font-size:.7rem;color:var(--text-muted);white-space:nowrap;}

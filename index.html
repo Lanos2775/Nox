@@ -276,8 +276,8 @@
 
       <div class="nghe-input-bar">
         <input type="text" id="wr-answer-input" class="nghe-answer-input" placeholder="Nhập câu trả lời tiếng Anh ... (Enter để kiểm tra)">
-        <button class="nghe-input-icon-btn" id="wr-translate-toggle-btn" title="Bật/tắt thanh dịch nhanh (Alt phải)">⇄</button>
-        <button class="nghe-input-icon-btn" id="wr-hint-btn" title="Gợi ý từ tiếp theo (Fn)">?</button>
+        <button class="nghe-input-icon-btn" id="wr-translate-toggle-btn" title="Bật/tắt thanh dịch nhanh (xem/đổi phím tắt trong Cài đặt)">⇄</button>
+        <button class="nghe-input-icon-btn" id="wr-hint-btn" title="Gợi ý từ tiếp theo (xem/đổi phím tắt trong Cài đặt)">?</button>
       </div>
     </section>
 
@@ -840,6 +840,19 @@
           <input type="checkbox" id="settings-qt-autodetect">
           <span>Tự nhận diện Anh / Việt</span>
         </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Phím tắt (Viết)</div>
+        <div class="settings-keybind-row">
+          <span>Dùng gợi ý</span>
+          <button type="button" class="keybind-btn" id="settings-keybind-hint" data-action="wrHintKey">Alt trái</button>
+        </div>
+        <div class="settings-keybind-row">
+          <span>Mở/đóng thanh dịch</span>
+          <button type="button" class="keybind-btn" id="settings-keybind-translate" data-action="wrTranslateKey">F2</button>
+        </div>
+        <button type="button" class="pill-btn-outline settings-keybind-reset" id="settings-keybind-reset">Đặt lại mặc định</button>
       </div>
 
       <div class="settings-section hidden" id="settings-section-momentum">
