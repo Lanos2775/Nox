@@ -4684,9 +4684,17 @@ function parseTxtIntoLists(text) {
     const sep = line.includes("-->") ? "-->" : line.includes("\t") ? "\t" : "-";
     const idx = line.indexOf(sep);
     if (idx === -1) return;
-    const en = line.slice(0, idx).trim();
+    const enRaw = line.slice(0, idx).trim();
     const vi = line.slice(idx + sep.length).trim();
-    if (en && vi) current.items.push({ id: uid(), en, vi, status: "new" });
+    if (!enRaw || !vi) return;
+    // "|" tách nhiều đáp án hẳn khác nhau (đáp án chính + các đáp án phụ),
+    // giống hệt cách xử lý khi thêm tay 1 mục trong Kho.
+    const enParts = enRaw.split("|").map((s) => s.trim()).filter(Boolean);
+    const en = enParts[0] || enRaw;
+    const enAlts = enParts.slice(1);
+    const item = { id: uid(), en, vi, status: "new" };
+    if (enAlts.length) item.enAlts = enAlts;
+    current.items.push(item);
   });
   return blocks;
 }
@@ -4709,7 +4717,14 @@ document.getElementById("wh-import-file").addEventListener("change", (e) => {
                 newList.items.push({ id: uid(), lines: i.lines, status: "new", createdAt: Date.now() });
               }
             } else {
-              newList.items.push({ id: uid(), en: i.en, vi: i.vi, status: "new" });
+              // "|" trong i.en (hoặc mảng i.enAlts có sẵn) = các đáp án phụ,
+              // giống hệt cách xử lý khi thêm tay 1 mục trong Kho.
+              const enParts = String(i.en || "").split("|").map((s) => s.trim()).filter(Boolean);
+              const en = enParts[0] || i.en;
+              const enAlts = enParts.slice(1).concat(Array.isArray(i.enAlts) ? i.enAlts : []);
+              const item = { id: uid(), en, vi: i.vi, status: "new" };
+              if (enAlts.length) item.enAlts = enAlts;
+              newList.items.push(item);
             }
           });
           getCategory(wh.cat).push(newList);
