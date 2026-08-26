@@ -1328,7 +1328,7 @@ const wr = {
 // ĐÚNG mới được giữ lại vĩnh viễn (trong item.wrProgress, có saveState).
 const wrAttempts = {};       // itemId -> [{text, pct}] các lần gõ sai của câu đang làm dở
 const wrHintCount = {};      // itemId -> số lần đã dùng gợi ý
-const wrHintRevealLen = {};  // itemId -> số ký tự đáp án đã "lộ" qua gợi ý (độc lập với ô nhập)
+const wrHintWordIdx = {};    // itemId -> chỉ số từ (theo mảng từ của đáp án) đã lộ qua gợi ý
 const wrEnterCount = {};     // itemId -> số lần đã bấm Enter (chỉ đếm ở độ khó Khó)
 const wrSessionSkipped = {}; // itemId -> true nếu đã hết lượt Enter ở độ khó Khó, tạm bỏ qua trong phiên này
 
@@ -1409,18 +1409,21 @@ function wrUpdateTrackedAnswer(item, typedRaw) {
 }
 
 // Chấm điểm % giống Nghe — so với TẤT CẢ đáp án được chấp nhận, lấy đáp án
-// khớp nhất. "Đúng" vẫn theo chuẩn khớp tuyệt đối sau khi chuẩn hoá (giữ
-// đúng tinh thần chấm cũ), % chỉ để hiển thị mức độ gần đúng.
+// khớp nhất để hiển thị mức độ gần đúng (%). "Đúng" (correct) CHỈ được tính
+// khi khớp TUYỆT ĐỐI (sau khi chuẩn hoá dấu câu/hoa-thường) với ít nhất 1
+// đáp án được chấp nhận — không dùng ngưỡng dung sai (tolerance) như bên
+// Nghe nữa, vì trước đây lỡ dùng chung "correct" từ ngheGradeLine (chỉ cần
+// khớp ~80% số từ đã được tính đúng dù còn thiếu chữ ở cuối câu).
 function wrGradeAnswer(typed, item) {
   const candidates = allAcceptedAnswers(item);
-  if (!candidates.length) return { pct: 0, correct: false };
-  let best = { pct: 0, correct: false };
+  if (!candidates.length) return { pct: 0, correct: false, matchedText: "" };
+  let best = { pct: 0, correct: false, matchedText: candidates[0].text };
   candidates.forEach((c) => {
     const g = ngheGradeLine(typed, c.text);
-    if (g.pct > best.pct) best = g;
+    if (g.pct > best.pct) best = { pct: g.pct, correct: false, matchedText: c.text };
   });
-  const exact = candidates.some((c) => normalizeAnswer(typed) === normalizeAnswer(c.text));
-  if (exact) best = { pct: 100, correct: true };
+  const exactMatch = candidates.find((c) => normalizeAnswer(typed) === normalizeAnswer(c.text));
+  if (exactMatch) best = { pct: 100, correct: true, matchedText: exactMatch.text };
   return best;
 }
 
@@ -1525,6 +1528,7 @@ function renderWritingTab() {
   rebuildWrQueue(false);
   document.getElementById("wr-answer-input").value = "";
   document.getElementById("quick-translate-bar").classList.add("hidden");
+  qtWriting.clear();
   renderWrChat();
 }
 
@@ -1735,6 +1739,14 @@ function wrBuildPromptBubble(item, idx) {
   const bubble = document.createElement("div");
   bubble.className = "nghe-bubble nghe-bubble-left";
   bubble.textContent = item.vi;
+  // Khi thanh dịch nhanh đang MỞ, bấm vào câu tiếng Việt này sẽ điền thẳng
+  // câu đó vào thanh dịch (và dịch luôn) — không cần gõ lại tay.
+  bubble.title = "Nhấp để điền câu này vào thanh dịch (khi thanh dịch đang mở)";
+  bubble.addEventListener("click", () => {
+    const bar = document.getElementById("quick-translate-bar");
+    if (!bar || bar.classList.contains("hidden")) return;
+    qtWriting.setInputAndTranslateForced(item.vi, "vi-en");
+  });
   wrap.appendChild(bubble);
 
   // Nút làm lại câu — ẩn theo mặc định, chỉ hiện khi di chuột vào câu đề.
@@ -1798,7 +1810,7 @@ function wrRedoItem(itemId, idx) {
   item.status = "new";
   delete wrAttempts[itemId];
   delete wrHintCount[itemId];
-  delete wrHintRevealLen[itemId];
+  delete wrHintWordIdx[itemId];
   delete wrEnterCount[itemId];
   delete wrSessionSkipped[itemId];
   saveState();
@@ -1852,16 +1864,36 @@ function wrToggleTranslateBar(forceShow) {
   const bar = document.getElementById("quick-translate-bar");
   const show = forceShow !== undefined ? forceShow : bar.classList.contains("hidden");
   bar.classList.toggle("hidden", !show);
+  // Ẩn thanh dịch đi thì xoá luôn nội dung đang dịch — lần mở lại sau sẽ
+  // trống, không còn sót bản dịch của lần trước.
+  if (!show) qtWriting.clear();
 }
 document.getElementById("wr-translate-toggle-btn").addEventListener("click", () => wrToggleTranslateBar());
 
 /* ============================================================
    Gợi ý (nút ? / phím tắt) — mỗi lần dùng gửi 1 bong bóng chat riêng chứa
-   từ tiếp theo, KHÔNG điền trực tiếp vào ô nhập (ô nhập vẫn giữ nguyên
-   những gì người dùng đang tự gõ). Các bong bóng gợi ý tự biến mất khỏi
-   khung chat ngay khi câu được làm đúng (renderWrChat chỉ hiện đáp án đúng
-   cho câu đã "done", không hiện lại các attempt/gợi ý cũ nữa).
+   TRỌN VẸN 1 TỪ tiếp theo (theo ranh giới từ, không cắt giữa chừng), KHÔNG
+   điền trực tiếp vào ô nhập (ô nhập vẫn giữ nguyên những gì người dùng đang
+   tự gõ). Các bong bóng gợi ý tự biến mất khỏi khung chat ngay khi câu được
+   làm đúng (renderWrChat chỉ hiện đáp án đúng cho câu đã "done", không hiện
+   lại các attempt/gợi ý cũ nữa).
    ============================================================ */
+// Tách đáp án thành mảng từ (theo khoảng trắng) — dùng để gợi ý luôn theo
+// TRỌN 1 TỪ, tránh lỗi cắt giữa từ khi so theo số ký tự thô (ví dụ gõ dở
+// "a " của "arrived" từng làm gợi ý nhảy nhầm ra "rrived").
+function wrAnswerWords(answer) {
+  return (answer || "").split(/\s+/).filter(Boolean);
+}
+// Đếm số từ người dùng đã gõ XONG (đã có khoảng trắng theo sau) trong ô
+// nhập — từ đang gõ dở (chưa có dấu cách sau nó) KHÔNG tính là đã xong, để
+// gợi ý luôn trả về trọn vẹn từ đó thay vì phần còn thiếu của nó.
+function wrCompletedWordCount(typed) {
+  const raw = typed || "";
+  if (!raw.trim()) return 0;
+  const endsWithSpace = /\s$/.test(raw);
+  const tokens = raw.trim().split(/\s+/);
+  return endsWithSpace ? tokens.length : Math.max(0, tokens.length - 1);
+}
 function wrUseHint() {
   const item = currentWrItem();
   if (!item || ensureWrProgress(item).done) return;
@@ -1882,18 +1914,17 @@ function wrUseHint() {
   const input = document.getElementById("wr-answer-input");
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
-  // Vị trí bắt đầu gợi ý = xa nhất giữa (a) phần đã lộ qua gợi ý trước đó và
-  // (b) phần người dùng đã TỰ gõ trong ô nhập — tránh việc gợi ý quay lại
-  // từ đầu câu khi bạn đã gõ tay được một đoạn mà chưa dùng gợi ý lần nào.
-  const cur = Math.max(wrHintRevealLen[item.id] || 0, input.value.length);
-  let nextSpace = answer.indexOf(" ", cur);
-  if (nextSpace === -1) nextSpace = answer.length;
-  else nextSpace += 1;
-  const word = answer.slice(cur, Math.max(nextSpace, cur + 1));
-  if (!word.trim()) return; // đã lộ hết đáp án, không còn gì để gợi ý thêm
-  wrHintRevealLen[item.id] = cur + word.length;
+  const words = wrAnswerWords(answer);
+  // Từ bắt đầu gợi ý = xa nhất giữa (a) số từ đã lộ qua gợi ý trước đó và
+  // (b) số từ người dùng đã TỰ gõ XONG — tránh gợi ý quay lại từ đầu câu
+  // khi bạn đã gõ tay được một đoạn mà chưa dùng gợi ý lần nào, đồng thời
+  // luôn trả về TRỌN VẸN 1 từ (không cắt dở như "I'm" chỉ còn "m").
+  const idx = Math.max(wrHintWordIdx[item.id] || 0, wrCompletedWordCount(input.value));
+  if (idx >= words.length) return; // đã lộ hết đáp án, không còn gì để gợi ý thêm
+  const word = words[idx];
+  wrHintWordIdx[item.id] = idx + 1;
   wrHintCount[item.id] = used + 1;
-  (wrAttempts[item.id] = wrAttempts[item.id] || []).push({ text: word.trim(), isHint: true });
+  (wrAttempts[item.id] = wrAttempts[item.id] || []).push({ text: word, isHint: true });
   renderWrChat();
 }
 document.getElementById("wr-hint-btn").addEventListener("click", wrUseHint);
@@ -1935,7 +1966,10 @@ function wrSubmitAnswer() {
   if (grade.correct) {
     item.status = "known";
     prog.done = true;
-    prog.correctText = typed;
+    // Hiện đáp án CHUẨN có sẵn trong dữ liệu (đáp án vừa khớp), không lấy
+    // nguyên văn người chơi gõ — tránh lệch hoa/thường, dấu câu, khoảng
+    // trắng thừa... so với đáp án gốc.
+    prog.correctText = grade.matchedText || item.en;
     delete wrAttempts[item.id];
     delete wrSessionSkipped[item.id];
     saveState();
@@ -2016,7 +2050,13 @@ function updateWrDifficultyBtn() {
     : "Bấm để đổi độ khó: Dễ → Trung bình → Khó";
   document.getElementById("wr-hint-btn").disabled = wr.difficulty === "hard";
   document.getElementById("wr-translate-toggle-btn").disabled = wr.difficulty === "hard";
-  if (wr.difficulty === "hard") document.getElementById("quick-translate-bar").classList.add("hidden");
+  if (wr.difficulty === "hard") {
+    document.getElementById("quick-translate-bar").classList.add("hidden");
+    // updateWrDifficultyBtn() được gọi 1 lần lúc script khởi tạo (trước khi
+    // qtWriting được khai báo ở dưới) — bọc try/catch để không vỡ lúc tải
+    // trang nếu độ khó đã lưu sẵn là "Khó".
+    try { qtWriting.clear(); } catch (e) { /* qtWriting chưa khởi tạo lúc này */ }
+  }
   wrUpdateTypingDots();
 }
 document.getElementById("wr-difficulty-toggle").addEventListener("click", () => {
@@ -2682,6 +2722,18 @@ function createQuickTranslateBar(prefix) {
       inputEl.value = text;
       clearTimeout(qs.debounceHandle);
       translate();
+    },
+    // Xoá sạch nội dung đang dịch (ô nhập + kết quả + trạng thái nội bộ) —
+    // dùng khi ẩn thanh dịch đi, để lần mở lại sau không còn sót bản dịch cũ.
+    clear() {
+      clearTimeout(qs.debounceHandle);
+      qs.lastEn = "";
+      qs.lastVi = "";
+      qs.lastIPA = "";
+      qs.sourceText = "";
+      qs.hasBlurred = false;
+      inputEl.value = "";
+      resultBox.innerHTML = "";
     },
   };
 }
