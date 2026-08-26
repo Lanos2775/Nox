@@ -32,7 +32,7 @@ function defaultState() {
       listening: [defaultList("Danh sách 1")],
       diary: [defaultDiaryList("Nhật ký 1")],
     },
-    selected: { flashcard: [], writing: [], listening: [] },
+    selected: { flashcard: [], writing: [], listening: [], wrFcSource: [] },
     activeWhList: { flashcard: null, writing: null, dictionary: null, listening: null, diary: null },
     reminder: {
       enabled: false, autoRead: false, desktopNotify: false, mobileNotify: { enabled: false },
@@ -131,6 +131,7 @@ function loadState() {
     }
     if (!parsed.settings.wrHintKey) parsed.settings.wrHintKey = "AltLeft";
     if (!parsed.settings.wrTranslateKey) parsed.settings.wrTranslateKey = "F2";
+    if (!parsed.selected.wrFcSource) parsed.selected.wrFcSource = [];
     return parsed;
   } catch (e) {
     return defaultState();
@@ -259,6 +260,7 @@ function connectSync(code) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       ensureSelected("flashcard");
       ensureSelected("writing");
+      ensureSelected("flashcard", "wrFcSource");
       renderCurrentTab();
       applyingRemoteState = false;
     },
@@ -331,10 +333,12 @@ function getCategory(cat) {
 function getList(cat, listId) {
   return getCategory(cat).find((l) => l.id === listId);
 }
-function ensureSelected(cat) {
+function ensureSelected(cat, selKey) {
+  const key = selKey || cat;
   const ids = state.categories[cat].map((l) => l.id);
-  state.selected[cat] = state.selected[cat].filter((id) => ids.includes(id));
-  if (state.selected[cat].length === 0 && ids.length) state.selected[cat] = [ids[0]];
+  if (!state.selected[key]) state.selected[key] = [];
+  state.selected[key] = state.selected[key].filter((id) => ids.includes(id));
+  if (state.selected[key].length === 0 && ids.length) state.selected[key] = [ids[0]];
 }
 function itemsFromLists(cat, listIds) {
   const lists = getCategory(cat).filter((l) => listIds.includes(l.id));
@@ -752,8 +756,9 @@ function escapeHtml(str) {
 
 // Chọn nhanh danh sách active (Thẻ / Viết) — thay cho popup "Chọn danh sách" cũ,
 // hiển thị ngay 1 hàng danh sách để bấm chọn/bỏ chọn, giống kiểu bên Nghe.
-function renderListQuickSelect(cat, containerId, onChange, singleSelect) {
-  ensureSelected(cat);
+function renderListQuickSelect(cat, containerId, onChange, singleSelect, selKey) {
+  const key = selKey || cat;
+  ensureSelected(cat, key);
   const box = document.getElementById(containerId);
   box.innerHTML = "";
   const lists = getCategory(cat);
@@ -763,16 +768,16 @@ function renderListQuickSelect(cat, containerId, onChange, singleSelect) {
   }
   lists.forEach((list) => {
     const btn = document.createElement("button");
-    const selected = state.selected[cat].includes(list.id);
+    const selected = state.selected[key].includes(list.id);
     btn.className = "nghe-item-btn" + (selected ? " active" : "");
     btn.innerHTML = `<span>${escapeHtml(list.name)}</span><span>${selected ? "✓" : ""}</span>`;
     btn.addEventListener("click", () => {
-      const arr = state.selected[cat];
+      const arr = state.selected[key];
       if (singleSelect) {
         // Chỉ được chọn 1 danh sách — bấm vào danh sách khác sẽ thay thế
         // lựa chọn hiện tại thay vì cộng dồn.
         if (arr.length === 1 && arr[0] === list.id) return;
-        state.selected[cat] = [list.id];
+        state.selected[key] = [list.id];
       } else {
         const idx = arr.indexOf(list.id);
         if (idx >= 0) {
@@ -1316,6 +1321,7 @@ document.getElementById("fc-shuffle").addEventListener("click", () => {
    ============================================================ */
 const wr = {
   filter: "all",
+  sourceCat: "writing", // "writing" hoặc "flashcard" — nguồn danh sách để luyện Viết
   queue: [],
   cursor: 0,
   maxReached: 0,
@@ -1324,6 +1330,13 @@ const wr = {
   trackedAnswer: "", // đáp án (trong các đáp án được chấp nhận) đang gần giống nhất với những gì đang gõ
   historyIndex: null, // đang lướt lại lịch sử câu sai bằng phím ↑/↓ (null = không lướt)
 };
+// Khi wr.sourceCat === "flashcard", danh sách đang chọn để luyện Viết được
+// lưu riêng ở đây (state.selected.wrFcSource) — KHÔNG dùng chung
+// state.selected.flashcard, để không ảnh hưởng tới danh sách đang chọn ở
+// tab Thẻ.
+function wrSelKey() {
+  return wr.sourceCat === "flashcard" ? "wrFcSource" : "writing";
+}
 // Dữ liệu tạm trong phiên làm việc (KHÔNG lưu vào state) — chỉ câu đã làm
 // ĐÚNG mới được giữ lại vĩnh viễn (trong item.wrProgress, có saveState).
 const wrAttempts = {};       // itemId -> [{text, pct}] các lần gõ sai của câu đang làm dở
@@ -1439,14 +1452,15 @@ function wrStatusFromFilter(f) {
 }
 
 function wrCurrentItems() {
-  ensureSelected("writing");
-  const items = itemsFromLists("writing", state.selected.writing);
+  const key = wrSelKey();
+  ensureSelected(wr.sourceCat, key);
+  const items = itemsFromLists(wr.sourceCat, state.selected[key]);
   if (wr.filter === "all") return items;
   return items.filter((i) => i.status === wrStatusFromFilter(wr.filter));
 }
 
 function wrItemById(id) {
-  for (const l of getCategory("writing")) {
+  for (const l of getCategory(wr.sourceCat)) {
     const found = l.items.find((i) => i.id === id);
     if (found) return found;
   }
@@ -1509,17 +1523,31 @@ function rebuildWrQueue(keep) {
   wr.historyIndex = null;
 }
 
+// Nút đổi nguồn danh sách luyện Viết giữa "Viết" và "Thẻ" (để có thể luyện
+// viết trên cả những danh sách đang nằm trong Thẻ mà không cần copy sang).
+function updateWrSourceToggleBtn() {
+  const btn = document.getElementById("wr-source-toggle");
+  if (!btn) return;
+  btn.textContent = "Danh sách: " + (wr.sourceCat === "flashcard" ? "Thẻ" : "Viết") + " ⇄";
+}
+document.getElementById("wr-source-toggle").addEventListener("click", () => {
+  wr.sourceCat = wr.sourceCat === "flashcard" ? "writing" : "flashcard";
+  renderWritingTab();
+});
+
 function renderWritingTab() {
-  ensureSelected("writing");
+  const key = wrSelKey();
+  ensureSelected(wr.sourceCat, key);
   // Phòng trường hợp còn sót nhiều danh sách được chọn từ trước khi đổi
   // sang chế độ chỉ chọn 1 danh sách — chỉ giữ lại danh sách đầu tiên.
-  if (state.selected.writing.length > 1) {
-    state.selected.writing = [state.selected.writing[0]];
+  if (state.selected[key].length > 1) {
+    state.selected[key] = [state.selected[key][0]];
     saveState();
   }
-  renderListQuickSelect("writing", "wr-list-quickselect", renderWritingTab, true);
+  updateWrSourceToggleBtn();
+  renderListQuickSelect(wr.sourceCat, "wr-list-quickselect", renderWritingTab, true, key);
 
-  const all = itemsFromLists("writing", state.selected.writing);
+  const all = itemsFromLists(wr.sourceCat, state.selected[key]);
   document.getElementById("wr-stat-total").textContent = all.length;
   document.getElementById("wr-stat-undone").textContent = all.filter((i) => i.status === "new").length;
   document.getElementById("wr-stat-correct").textContent = all.filter((i) => i.status === "known").length;
@@ -1533,7 +1561,7 @@ function renderWritingTab() {
 }
 
 function renderWritingStatsOnly() {
-  const all = itemsFromLists("writing", state.selected.writing);
+  const all = itemsFromLists(wr.sourceCat, state.selected[wrSelKey()]);
   document.getElementById("wr-stat-total").textContent = all.length;
   document.getElementById("wr-stat-undone").textContent = all.filter((i) => i.status === "new").length;
   document.getElementById("wr-stat-correct").textContent = all.filter((i) => i.status === "known").length;
@@ -1681,8 +1709,8 @@ function renderWrChat() {
 
   // Tiêu đề hiện tên danh sách đang chọn (chỉ 1 danh sách), không phải câu
   // đang làm.
-  const listId = state.selected.writing[0];
-  const list = listId ? getList("writing", listId) : null;
+  const listId = state.selected[wrSelKey()][0];
+  const list = listId ? getList(wr.sourceCat, listId) : null;
   titleEl.textContent = list ? list.name : "Chọn danh sách để bắt đầu";
 
   const item = currentWrItem();
@@ -1797,7 +1825,26 @@ function wrBuildAnswerBubble(attempt, clickable) {
     }
   }
   row.appendChild(pctSpan);
-  row.appendChild(bubble);
+  if (attempt.correct) {
+    // Đáp án đúng — thêm nút loa đọc câu tiếng Anh, chỉ hiện khi di chuột
+    // vào (giống nút "làm lại câu" bên trái).
+    const wrap = document.createElement("div");
+    wrap.className = "nghe-right-wrap";
+    const speakBtn = document.createElement("button");
+    speakBtn.type = "button";
+    speakBtn.className = "nghe-translate-btn";
+    speakBtn.title = "Đọc câu tiếng Anh";
+    speakBtn.textContent = "🔊";
+    speakBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      playAudio(attempt.text, "en-US");
+    });
+    wrap.appendChild(bubble);
+    wrap.appendChild(speakBtn);
+    row.appendChild(wrap);
+  } else {
+    row.appendChild(bubble);
+  }
   return row;
 }
 
@@ -6332,6 +6379,7 @@ document.getElementById("dy-content").addEventListener("keydown", (e) => {
    ============================================================ */
 ensureSelected("flashcard");
 ensureSelected("writing");
+ensureSelected("flashcard", "wrFcSource");
 renderFlashcardTab();
 updateQuizCountSliderMax();
 if (state.reminder.enabled) {
