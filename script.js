@@ -1341,7 +1341,6 @@ function wrSelKey() {
 // ĐÚNG mới được giữ lại vĩnh viễn (trong item.wrProgress, có saveState).
 const wrAttempts = {};       // itemId -> [{text, pct}] các lần gõ sai của câu đang làm dở
 const wrHintCount = {};      // itemId -> số lần đã dùng gợi ý
-const wrHintWordIdx = {};    // itemId -> chỉ số từ (theo mảng từ của đáp án) đã lộ qua gợi ý
 const wrEnterCount = {};     // itemId -> số lần đã bấm Enter (chỉ đếm ở độ khó Khó)
 const wrSessionSkipped = {}; // itemId -> true nếu đã hết lượt Enter ở độ khó Khó, tạm bỏ qua trong phiên này
 
@@ -1857,7 +1856,6 @@ function wrRedoItem(itemId, idx) {
   item.status = "new";
   delete wrAttempts[itemId];
   delete wrHintCount[itemId];
-  delete wrHintWordIdx[itemId];
   delete wrEnterCount[itemId];
   delete wrSessionSkipped[itemId];
   saveState();
@@ -1931,15 +1929,26 @@ document.getElementById("wr-translate-toggle-btn").addEventListener("click", () 
 function wrAnswerWords(answer) {
   return (answer || "").split(/\s+/).filter(Boolean);
 }
-// Đếm số từ người dùng đã gõ XONG (đã có khoảng trắng theo sau) trong ô
-// nhập — từ đang gõ dở (chưa có dấu cách sau nó) KHÔNG tính là đã xong, để
-// gợi ý luôn trả về trọn vẹn từ đó thay vì phần còn thiếu của nó.
-function wrCompletedWordCount(typed) {
+// Đếm số từ ĐÚNG liên tiếp tính từ đầu câu mà người dùng đã tự gõ XONG (đã
+// có khoảng trắng theo sau) — từ đang gõ dở (chưa có dấu cách sau nó) KHÔNG
+// tính. Vừa gặp 1 từ gõ SAI (không khớp từ đúng ở đúng vị trí đó) là dừng
+// đếm ngay, để gợi ý không bao giờ nhảy qua từ đang gõ sai/gõ dở sang từ
+// tiếp theo — ví dụ gõ "I am a goo " (sai "good") thì vẫn dừng ở từ thứ 4,
+// gợi ý sẽ tiếp tục đưa ra "good" chứ không nhảy sang từ kế tiếp.
+function wrCorrectPrefixWordCount(words, typed) {
   const raw = typed || "";
   if (!raw.trim()) return 0;
   const endsWithSpace = /\s$/.test(raw);
   const tokens = raw.trim().split(/\s+/);
-  return endsWithSpace ? tokens.length : Math.max(0, tokens.length - 1);
+  const completedCount = endsWithSpace ? tokens.length : Math.max(0, tokens.length - 1);
+  let correct = 0;
+  for (let i = 0; i < completedCount; i++) {
+    const typedWord = stripPunct(tokens[i] || "").toLowerCase();
+    const correctWord = stripPunct(words[i] || "").toLowerCase();
+    if (!typedWord || typedWord !== correctWord) break;
+    correct++;
+  }
+  return correct;
 }
 function wrUseHint() {
   const item = currentWrItem();
@@ -1962,14 +1971,13 @@ function wrUseHint() {
   wrUpdateTrackedAnswer(item, input.value);
   const answer = wr.trackedAnswer || item.en;
   const words = wrAnswerWords(answer);
-  // Từ bắt đầu gợi ý = xa nhất giữa (a) số từ đã lộ qua gợi ý trước đó và
-  // (b) số từ người dùng đã TỰ gõ XONG — tránh gợi ý quay lại từ đầu câu
-  // khi bạn đã gõ tay được một đoạn mà chưa dùng gợi ý lần nào, đồng thời
-  // luôn trả về TRỌN VẸN 1 từ (không cắt dở như "I'm" chỉ còn "m").
-  const idx = Math.max(wrHintWordIdx[item.id] || 0, wrCompletedWordCount(input.value));
+  // Từ bắt đầu gợi ý = từ ngay sau từ ĐÚNG cuối cùng người dùng đã tự gõ.
+  // Nếu chưa gõ đúng từ đó (kể cả đã dùng gợi ý cho nó trước đây nhưng
+  // chưa gõ lại vào ô nhập), gợi ý sẽ tiếp tục đưa ra ĐÚNG từ đó, không
+  // đẩy sang từ tiếp theo.
+  const idx = wrCorrectPrefixWordCount(words, input.value);
   if (idx >= words.length) return; // đã lộ hết đáp án, không còn gì để gợi ý thêm
   const word = words[idx];
-  wrHintWordIdx[item.id] = idx + 1;
   wrHintCount[item.id] = used + 1;
   (wrAttempts[item.id] = wrAttempts[item.id] || []).push({ text: word, isHint: true });
   renderWrChat();
