@@ -40,7 +40,7 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "", wrHintKey: "AltLeft", wrTranslateKey: "F2" },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "", wrHintKey: "AltLeft", wrTranslateKey: "F2", showStudyMinutes: false },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     studyTime: { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 },
     bubblePos: null,
@@ -129,6 +129,7 @@ function loadState() {
       parsed.studyTime.writingSec = 0;
       parsed.studyTime.listeningSec = 0;
     }
+    if (parsed.settings.showStudyMinutes === undefined) parsed.settings.showStudyMinutes = false;
     if (!parsed.settings.wrHintKey) parsed.settings.wrHintKey = "AltLeft";
     if (!parsed.settings.wrTranslateKey) parsed.settings.wrTranslateKey = "F2";
     if (!parsed.selected.wrFcSource) parsed.selected.wrFcSource = [];
@@ -439,7 +440,6 @@ function logStudyAction(source, isCorrect, customGain, customPenalty) {
   saveState();
 
   scheduleStudyIdleWarning();
-  updateBrandMomentumQuickview();
   applyMomentumThemeSync();
 }
 
@@ -466,13 +466,21 @@ function fireStudyIdleWarning() {
   }
 }
 
-/* ---- Xem nhanh hệ số cạnh chữ "Nox" ----
-   Tính năng "Thống kê > Hệ số" đang tạm ẩn (đã thay giao diện Thống kê bằng
-   vòng tròn mục tiêu) — luôn ẩn badge này bất kể cài đặt cũ của người dùng. */
-function updateBrandMomentumQuickview() {
+/* ---- Xem nhanh số phút đã học hôm nay cạnh chữ "Nox" ----
+   Bật/tắt trong Cài đặt > Thời gian học. Hiện tổng số phút đã học hôm nay
+   (Viết + Nghe cộng lại — 2 mảng thời gian đang được theo dõi thực sự).
+   Badge tự cập nhật mỗi giây khi đang học (qua studyTimeTick). */
+function updateBrandMinutesQuickview() {
   const el = document.getElementById("brand-momentum");
   if (!el) return;
-  el.classList.add("hidden");
+  if (!state.settings || !state.settings.showStudyMinutes) {
+    el.classList.add("hidden");
+    return;
+  }
+  ensureStudyTimeToday();
+  const totalMin = Math.floor((state.studyTime.writingSec + state.studyTime.listeningSec) / 60);
+  el.textContent = totalMin + "p";
+  el.classList.remove("hidden");
 }
 
 /* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
@@ -530,6 +538,7 @@ function studyTimeTick() {
   if (wh.cat === "stats" && !document.getElementById("wh-stats-view").classList.contains("hidden")) {
     updateRingLiveValues();
   }
+  if (cat && state.settings && state.settings.showStudyMinutes) updateBrandMinutesQuickview();
 }
 setInterval(studyTimeTick, 1000);
 document.addEventListener("visibilitychange", () => {
@@ -5257,7 +5266,6 @@ document.getElementById("settings-momentum-system-notify").checked = !!state.set
 document.getElementById("settings-momentum-quickview").addEventListener("change", (e) => {
   state.settings.momentumQuickview = e.target.checked;
   saveState();
-  updateBrandMomentumQuickview();
 });
 document.getElementById("settings-momentum-quickview").checked = !!state.settings.momentumQuickview;
 
@@ -5279,7 +5287,15 @@ momentumIdleSlider.addEventListener("input", (e) => {
   scheduleStudyIdleWarning();
 });
 
-updateBrandMomentumQuickview();
+/* ---- Cài đặt Thời gian học: hiện số phút đã học cạnh chữ "Nox" ---- */
+document.getElementById("settings-study-minutes-quickview").addEventListener("change", (e) => {
+  state.settings.showStudyMinutes = e.target.checked;
+  saveState();
+  updateBrandMinutesQuickview();
+});
+document.getElementById("settings-study-minutes-quickview").checked = !!state.settings.showStudyMinutes;
+
+updateBrandMinutesQuickview();
 applyMomentumThemeSync();
 scheduleStudyIdleWarning();
 
