@@ -40,9 +40,10 @@ function defaultState() {
       autoOff: { enabled: false, mode: "cycles", cycles: 1, minutes: 5 },
       autoOn: { enabled: false, mode: "countdown", minutes: 5, clock: "17:00" },
     },
-    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "", wrHintKey: "AltLeft", wrTranslateKey: "F2", showStudyMinutes: false },
+    settings: { flipVolume: 100, ttsVolume: 100, sfxEnabled: true, sfxVolume: 100, reminderMinDisplay: 10, reminderMaxReads: 2, fcFlipDuration: 10, qtClearOnRefocus: false, qtAutoDetectLang: false, showDiary: false, momentumSystemNotify: false, momentumQuickview: false, momentumThemeSync: false, momentumIdleMinutes: 3, wrDifficulty: "medium", ngheVoiceMode: "multi", ngheSingleVoiceURI: "", wrHintKey: "AltLeft", wrTranslateKey: "F2", wrReadKey: "F3", showStudyMinutes: false },
     studyMomentum: { score: 0, streakGain: 1, lastActionAt: null, history: [] },
     studyTime: { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 },
+    studyTimeTotal: { writingSec: 0, listeningSec: 0 },
     bubblePos: null,
   };
 }
@@ -124,6 +125,21 @@ function loadState() {
     if (parsed.studyTime.listeningSec === undefined) parsed.studyTime.listeningSec = 0;
     if (parsed.studyTime.writingGoalMin === undefined) parsed.studyTime.writingGoalMin = 60;
     if (parsed.studyTime.listeningGoalMin === undefined) parsed.studyTime.listeningGoalMin = 60;
+    // Tổng số giờ học CỘNG DỒN, KHÔNG BAO GIỜ reset theo ngày (khác với
+    // studyTime.writingSec/listeningSec ở trên chỉ tính riêng "hôm nay" cho
+    // vòng tròn mục tiêu). Trước đây không có trường này nên số giờ học bị
+    // mất mỗi khi qua ngày mới / nghỉ 1 hôm rồi quay lại — nay tách riêng để
+    // sống sót qua mọi lần đổi ngày.
+    if (!parsed.studyTimeTotal) {
+      // Lần đầu nâng cấp lên bản có trường này: lấy tạm số giây "hôm nay" hiện
+      // có (nếu còn đúng ngày) làm mốc khởi điểm, còn hơn là bắt đầu lại từ 0.
+      parsed.studyTimeTotal = {
+        writingSec: parsed.studyTime.date === todayKey() ? (parsed.studyTime.writingSec || 0) : 0,
+        listeningSec: parsed.studyTime.date === todayKey() ? (parsed.studyTime.listeningSec || 0) : 0,
+      };
+    }
+    if (parsed.studyTimeTotal.writingSec === undefined) parsed.studyTimeTotal.writingSec = 0;
+    if (parsed.studyTimeTotal.listeningSec === undefined) parsed.studyTimeTotal.listeningSec = 0;
     if (parsed.studyTime.date !== todayKey()) {
       parsed.studyTime.date = todayKey();
       parsed.studyTime.writingSec = 0;
@@ -132,6 +148,7 @@ function loadState() {
     if (parsed.settings.showStudyMinutes === undefined) parsed.settings.showStudyMinutes = false;
     if (!parsed.settings.wrHintKey) parsed.settings.wrHintKey = "AltLeft";
     if (!parsed.settings.wrTranslateKey) parsed.settings.wrTranslateKey = "F2";
+    if (!parsed.settings.wrReadKey) parsed.settings.wrReadKey = "F3";
     if (!parsed.selected.wrFcSource) parsed.selected.wrFcSource = [];
     return parsed;
   } catch (e) {
@@ -443,28 +460,16 @@ function logStudyAction(source, isCorrect, customGain, customPenalty) {
   applyMomentumThemeSync();
 }
 
-/* ---- Cảnh báo sắp hết thời gian giữ đà (chỉ hoạt động khi tab web đang mở) ---- */
+/* ---- Cảnh báo sắp hết thời gian giữ đà: ĐÃ TẮT — tính năng "Hệ số/đà học"
+   đã bị ẩn khỏi giao diện (xem statsSnapshotForCat ở trên) nhưng phần cảnh
+   báo (toast + thông báo hệ thống) trước đây vẫn chạy ngầm và tự nổi lên dù
+   không còn tính năng nào để xem, gây khó chịu. Giữ lại 2 hàm rỗng (thay vì
+   xoá hẳn) để không phải dọn các lời gọi rải rác (logStudyAction, cài đặt
+   ngưỡng ngắt quãng, khởi động app...). ---- */
 function scheduleStudyIdleWarning() {
   if (studyIdleWarnTimer) clearTimeout(studyIdleWarnTimer);
-  const m = state.studyMomentum;
-  if (!m.lastActionAt) return;
-  const remaining = studyIdleTimeoutMs() - STUDY_IDLE_WARN_LEAD_MS - (Date.now() - m.lastActionAt);
-  if (remaining <= 0) return;
-  studyIdleWarnTimer = setTimeout(fireStudyIdleWarning, remaining);
 }
-function fireStudyIdleWarning() {
-  playMomentumWarnSound();
-  showToast("⚠️ Sắp hết thời gian giữ đà học — làm thêm 1 hành động nữa để không bị ngắt quãng!", 5000);
-  if (state.settings.momentumSystemNotify && "Notification" in window && Notification.permission === "granted") {
-    try {
-      new Notification("Nox — Sắp ngắt quãng đà học!", {
-        body: "Quay lại học trong ít giây nữa để giữ đà, nếu không hệ số sẽ bắt đầu giảm.",
-        icon: "icon-192.png",
-        tag: "nox-momentum-warn",
-      });
-    } catch (e) { /* ignore */ }
-  }
-}
+function fireStudyIdleWarning() { /* đã tắt */ }
 
 /* ---- Xem nhanh số phút đã học hôm nay cạnh chữ "Nox" ----
    Bật/tắt trong Cài đặt > Thời gian học. Hiện tổng số phút đã học hôm nay
@@ -504,6 +509,7 @@ function applyMomentumThemeSync() {
      (kèm đẩy lên cloud) khi rời tab/ẩn trang/trước khi đóng trang.
    ============================================================ */
 function ensureStudyTimeToday() {
+  if (!state.studyTimeTotal) state.studyTimeTotal = { writingSec: 0, listeningSec: 0 };
   if (!state.studyTime) {
     state.studyTime = { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 };
     return;
@@ -527,8 +533,13 @@ function studyTimeTick() {
   ensureStudyTimeToday();
   const cat = currentTrackedStudyCat();
   if (cat) {
-    if (cat === "writing") state.studyTime.writingSec += 1;
-    else state.studyTime.listeningSec += 1;
+    if (cat === "writing") {
+      state.studyTime.writingSec += 1;
+      state.studyTimeTotal.writingSec += 1;
+    } else {
+      state.studyTime.listeningSec += 1;
+      state.studyTimeTotal.listeningSec += 1;
+    }
     studyTimeTickCount++;
     if (studyTimeTickCount >= 10) {
       studyTimeTickCount = 0;
@@ -1621,6 +1632,11 @@ document.addEventListener("keydown", (e) => {
     wrUseHint();
     return;
   }
+  if (e.code === state.settings.wrReadKey) {
+    e.preventDefault();
+    wrReadCurrentAnswer();
+    return;
+  }
   if (e.code !== "ArrowLeft" && e.code !== "ArrowRight") return;
   if (isTypingTarget()) {
     const el = document.activeElement;
@@ -1653,16 +1669,21 @@ function keybindLabel(code) {
   if (code.startsWith("Numpad")) return "Numpad " + code.slice(6);
   return code;
 }
+// Danh sách các hành động có thể gán phím tắt riêng — thêm hành động mới chỉ
+// cần thêm 1 dòng vào đây, không phải sửa nhiều nơi.
+const WR_KEYBIND_ACTIONS = ["wrHintKey", "wrTranslateKey", "wrReadKey"];
+const WR_KEYBIND_DEFAULTS = { wrHintKey: "AltLeft", wrTranslateKey: "F2", wrReadKey: "F3" };
 function updateKeybindButtons() {
-  document.getElementById("settings-keybind-hint").textContent = keybindLabel(state.settings.wrHintKey);
-  document.getElementById("settings-keybind-translate").textContent = keybindLabel(state.settings.wrTranslateKey);
+  WR_KEYBIND_ACTIONS.forEach((action) => {
+    const btn = document.querySelector(`.keybind-btn[data-action="${action}"]`);
+    if (btn) btn.textContent = keybindLabel(state.settings[action]);
+  });
 }
-let keybindListening = null; // "wrHintKey" | "wrTranslateKey" | null
+let keybindListening = null; // 1 trong WR_KEYBIND_ACTIONS, hoặc null
 function startKeybindCapture(action, btn) {
   document.querySelectorAll(".keybind-btn").forEach((b) => {
     b.classList.remove("listening");
-    if (b.dataset.action === "wrHintKey") b.textContent = keybindLabel(state.settings.wrHintKey);
-    if (b.dataset.action === "wrTranslateKey") b.textContent = keybindLabel(state.settings.wrTranslateKey);
+    if (WR_KEYBIND_ACTIONS.includes(b.dataset.action)) b.textContent = keybindLabel(state.settings[b.dataset.action]);
   });
   keybindListening = action;
   btn.classList.add("listening");
@@ -1684,8 +1705,8 @@ document.addEventListener("keydown", (e) => {
     if (btn) btn.classList.remove("listening");
     return;
   }
-  const otherAction = keybindListening === "wrHintKey" ? "wrTranslateKey" : "wrHintKey";
-  if (state.settings[otherAction] === e.code) {
+  const conflictAction = WR_KEYBIND_ACTIONS.find((a) => a !== keybindListening && state.settings[a] === e.code);
+  if (conflictAction) {
     showToast("Phím này đang được gán cho hành động khác rồi.");
     return;
   }
@@ -1697,8 +1718,7 @@ document.addEventListener("keydown", (e) => {
   if (btn) btn.classList.remove("listening");
 }, true);
 document.getElementById("settings-keybind-reset").addEventListener("click", () => {
-  state.settings.wrHintKey = "AltLeft";
-  state.settings.wrTranslateKey = "F2";
+  WR_KEYBIND_ACTIONS.forEach((action) => { state.settings[action] = WR_KEYBIND_DEFAULTS[action]; });
   saveState();
   updateKeybindButtons();
   showToast("Đã đặt lại phím tắt mặc định.");
@@ -1817,7 +1837,11 @@ function wrBuildAnswerBubble(attempt, clickable) {
       bubble.addEventListener("click", () => {
         const input = document.getElementById("wr-answer-input");
         const sep = input.value && !/\s$/.test(input.value) ? " " : "";
-        input.value = input.value + sep + attempt.text;
+        // Thêm dấu cách NGAY SAU từ vừa chèn — để wrCorrectPrefixWordCount()
+        // tính từ này là "đã gõ xong", nhờ đó lần bấm gợi ý tiếp theo mới
+        // nhận ra và đưa tới đúng từ kế tiếp, thay vì lặp lại mãi từ này
+        // (bug cũ: thiếu dấu cách khiến từ luôn bị coi là "đang gõ dở").
+        input.value = input.value + sep + attempt.text + " ";
         input.focus();
         wr.historyIndex = null;
         wrUpdateTypingDots();
@@ -1834,25 +1858,16 @@ function wrBuildAnswerBubble(attempt, clickable) {
   }
   row.appendChild(pctSpan);
   if (attempt.correct) {
-    // Đáp án đúng — thêm nút loa đọc câu tiếng Anh, chỉ hiện khi di chuột
-    // vào (giống nút "làm lại câu" bên trái).
-    const wrap = document.createElement("div");
-    wrap.className = "nghe-right-wrap";
-    const speakBtn = document.createElement("button");
-    speakBtn.type = "button";
-    speakBtn.className = "nghe-translate-btn";
-    speakBtn.title = "Đọc câu tiếng Anh";
-    speakBtn.textContent = "🔊";
-    speakBtn.addEventListener("click", (e) => {
+    // Đáp án đúng — không còn nút loa riêng, bấm THẲNG vào bong bóng câu để
+    // đọc luôn (đỡ phải rê chuột tìm icon nhỏ).
+    bubble.classList.add("clickable");
+    bubble.title = "Nhấp để nghe lại câu này";
+    bubble.addEventListener("click", (e) => {
       e.stopPropagation();
       playAudio(attempt.text, "en-US");
     });
-    wrap.appendChild(bubble);
-    wrap.appendChild(speakBtn);
-    row.appendChild(wrap);
-  } else {
-    row.appendChild(bubble);
   }
+  row.appendChild(bubble);
   return row;
 }
 
@@ -1987,11 +2002,48 @@ function wrUseHint() {
   const idx = wrCorrectPrefixWordCount(words, input.value);
   if (idx >= words.length) return; // đã lộ hết đáp án, không còn gì để gợi ý thêm
   const word = words[idx];
+  // Chống spam: nếu lần gợi ý gần nhất CŨNG đang gợi ý đúng từ này (idx chưa
+  // đổi vì người dùng chưa gõ/chèn từ đó vào ô nhập), không tính thêm lượt
+  // và không nhân thêm bong bóng trùng lặp — bấm dồn dập không còn dồn ra
+  // nhiều từ/cả câu nữa, chỉ khi nào từ hiện tại đã "gõ xong" đúng thì mới
+  // được cấp gợi ý tiếp theo.
+  const existing = wrAttempts[item.id] || [];
+  const lastHint = [...existing].reverse().find((a) => a.isHint);
+  if (lastHint && lastHint.text === word) {
+    showToast("Chèn từ gợi ý vào ô nhập rồi mới gợi ý được từ tiếp theo.");
+    return;
+  }
   wrHintCount[item.id] = used + 1;
-  (wrAttempts[item.id] = wrAttempts[item.id] || []).push({ text: word, isHint: true });
+  (wrAttempts[item.id] = existing);
+  existing.push({ text: word, isHint: true });
   renderWrChat();
 }
 document.getElementById("wr-hint-btn").addEventListener("click", wrUseHint);
+
+/* ============================================================
+   Đọc nhanh câu đúng/gợi ý bằng phím tắt (Cài đặt > Phím tắt > "Đọc câu
+   đúng/gợi ý") — chỉ đọc lại những gì ĐANG hiện sẵn trong khung chat (bong
+   bóng đáp án đúng nếu câu đã xong, hoặc bong bóng gợi ý gần nhất nếu chưa),
+   không tiết lộ thêm thông tin nào mới ngoài những gì người dùng đã thấy.
+   ============================================================ */
+function wrReadCurrentAnswer() {
+  const item = currentWrItem();
+  if (!item) return;
+  const prog = ensureWrProgress(item);
+  if (prog.done) {
+    playAudio(prog.correctText || item.en, "en-US");
+    return;
+  }
+  const atts = wrAttempts[item.id] || [];
+  for (let i = atts.length - 1; i >= 0; i--) {
+    if (atts[i].isHint) {
+      playAudio(atts[i].text, "en-US");
+      return;
+    }
+  }
+  showToast("Chưa có gợi ý nào để đọc — dùng gợi ý trước đã.");
+}
+
 
 const WR_DIFFICULTY_GAIN = { easy: 5, medium: 15, hard: 35 };
 const WR_DIFFICULTY_PENALTY = { easy: 2, medium: 6, hard: 14 };
@@ -2203,6 +2255,10 @@ document.getElementById("wr-shuffle").addEventListener("click", () => {
   renderWrChat();
   showToast("Đã xáo trộn thứ tự câu.");
 });
+// Nút nhỏ cạnh xáo trộn — mở lại đúng overlay chọn giọng đọc dùng chung với
+// tab Nghe (state.settings.ngheVoiceMode / ngheSingleVoiceURI áp dụng cho cả
+// 2 tab vì đều phát âm qua playAudio()).
+document.getElementById("wr-voice-settings-btn").addEventListener("click", ngheOpenVoiceOverlay);
 
 // Bôi đen 1 đoạn trong câu đề (bong bóng bên trái) sẽ tự điền + dịch nhanh
 // đoạn đó trong thanh dịch (tự mở thanh dịch lên nếu đang ẩn).
@@ -3906,6 +3962,14 @@ function ringMinutesDone(cat) {
   const sec = cat === "writing" ? state.studyTime.writingSec : state.studyTime.listeningSec;
   return sec / 60;
 }
+// Tổng số phút đã học CỘNG DỒN từ trước tới nay (không reset theo ngày) —
+// dùng cho số "giờ" nhỏ bên dưới vòng tròn, để nghỉ 1 hôm không làm mất số
+// giờ đã học trước đó (khác với ringMinutesDone chỉ tính riêng "hôm nay").
+function ringTotalMinutes(cat) {
+  ensureStudyTimeToday();
+  const sec = cat === "writing" ? state.studyTimeTotal.writingSec : state.studyTimeTotal.listeningSec;
+  return sec / 60;
+}
 function formatHours(minutes) {
   return (minutes / 60).toFixed(minutes < 600 ? 1 : 0) + "h";
 }
@@ -3932,7 +3996,7 @@ function updateRingLiveValues() {
     if (!ringEditMode) {
       const valEl = document.getElementById("ring-value-" + cat);
       if (valEl) valEl.textContent = Math.floor(minutesDone);
-      syncHourDisplay(cat, minutesDone);
+      syncHourDisplay(cat, ringTotalMinutes(cat));
     }
   });
 }
@@ -3960,7 +4024,7 @@ function renderStatsRings(animate) {
     const pct = Math.min(1, minutesDone / goal);
     const ring = document.getElementById("ring-progress-" + cat);
     const valEl = document.getElementById("ring-value-" + cat);
-    syncHourDisplay(cat, minutesDone);
+    syncHourDisplay(cat, ringTotalMinutes(cat));
 
     if (animate && ring) {
       ring.style.transition = "none";
@@ -4042,7 +4106,7 @@ function renderRingGoalEditors() {
       span.id = "ring-value-" + cat;
       span.textContent = Math.floor(ringMinutesDone(cat));
       holder.replaceWith(span);
-      syncHourDisplay(cat, ringMinutesDone(cat));
+      syncHourDisplay(cat, ringTotalMinutes(cat));
     }
   });
 }
@@ -5682,6 +5746,17 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.28",
+    changes: [
+      "Viết: bỏ nút loa 🔊 riêng cạnh đáp án đúng — giờ bấm thẳng vào bong bóng câu để nghe lại",
+      "Viết: thêm phím tắt riêng (đổi được trong Cài đặt > Phím tắt) để đọc nhanh câu đúng/gợi ý đang hiện trong khung chat, mặc định F3",
+      "Viết: đảo vị trí nút Độ khó và nút xáo trộn ⟲, thêm nút 🎙 cạnh xáo trộn để mở nhanh bảng chọn giọng đọc (dùng chung với Nghe)",
+      "Fix bug gợi ý: bấm gợi ý dồn dập không còn tự đẩy ra hết cả câu — mỗi lượt chỉ đưa đúng 1 từ tiếp theo, phải chèn/gõ đúng từ đang gợi ý rồi mới được gợi ý từ kế tiếp",
+      "Fix bug Thống kê: số giờ đã học không còn bị reset về 0 khi nghỉ 1 hôm không mở app — tách riêng bộ đếm cộng dồn vĩnh viễn khỏi bộ đếm mục tiêu hằng ngày",
+      "Xoá thông báo \"sắp ngắt quãng đà học\" còn sót lại (toast + thông báo hệ thống) — tính năng Hệ số/đà học đã ẩn khỏi giao diện từ trước nên thông báo này không còn ý nghĩa",
+    ],
+  },
   {
     version: "2.27",
     changes: [

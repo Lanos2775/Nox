@@ -1546,6 +1546,8 @@ button{touch-action:manipulation;}
 .nghe-bubble-right.hint.clickable:hover{filter:brightness(1.06);text-decoration:underline;}
 .nghe-bubble-right.wrong.clickable{cursor:pointer;}
 .nghe-bubble-right.wrong.clickable:hover{filter:brightness(1.06);text-decoration:underline;}
+.nghe-bubble-right.correct.clickable{cursor:pointer;}
+.nghe-bubble-right.correct.clickable:hover{filter:brightness(1.06);text-decoration:underline;}
 .nghe-pct{font-size:.7rem;color:var(--text-muted);white-space:nowrap;}
 .nghe-system-msg{align-self:center;color:var(--text-muted);font-size:.82rem;text-align:center;padding:8px;}
 
