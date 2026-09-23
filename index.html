@@ -20,6 +20,7 @@
 <!-- Firebase (đồng bộ dữ liệu giữa các thiết bị) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <!-- Lightweight Charts (TradingView) — dùng để vẽ biểu đồ "Đà học tập" ở tab Thống kê -->
 <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
 </head>
@@ -41,9 +42,18 @@
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
     <div class="sidebar-header">
-      <h1 class="brand">Nox<span class="brand-momentum hidden" id="brand-momentum">0</span></h1>
+      <button class="account-brand-btn" id="account-open-btn" type="button">
+        <span class="account-avatar" id="account-avatar">?</span>
+        <span class="account-brand-text">
+          <span class="account-brand-name-row">
+            <span class="account-brand-name" id="account-brand-name">Khách</span>
+            <span class="brand-momentum hidden" id="brand-momentum">0</span>
+          </span>
+          <span class="account-brand-role" id="account-brand-role">Chưa đăng nhập</span>
+        </span>
+      </button>
       <div class="sidebar-header-right">
-        <button class="diary-quick-btn" id="diary-quick-open" title="Nhật ký nhanh">📔</button>
+        <button class="bell-pill-btn hidden" id="admin-panel-quick-open" title="Admin Panel">🛠️</button>
         <button class="bell-pill-btn" id="warehouse-quick-open" title="Kho">🗄️</button>
         <button class="settings-gear-btn" id="settings-open" title="Cài đặt">⚙️</button>
       </div>
@@ -179,6 +189,7 @@
           <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách">🗑</button>
         </div>
         <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
+        <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">⭱ Đăng lên Thư viện</button>
       </div>
       <div class="wh-stats-sidebar-note hidden" id="wh-stats-sidebar-note">Thống kê tổng hợp từ tất cả danh sách — không cần chọn danh sách riêng.</div>
     </div>
@@ -331,8 +342,8 @@
         <button class="wh-cat-btn" data-wh-cat="writing">Viết</button>
         <button class="wh-cat-btn" data-wh-cat="listening">Nghe</button>
         <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
+        <button class="wh-cat-btn" data-wh-cat="library" id="wh-cat-library-btn">Thư viện</button>
         <button class="wh-cat-btn" data-wh-cat="stats" id="wh-cat-stats-btn">Thống kê</button>
-        <button class="wh-cat-btn" data-wh-cat="diary" id="wh-cat-diary-btn">Nhật Ký</button>
       </div>
 
       <div class="wh-list-title" id="wh-current-list-title">Danh sách 1</div>
@@ -356,9 +367,22 @@
           <div class="wh-listening-grid" id="wh-listening-grid"></div>
         </div>
 
-        <div class="wh-diary-preview hidden" id="wh-diary-preview">
-          <div class="wh-diary-preview-content" id="wh-diary-preview-content"></div>
-          <button class="block-btn primary" id="wh-diary-open-editor">✎ Mở để viết</button>
+        <div class="wh-library-view hidden" id="wh-library-view">
+          <div class="wh-library-side">
+            <div class="wh-library-side-label">Loại nội dung</div>
+            <button class="wh-library-filter-btn active" data-lib-cat="flashcard">Thẻ</button>
+            <button class="wh-library-filter-btn" data-lib-cat="writing">Viết</button>
+            <button class="wh-library-filter-btn" data-lib-cat="listening">Nghe</button>
+            <button class="wh-library-filter-btn" data-lib-cat="dictionary">Từ điển</button>
+            <div class="wh-library-side-label" style="margin-top:14px;">Sắp xếp</div>
+            <button class="wh-library-filter-btn active" data-lib-sort="new">Mới nhất</button>
+            <button class="wh-library-filter-btn" data-lib-sort="old">Cũ nhất</button>
+            <button class="wh-library-filter-btn" data-lib-sort="trend">Xu hướng</button>
+          </div>
+          <div class="wh-library-main">
+            <div class="wh-library-quota" id="wh-library-quota"></div>
+            <div class="wh-library-list" id="wh-library-list"></div>
+          </div>
         </div>
 
         <div class="wh-stats-view hidden" id="wh-stats-view">
@@ -542,6 +566,130 @@
   </div>
 </div>
 
+<!-- ============ ĐĂNG NHẬP / ĐĂNG KÝ ============ -->
+<div class="overlay hidden" id="auth-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Tài khoản</span>
+      <button class="popup-close" id="auth-close">✕</button>
+    </div>
+    <div class="auth-subtabs">
+      <button type="button" class="auth-subtab-btn active" data-auth-tab="login">Đăng nhập</button>
+      <button type="button" class="auth-subtab-btn" data-auth-tab="register">Đăng ký</button>
+    </div>
+
+    <div class="auth-pane" id="auth-pane-login">
+      <input type="text" class="text-input" id="auth-login-name" placeholder="Tên đăng nhập" autocomplete="username">
+      <input type="password" class="text-input" id="auth-login-pass" placeholder="Mật khẩu" autocomplete="current-password" style="margin-top:8px;">
+      <button class="block-btn primary" id="auth-login-submit" style="margin-top:12px;">Đăng nhập</button>
+      <button type="button" class="link-btn" id="auth-forgot-open" style="margin-top:10px;">Quên mật khẩu?</button>
+      <p class="auth-error hidden" id="auth-login-error"></p>
+    </div>
+
+    <div class="auth-pane hidden" id="auth-pane-register">
+      <input type="text" class="text-input" id="auth-reg-name" placeholder="Tên (tối đa 10 ký tự)" maxlength="10">
+      <input type="password" class="text-input" id="auth-reg-pass" placeholder="Mật khẩu (tối thiểu 6 ký tự)" autocomplete="new-password" style="margin-top:8px;">
+      <input type="email" class="text-input" id="auth-reg-email" placeholder="Email" autocomplete="email" style="margin-top:8px;">
+      <button class="block-btn primary" id="auth-reg-submit" style="margin-top:12px;">Tạo tài khoản</button>
+      <p class="auth-error hidden" id="auth-reg-error"></p>
+    </div>
+
+    <div class="auth-pane hidden" id="auth-pane-forgot">
+      <p class="wh-preview-empty" style="margin:0 0 10px;">Nhập email đã đăng ký, Firebase sẽ gửi link đặt lại mật khẩu.</p>
+      <input type="email" class="text-input" id="auth-forgot-email" placeholder="Email">
+      <button class="block-btn primary" id="auth-forgot-submit" style="margin-top:12px;">Gửi email đặt lại</button>
+      <button type="button" class="link-btn" id="auth-forgot-back" style="margin-top:10px;">← Quay lại đăng nhập</button>
+      <p class="auth-error hidden" id="auth-forgot-error"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ THÔNG TIN TÀI KHOẢN ============ -->
+<div class="overlay hidden" id="account-info-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Tài khoản của bạn</span>
+      <button class="popup-close" id="account-info-close">✕</button>
+    </div>
+    <div class="account-info-row"><span>Tên</span><b id="acc-info-name">—</b></div>
+    <div class="account-info-row"><span>Email</span><b id="acc-info-email">—</b></div>
+    <div class="account-info-row"><span>Cấp</span><b id="acc-info-role">—</b></div>
+    <div class="account-info-row hidden" id="acc-info-quota-row"><span>Gói đã tải (thư viện)</span><b id="acc-info-quota">—</b></div>
+    <p class="wh-preview-empty" id="acc-info-perms" style="margin:10px 0;"></p>
+
+    <div class="account-info-actions">
+      <button type="button" class="pill-btn-outline" id="acc-change-name-btn">Đổi tên</button>
+      <button type="button" class="pill-btn-outline" id="acc-change-pass-btn">Đổi mật khẩu</button>
+      <button type="button" class="pill-btn-outline" id="acc-change-email-btn">Đổi email</button>
+    </div>
+    <button type="button" class="pill-btn-outline" id="acc-upgrade-btn" style="margin-top:10px;width:100%;">Xin nâng cấp lên Premium</button>
+    <button type="button" class="block-btn" id="acc-logout-btn" style="margin-top:14px;">Đăng xuất</button>
+  </div>
+</div>
+
+<!-- ============ ADMIN PANEL ============ -->
+<div class="overlay hidden" id="admin-panel-overlay">
+  <div class="modal-panel">
+    <div class="popup-header">
+      <span>Admin Panel</span>
+      <button class="popup-close" id="admin-panel-close">✕</button>
+    </div>
+    <div class="auth-subtabs" id="admin-panel-tabs">
+      <button type="button" class="auth-subtab-btn active" data-admin-tab="users">User <span class="admin-badge hidden" id="admin-badge-users"></span></button>
+      <button type="button" class="auth-subtab-btn" data-admin-tab="library">Thư viện <span class="admin-badge hidden" id="admin-badge-library"></span></button>
+      <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
+      <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
+    </div>
+    <div class="admin-pane" id="admin-pane-users"></div>
+    <div class="admin-pane hidden" id="admin-pane-library"></div>
+    <div class="admin-pane hidden" id="admin-pane-database">
+      <div id="admin-db-info" class="wh-preview-empty"></div>
+      <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
+      <div class="account-info-row">
+        <span>Giới hạn số tài khoản đăng ký</span>
+        <input type="number" class="text-input" id="admin-reg-cap-input" style="max-width:100px;" min="0" placeholder="Không giới hạn">
+      </div>
+      <button class="pill-btn primary" id="admin-reg-cap-save" style="width:100%;">Lưu giới hạn</button>
+    </div>
+    <div class="admin-pane hidden" id="admin-pane-features"></div>
+  </div>
+</div>
+
+<!-- ============ CHI TIẾT GÓI THƯ VIỆN ============ -->
+<div class="overlay hidden" id="library-detail-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span id="lib-detail-title">Gói</span>
+      <button class="popup-close" id="library-detail-close">✕</button>
+    </div>
+    <div class="account-info-row"><span>Tác giả</span><b id="lib-detail-author">—</b></div>
+    <div class="account-info-row"><span>Lượt tải</span><b id="lib-detail-downloads">—</b></div>
+    <div class="account-info-row"><span>Ngày đăng</span><b id="lib-detail-date">—</b></div>
+    <p class="wh-preview-empty" id="lib-detail-note" style="margin:8px 0;"></p>
+    <div class="lib-detail-preview" id="lib-detail-preview"></div>
+    <button class="block-btn primary" id="lib-detail-download-btn" style="margin-top:12px;">Tải về Kho</button>
+  </div>
+</div>
+
+<!-- ============ TẢI GÓI LÊN THƯ VIỆN ============ -->
+<div class="overlay hidden" id="library-upload-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Đăng gói lên Thư viện</span>
+      <button class="popup-close" id="library-upload-close">✕</button>
+    </div>
+    <p class="wh-preview-empty" id="lib-upload-list-name" style="margin:0 0 10px;"></p>
+    <input type="text" class="text-input" id="lib-upload-title" placeholder="Tên gói">
+    <label class="settings-checkbox-row" style="margin-top:8px;">
+      <input type="checkbox" id="lib-upload-anon">
+      <span>Đăng ẩn danh (người khác không thấy tên bạn)</span>
+    </label>
+    <textarea class="text-input" id="lib-upload-note" placeholder="Lời chú thích (không bắt buộc)" rows="3" style="margin-top:8px;resize:vertical;"></textarea>
+    <button class="block-btn primary" id="lib-upload-submit" style="margin-top:12px;">Gửi lên Thư viện</button>
+    <p class="auth-error hidden" id="lib-upload-error"></p>
+  </div>
+</div>
+
 <!-- ============ GENERIC PROMPT MODAL ============ -->
 <div class="overlay hidden" id="generic-prompt-overlay">
   <div class="modal-panel small">
@@ -570,60 +718,6 @@
 </div>
 
 <!-- ============ DIARY (NHẬT KÝ) POPUP ============ -->
-<div class="overlay hidden" id="diary-popup-overlay">
-  <div class="diary-popup-panel">
-    <div class="diary-toolbar">
-      <div class="diary-toolbar-left">
-        <div class="diary-dd-wrap">
-          <button class="diary-tool-btn diary-fontsize-btn" id="dy-fontsize-btn" title="Cỡ chữ">Vừa ▾</button>
-          <div class="diary-dropdown-menu hidden" id="dy-fontsize-menu">
-            <button type="button" data-size="2">Nhỏ</button>
-            <button type="button" data-size="3">Vừa</button>
-            <button type="button" data-size="5">Lớn</button>
-            <button type="button" data-size="7">Rất lớn</button>
-          </div>
-        </div>
-
-        <div class="diary-dd-wrap">
-          <button class="diary-tool-btn diary-color-btn" id="dy-color-btn" title="Màu chữ">A</button>
-          <input type="color" id="dy-color-input" class="diary-color-input" value="#7c3aed">
-        </div>
-
-        <button class="diary-tool-btn" id="dy-bold-btn" title="In đậm (Ctrl+B)"><b>B</b></button>
-        <button class="diary-tool-btn" id="dy-italic-btn" title="In nghiêng (Ctrl+I)"><i>I</i></button>
-        <button class="diary-tool-btn" id="dy-underline-btn" title="Gạch chân (Ctrl+U)"><u>U</u></button>
-
-        <div class="diary-dd-wrap">
-          <button class="diary-tool-btn" id="dy-align-btn" title="Căn lề & danh sách">≡ ▾</button>
-          <div class="diary-dropdown-menu hidden" id="dy-align-menu">
-            <button type="button" data-cmd="justifyLeft">⯇ Căn trái <kbd>Ctrl+Shift+L</kbd></button>
-            <button type="button" data-cmd="justifyCenter">☰ Căn giữa <kbd>Ctrl+Shift+E</kbd></button>
-            <button type="button" data-cmd="justifyRight">⯈ Căn phải <kbd>Ctrl+Shift+R</kbd></button>
-            <button type="button" data-cmd="insertOrderedList">1. Danh sách đánh số <kbd>Ctrl+Shift+7</kbd></button>
-            <button type="button" data-cmd="insertUnorderedList">• Danh sách dấu chấm <kbd>Ctrl+Shift+8</kbd></button>
-          </div>
-        </div>
-
-        <button class="diary-tool-btn" id="dy-box-btn" title="Đóng khung nét đứt (Ctrl+Shift+D) — bôi đen chữ trước">▭</button>
-
-        <span class="diary-toolbar-sep"></span>
-        <button class="diary-tool-btn" id="dy-freewrite-btn" title="Viết tự do — bật rồi bấm vào bất kỳ đâu trên trang để viết, kéo được đi khắp nơi">✥</button>
-      </div>
-
-      <div class="diary-toolbar-right">
-        <button class="diary-tool-btn" id="dy-undo-btn" title="Quay lại 1 bước (Ctrl+Z)">←</button>
-        <button class="diary-tool-btn" id="dy-redo-btn" title="Tiến lên 1 bước (Ctrl+Y)">→</button>
-        <button class="diary-tool-btn" id="dy-mode-btn" title="Chuyển chỉnh sửa / xem (Ctrl+Shift+M)">✎</button>
-        <select id="dy-note-select" class="diary-note-select" title="Đổi ghi chú"></select>
-        <button class="diary-close-btn" id="dy-close-btn" title="Đóng (Esc)">✕</button>
-      </div>
-    </div>
-
-    <div class="diary-content" id="dy-content" contenteditable="true" spellcheck="false"
-         data-placeholder="Viết gì đó ..."></div>
-  </div>
-</div>
-
 <!-- ============ REMINDER (NHẮC TỪ) POPUP ============ -->
 <div class="reminder-popup hidden" id="reminder-popup">
   <div class="reminder-popup-header">
@@ -676,21 +770,17 @@
     </div>
 
     <div class="settings-body">
-      <div class="settings-section">
-        <div class="section-label">Đồng bộ</div>
-        <div class="settings-sync-status">
-          <span class="settings-sync-dot sync-off" id="settings-sync-dot"></span>
-          <span id="settings-sync-label">Chưa kết nối</span>
+      <div class="settings-section" id="settings-account-status-section">
+        <div class="section-label">Tài khoản</div>
+        <p class="wh-preview-empty" id="settings-account-status-note">Chưa đăng nhập — dữ liệu chỉ lưu trên máy này. Bấm vào avatar ở góc trên bên trái để đăng nhập/đăng ký.</p>
+      </div>
+
+      <div class="settings-section hidden" id="settings-admin-unlock-section">
+        <div class="section-label">Admin Panel</div>
+        <div class="btn-row-2">
+          <input type="password" class="text-input" id="settings-admin-pass-input" placeholder="Nhập mật khẩu đăng nhập admin...">
+          <button class="pill-btn primary" id="settings-admin-unlock-btn">Mở khoá</button>
         </div>
-        <div class="btn-row-2" id="settings-sync-connect-row">
-          <input type="text" id="settings-sync-code-input" class="text-input" placeholder="Nhập mã đồng bộ (tối thiểu 8 ký tự) ...">
-          <button class="pill-btn primary" id="settings-sync-connect">Kết nối</button>
-        </div>
-        <div class="btn-row-2" style="margin-top:8px;">
-          <button class="pill-btn-outline" id="settings-sync-generate">🎲 Tạo mã ngẫu nhiên</button>
-          <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn">🗄️ Đổi database</button>
-        </div>
-        <button class="pill-btn-outline hidden" id="settings-sync-disconnect">Ngắt kết nối</button>
       </div>
 
       <div class="settings-section">
@@ -886,14 +976,6 @@
           <span>Thời gian nhắc ngừng</span>
           <input type="range" id="settings-momentum-idle-minutes" min="1" max="30" value="3">
           <span class="settings-slider-val" id="settings-momentum-idle-minutes-val">3p</span>
-        </label>
-      </div>
-
-      <div class="settings-section">
-        <div class="section-label">Nhật ký</div>
-        <label class="settings-checkbox-row">
-          <input type="checkbox" id="settings-show-diary">
-          <span>Hiện tính năng Nhật ký</span>
         </label>
       </div>
 
