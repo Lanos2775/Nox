@@ -5198,6 +5198,48 @@ document.getElementById("settings-overlay").addEventListener("click", (e) => {
 });
 
 /* ============================================================
+   SAO LƯU DỮ LIỆU (xuất/nhập file JSON toàn bộ state cục bộ)
+   ============================================================ */
+document.getElementById("settings-export-backup-btn").addEventListener("click", () => {
+  try {
+    const dataStr = JSON.stringify(state, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `nox-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast("Đã xuất file sao lưu.");
+  } catch (err) {
+    showToast("Lỗi khi xuất dữ liệu: " + (err && err.message ? err.message : "?"));
+  }
+});
+document.getElementById("settings-import-backup-btn").addEventListener("click", () => {
+  document.getElementById("settings-import-backup-input").click();
+});
+document.getElementById("settings-import-backup-input").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  const ok = await showConfirm("Nhập dữ liệu sẽ GHI ĐÈ toàn bộ dữ liệu hiện tại trên máy này bằng nội dung trong file. Tiếp tục?");
+  if (!ok) return;
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if (typeof parsed !== "object" || parsed === null) throw new Error("File không đúng định dạng.");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    showToast("Đã nhập dữ liệu — đang tải lại trang...");
+    setTimeout(() => window.location.reload(), 800);
+  } catch (err) {
+    showToast("Lỗi khi nhập file: " + (err && err.message ? err.message : "File không hợp lệ."));
+  }
+});
+
+/* ============================================================
    ĐỔI DATABASE (chuyển sang project Firebase khác — ví dụ chuyển acc)
    ============================================================ */
 function updateDbConfigUI() {
@@ -5763,6 +5805,17 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.31",
+    changes: [
+      "Thư viện: thêm nút Yêu thích (❤️) trên từng gói + sắp xếp 'Yêu thích'; thêm nút Báo cáo (🚩) trong chi tiết gói",
+      "Admin > Thư viện: hiện số báo cáo trên mỗi gói (xem lý do, bỏ qua báo cáo), gói bị báo cáo/chờ duyệt được đẩy lên đầu danh sách",
+      "Admin: thêm khối thống kê nhanh (tổng user, Premium, Admin, gói chờ duyệt, gói bị báo cáo), ô tìm kiếm trong tab User, tab Nhật ký ghi lại các hành động admin (ban, đổi vai trò, xoá tài khoản, duyệt/xoá gói...)",
+      "Admin: giới hạn 5 lần nhập sai mật khẩu mở khoá trước khi khoá tạm 60 giây",
+      "PWA: hiện banner 'Có bản cập nhật mới' kèm nút tải lại thay vì tự động cập nhật ngầm",
+      "Cài đặt: thêm Xuất/Nhập dữ liệu (JSON) để tự sao lưu tiến độ học",
+    ],
+  },
   {
     version: "2.30",
     changes: [
@@ -6510,27 +6563,55 @@ async function adminReauthenticate(password) {
   }
 }
 
+/* Ghi log hành động admin vào admin_log/ (chỉ admin đọc/ghi được — xem firebase-rules.json) */
+function logAdminAction(action, detail) {
+  if (!currentUser) return;
+  firebase.database().ref("admin_log").push({
+    by: (accountProfile && accountProfile.name) || currentUser.email || "?",
+    action, detail: detail || "",
+    at: Date.now(),
+  }).catch(() => {});
+}
+
+/* Giới hạn số lần nhập sai mật khẩu mở khoá Admin Panel (chống dò mật khẩu) */
+let adminUnlockFails = 0;
+let adminUnlockLockUntil = 0;
+
 function renderWhAdminView() {
   const isUnlocked = accountRole === "admin" && adminUnlocked;
   document.getElementById("admin-lock").classList.toggle("hidden", isUnlocked);
   document.getElementById("admin-content").classList.toggle("hidden", !isUnlocked);
-  if (isUnlocked) switchAdminTab("users");
+  if (isUnlocked) { switchAdminTab("users"); renderAdminQuickStats(); }
 }
 document.getElementById("admin-unlock-btn").addEventListener("click", async () => {
   const input = document.getElementById("admin-unlock-input");
   const pass = input.value;
   const errEl = document.getElementById("admin-unlock-error");
   errEl.classList.add("hidden");
+  const remainMs = adminUnlockLockUntil - Date.now();
+  if (remainMs > 0) {
+    errEl.textContent = `Đã nhập sai quá nhiều lần — thử lại sau ${Math.ceil(remainMs / 1000)} giây.`;
+    errEl.classList.remove("hidden");
+    return;
+  }
   if (!pass || !currentUser) return;
   const ok = await adminReauthenticate(pass);
   if (ok) {
+    adminUnlockFails = 0;
     adminUnlocked = true;
     sessionStorage.setItem(ADMIN_PASS_SESSION_KEY, "1");
     input.value = "";
     renderWhAdminView();
     refreshAccountUI();
   } else {
-    errEl.textContent = "Sai mật khẩu.";
+    adminUnlockFails++;
+    if (adminUnlockFails >= 5) {
+      adminUnlockLockUntil = Date.now() + 60000;
+      adminUnlockFails = 0;
+      errEl.textContent = "Đã nhập sai quá nhiều lần — thử lại sau 60 giây.";
+    } else {
+      errEl.textContent = `Sai mật khẩu (còn ${5 - adminUnlockFails} lần thử).`;
+    }
     errEl.classList.remove("hidden");
   }
 });
@@ -6544,13 +6625,34 @@ document.getElementById("admin-relock-btn").addEventListener("click", () => {
   showToast("Đã khoá lại Admin Panel.");
 });
 
+async function renderAdminQuickStats() {
+  const box = document.getElementById("admin-quick-stats");
+  if (!box) return;
+  const [usersSnap, librarySnap] = await Promise.all([
+    firebase.database().ref("users").once("value"),
+    firebase.database().ref("library").once("value"),
+  ]);
+  const users = Object.values(usersSnap.val() || {}).map((u) => u.profile || {});
+  const lib = Object.values(librarySnap.val() || {});
+  const chips = [
+    { n: users.length, label: "Tổng user" },
+    { n: users.filter((u) => u.role === "premium").length, label: "Premium" },
+    { n: users.filter((u) => u.role === "admin").length, label: "Admin" },
+    { n: lib.filter((p) => p.status === "pending").length, label: "Gói chờ duyệt" },
+    { n: lib.filter((p) => p.reports && Object.keys(p.reports).length).length, label: "Gói bị báo cáo" },
+  ];
+  box.innerHTML = chips.map((c) => `<div class="admin-stat-chip"><b>${c.n}</b><span>${escapeHtml(c.label)}</span></div>`).join("");
+}
+
 function switchAdminTab(tab) {
   document.querySelectorAll("#admin-panel-tabs [data-admin-tab]").forEach((b) => b.classList.toggle("active", b.dataset.adminTab === tab));
-  ["users", "library", "database", "features"].forEach((t) => {
+  ["users", "library", "log", "database", "features"].forEach((t) => {
     document.getElementById("admin-pane-" + t).classList.toggle("hidden", t !== tab);
   });
+  document.getElementById("admin-users-search").classList.toggle("hidden", tab !== "users");
   if (tab === "users") renderAdminUsersTab();
   if (tab === "library") renderAdminLibraryTab();
+  if (tab === "log") renderAdminLogTab();
   if (tab === "database") renderAdminDatabaseTab();
   if (tab === "features") renderAdminFeaturesTab();
 }
@@ -6558,15 +6660,41 @@ document.querySelectorAll("#admin-panel-tabs [data-admin-tab]").forEach((btn) =>
   btn.addEventListener("click", () => switchAdminTab(btn.dataset.adminTab));
 });
 
+async function renderAdminLogTab() {
+  const pane = document.getElementById("admin-pane-log");
+  pane.innerHTML = `<p class="admin-empty">Đang tải...</p>`;
+  const snap = await firebase.database().ref("admin_log").limitToLast(50).once("value");
+  const entries = Object.values(snap.val() || {}).sort((a, b) => (b.at || 0) - (a.at || 0));
+  pane.innerHTML = "";
+  if (!entries.length) { pane.appendChild(Object.assign(document.createElement("p"), { className: "admin-empty", textContent: "Chưa có hoạt động nào được ghi lại." })); return; }
+  entries.forEach((e) => {
+    const row = document.createElement("div");
+    row.className = "admin-log-row";
+    row.innerHTML = `<span><b>${escapeHtml(e.by || "?")}</b> — ${escapeHtml(e.action || "")}${e.detail ? ": " + escapeHtml(e.detail) : ""}</span><span class="admin-log-time">${e.at ? new Date(e.at).toLocaleString("vi-VN") : ""}</span>`;
+    pane.appendChild(row);
+  });
+}
+
+let adminUsersCache = [];
 async function renderAdminUsersTab() {
   const pane = document.getElementById("admin-pane-users");
   pane.innerHTML = `<p class="admin-empty">Đang tải...</p>`;
   const snap = await firebase.database().ref("users").once("value");
   const users = snap.val() || {};
-  const entries = Object.entries(users).map(([uid, u]) => ({ uid, ...(u.profile || {}) }));
+  adminUsersCache = Object.entries(users).map(([uid, u]) => ({ uid, ...(u.profile || {}) }));
+  renderAdminUsersList();
+}
+document.getElementById("admin-users-search").addEventListener("input", renderAdminUsersList);
+function renderAdminUsersList() {
+  const pane = document.getElementById("admin-pane-users");
+  const q = document.getElementById("admin-users-search").value.trim().toLowerCase();
+  const entries = q
+    ? adminUsersCache.filter((u) => (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q))
+    : adminUsersCache;
   const pending = entries.filter((u) => u.upgradeRequested && u.role === "free");
-  document.getElementById("admin-badge-users").classList.toggle("hidden", pending.length === 0);
-  document.getElementById("admin-badge-users").textContent = pending.length;
+  const allPending = adminUsersCache.filter((u) => u.upgradeRequested && u.role === "free");
+  document.getElementById("admin-badge-users").classList.toggle("hidden", allPending.length === 0);
+  document.getElementById("admin-badge-users").textContent = allPending.length;
   pane.innerHTML = "";
   if (pending.length) {
     const h = document.createElement("div");
@@ -6579,7 +6707,7 @@ async function renderAdminUsersTab() {
     sep.textContent = "Tất cả tài khoản";
     pane.appendChild(sep);
   }
-  if (!entries.length) pane.appendChild(Object.assign(document.createElement("p"), { className: "admin-empty", textContent: "Chưa có tài khoản nào." }));
+  if (!entries.length) pane.appendChild(Object.assign(document.createElement("p"), { className: "admin-empty", textContent: q ? "Không tìm thấy user nào." : "Chưa có tài khoản nào." }));
   entries.forEach((u) => pane.appendChild(buildAdminUserRow(u, false)));
 }
 function buildAdminUserRow(u, highlightPending) {
@@ -6601,8 +6729,10 @@ function buildAdminUserRow(u, highlightPending) {
   });
   select.addEventListener("change", async () => {
     await firebase.database().ref("users/" + u.uid + "/profile").update({ role: select.value, upgradeRequested: false });
+    logAdminAction("Đổi vai trò", `${u.name} → ${roleLabel(select.value)}`);
     showToast("Đã đổi vai trò " + u.name + " thành " + roleLabel(select.value) + ".");
     renderAdminUsersTab();
+    renderAdminQuickStats();
   });
   actions.appendChild(select);
   const banBtn = document.createElement("button");
@@ -6610,6 +6740,7 @@ function buildAdminUserRow(u, highlightPending) {
   banBtn.textContent = u.banned ? "Unban" : "Ban";
   banBtn.addEventListener("click", async () => {
     await firebase.database().ref("users/" + u.uid + "/profile").update({ banned: !u.banned });
+    logAdminAction(u.banned ? "Unban" : "Ban", u.name);
     showToast((u.banned ? "Đã unban " : "Đã ban ") + u.name + ".");
     renderAdminUsersTab();
   });
@@ -6627,6 +6758,7 @@ function buildAdminUserRow(u, highlightPending) {
     if (!ok) { showToast("Sai mật khẩu admin."); return; }
     try {
       await firebase.auth().sendPasswordResetEmail(u.email);
+      logAdminAction("Gửi email đặt lại mật khẩu", u.name);
       showToast("Không thể xem trực tiếp mật khẩu (Firebase mã hoá, kể cả Admin cũng không đọc được) — đã gửi email đặt lại mật khẩu tới " + u.email + ".");
     } catch (err) {
       showToast(friendlyAuthError(err));
@@ -6647,8 +6779,10 @@ function buildAdminUserRow(u, highlightPending) {
     try {
       if (u.nameLower) await firebase.database().ref("usernames/" + u.nameLower).remove();
       await firebase.database().ref("users/" + u.uid + "/profile").remove();
+      logAdminAction("Xoá tài khoản", u.name);
       showToast("Đã xoá tài khoản " + u.name + " khỏi hệ thống.");
       renderAdminUsersTab();
+      renderAdminQuickStats();
     } catch (err) {
       showToast("Lỗi khi xoá: " + (err && err.message ? err.message : "?"));
     }
@@ -6666,18 +6800,40 @@ async function renderAdminLibraryTab() {
   const all = snap.val() || {};
   const entries = Object.entries(all).map(([id, p]) => ({ id, ...p }));
   const pending = entries.filter((p) => p.status === "pending");
-  document.getElementById("admin-badge-library").classList.toggle("hidden", pending.length === 0);
-  document.getElementById("admin-badge-library").textContent = pending.length;
+  const reportedCount = entries.filter((p) => p.reports && Object.keys(p.reports).length).length;
+  document.getElementById("admin-badge-library").classList.toggle("hidden", pending.length === 0 && reportedCount === 0);
+  document.getElementById("admin-badge-library").textContent = pending.length + reportedCount;
   pane.innerHTML = "";
   if (!entries.length) { pane.appendChild(Object.assign(document.createElement("p"), { className: "admin-empty", textContent: "Thư viện chưa có gói nào." })); return; }
-  entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  // Ưu tiên hiện gói bị báo cáo và gói chờ duyệt lên đầu.
+  entries.sort((a, b) => {
+    const ar = a.reports ? Object.keys(a.reports).length : 0;
+    const br = b.reports ? Object.keys(b.reports).length : 0;
+    const ap = a.status === "pending" ? 1 : 0;
+    const bp = b.status === "pending" ? 1 : 0;
+    if ((br > 0) !== (ar > 0)) return br > 0 ? 1 : -1;
+    if (ap !== bp) return bp - ap;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
   entries.forEach((p) => {
+    const reports = p.reports ? Object.values(p.reports) : [];
     const row = document.createElement("div");
     row.className = "admin-row";
     const main = document.createElement("div");
     main.className = "admin-row-main";
     const itemCount = p.items ? p.items.length : 0;
     main.innerHTML = `<b>${escapeHtml(p.title || "?")}</b><span class="admin-row-sub">Tác giả thật: ${escapeHtml(p.authorName || "?")}${p.anon ? " (đăng ẩn danh)" : ""} · ${whCatLabel(p.cat)} · ${itemCount} mục · ${p.downloads || 0} lượt tải · trạng thái: ${p.status === "pending" ? "chờ duyệt" : "đã duyệt"}</span>`;
+    if (reports.length) {
+      const toggle = document.createElement("button");
+      toggle.className = "admin-report-toggle";
+      toggle.textContent = `🚩 ${reports.length} báo cáo — xem lý do`;
+      const list = document.createElement("div");
+      list.className = "admin-report-list hidden";
+      list.innerHTML = reports.map((r) => `• ${escapeHtml(r.reason || "(không có lý do)")} <span class="admin-log-time">${r.at ? new Date(r.at).toLocaleString("vi-VN") : ""}</span>`).join("<br>");
+      toggle.addEventListener("click", () => list.classList.toggle("hidden"));
+      main.appendChild(toggle);
+      main.appendChild(list);
+    }
     row.appendChild(main);
     const actions = document.createElement("div");
     actions.className = "admin-row-actions";
@@ -6687,10 +6843,25 @@ async function renderAdminLibraryTab() {
       approveBtn.textContent = "Duyệt";
       approveBtn.addEventListener("click", async () => {
         await firebase.database().ref("library/" + p.id).update({ status: "approved" });
+        logAdminAction("Duyệt gói thư viện", p.title);
         showToast("Đã duyệt gói " + p.title + ".");
         renderAdminLibraryTab();
+        renderAdminQuickStats();
       });
       actions.appendChild(approveBtn);
+    }
+    if (reports.length) {
+      const dismissBtn = document.createElement("button");
+      dismissBtn.className = "pill-btn-outline";
+      dismissBtn.textContent = "Bỏ qua báo cáo";
+      dismissBtn.addEventListener("click", async () => {
+        await firebase.database().ref("library/" + p.id + "/reports").remove();
+        logAdminAction("Bỏ qua báo cáo", p.title);
+        showToast("Đã xoá các báo cáo của gói " + p.title + ".");
+        renderAdminLibraryTab();
+        renderAdminQuickStats();
+      });
+      actions.appendChild(dismissBtn);
     }
     const delBtn = document.createElement("button");
     delBtn.className = "pill-btn-outline";
@@ -6699,8 +6870,10 @@ async function renderAdminLibraryTab() {
       const ok = await showConfirm(`Xoá gói "${p.title}" khỏi Thư viện?`);
       if (!ok) return;
       await firebase.database().ref("library/" + p.id).remove();
+      logAdminAction("Xoá gói thư viện", p.title);
       showToast("Đã xoá.");
       renderAdminLibraryTab();
+      renderAdminQuickStats();
     });
     actions.appendChild(delBtn);
     row.appendChild(actions);
@@ -6797,8 +6970,10 @@ async function renderLibraryTab() {
   listEl.innerHTML = `<p class="wh-library-empty">Đang tải...</p>`;
   const snap = await firebase.database().ref("library").orderByChild("cat").equalTo(libUi.cat).once("value");
   let entries = Object.entries(snap.val() || {}).map(([id, p]) => ({ id, ...p })).filter((p) => p.status === "approved");
+  entries.forEach((p) => { p._likeCount = p.likes ? Object.keys(p.likes).length : 0; });
   if (libUi.sort === "new") entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   else if (libUi.sort === "old") entries.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  else if (libUi.sort === "likes") entries.sort((a, b) => b._likeCount - a._likeCount);
   else entries.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
   const q = (libUi.search || "").trim().toLowerCase();
   if (q) {
@@ -6816,25 +6991,42 @@ async function renderLibraryTab() {
     return;
   }
   const canDownload = dl === Infinity || remain > 0;
+  const myUid = currentUser ? currentUser.uid : null;
   entries.forEach((p) => {
+    const liked = !!(myUid && p.likes && p.likes[myUid]);
     const card = document.createElement("div");
     card.className = "wh-library-card";
     card.innerHTML = `
       <div class="wh-library-card-title">${escapeHtml(p.title || "?")}</div>
       <div class="wh-library-card-meta"><span>👤 ${escapeHtml(p.anon ? "Ẩn danh" : (p.authorName || "?"))}</span><span>⬇ ${p.downloads || 0}</span></div>
       ${p.note ? `<div class="wh-library-card-note">"${escapeHtml(p.note)}"</div>` : ""}
-      <button class="pill-btn primary wh-library-card-dl" ${canDownload ? "" : "disabled"}>Tải về Kho</button>
+      <div class="wh-library-card-footer">
+        <button class="wh-library-card-like-btn${liked ? " liked" : ""}" title="Yêu thích">${liked ? "❤️" : "🤍"} <span>${p._likeCount}</span></button>
+        <button class="pill-btn primary wh-library-card-dl" ${canDownload ? "" : "disabled"}>Tải về Kho</button>
+      </div>
     `;
     card.addEventListener("click", (e) => {
-      if (e.target.closest(".wh-library-card-dl")) return;
+      if (e.target.closest(".wh-library-card-dl") || e.target.closest(".wh-library-card-like-btn")) return;
       openLibraryDetail(p);
     });
     card.querySelector(".wh-library-card-dl").addEventListener("click", (e) => {
       e.stopPropagation();
       downloadLibraryPackage(p);
     });
+    card.querySelector(".wh-library-card-like-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleLibraryLike(p);
+    });
     listEl.appendChild(card);
   });
+}
+
+async function toggleLibraryLike(p) {
+  if (!currentUser) { showToast("Cần đăng nhập để yêu thích gói."); return; }
+  const ref = firebase.database().ref(`library/${p.id}/likes/${currentUser.uid}`);
+  const alreadyLiked = !!(p.likes && p.likes[currentUser.uid]);
+  await ref.set(alreadyLiked ? null : true);
+  renderLibraryTab();
 }
 
 function openLibraryDetail(p) {
@@ -6857,6 +7049,32 @@ function openLibraryDetail(p) {
   const remain = dailyQuotaRemaining("downloadCount", "downloadDate", dl);
   dlBtn.disabled = !(dl === Infinity || remain > 0);
   dlBtn.onclick = () => downloadLibraryPackage(p);
+
+  const likeBtn = document.getElementById("lib-detail-like-btn");
+  const likeCountEl = document.getElementById("lib-detail-like-count");
+  function refreshLikeBtn(pkg) {
+    const liked = !!(currentUser && pkg.likes && pkg.likes[currentUser.uid]);
+    const count = pkg.likes ? Object.keys(pkg.likes).length : 0;
+    likeBtn.classList.toggle("liked", liked);
+    likeBtn.innerHTML = `${liked ? "❤️" : "🤍"} <span id="lib-detail-like-count">${count}</span>`;
+  }
+  refreshLikeBtn(p);
+  likeBtn.onclick = async () => {
+    await toggleLibraryLike(p);
+    const snap = await firebase.database().ref("library/" + p.id).once("value");
+    const fresh = { id: p.id, ...(snap.val() || {}) };
+    Object.assign(p, fresh);
+    refreshLikeBtn(p);
+  };
+
+  document.getElementById("lib-detail-report-btn").onclick = async () => {
+    if (!currentUser) { showToast("Cần đăng nhập để báo cáo."); return; }
+    const reason = await showPrompt("Lý do báo cáo gói này (nội dung sai, vi phạm, spam...)", "");
+    if (!reason) return;
+    await firebase.database().ref(`library/${p.id}/reports/${currentUser.uid}`).set({ reason, at: Date.now() });
+    showToast("Đã gửi báo cáo tới Admin. Cảm ơn bạn!");
+  };
+
   document.getElementById("library-detail-overlay").classList.remove("hidden");
 }
 document.getElementById("library-detail-close").addEventListener("click", () => document.getElementById("library-detail-overlay").classList.add("hidden"));

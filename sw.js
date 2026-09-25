@@ -1,4 +1,4 @@
-const CACHE_NAME = "nox-cache-v55";
+const CACHE_NAME = "nox-cache-v56";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -13,7 +13,12 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS))
   );
-  self.skipWaiting();
+  // Không tự skipWaiting() nữa — chờ người dùng bấm "Tải lại để cập nhật"
+  // (trang gửi postMessage("SKIP_WAITING")) để tránh cập nhật ngầm bất ngờ.
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {

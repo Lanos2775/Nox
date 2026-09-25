@@ -1646,3 +1646,43 @@ button{touch-action:manipulation;}
 }
 .lib-detail-preview-item{padding:4px 0;border-bottom:1px solid var(--border-soft);}
 .lib-detail-preview-item:last-child{border-bottom:none;}
+
+.lib-detail-actions-row{display:flex;gap:8px;margin-top:12px;}
+.lib-detail-actions-row button{flex:1;}
+.lib-like-btn.liked{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+
+.wh-library-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px;}
+.wh-library-card-like-btn{
+  border:none;background:none;color:var(--text-muted);font-size:.78rem;
+  display:flex;align-items:center;gap:4px;padding:2px 4px;cursor:pointer;flex-shrink:0;
+}
+.wh-library-card-like-btn.liked{color:var(--difficult);}
+
+.admin-quick-stats{
+  display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;
+}
+.admin-stat-chip{
+  flex:1;min-width:84px;border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 10px;text-align:center;
+}
+.admin-stat-chip b{display:block;font-size:1.05rem;}
+.admin-stat-chip span{font-size:.66rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.03em;}
+#admin-users-search{margin-bottom:10px;}
+.admin-report-toggle{background:none;border:none;color:var(--difficult);font-size:.72rem;cursor:pointer;padding:0;text-decoration:underline;}
+.admin-report-list{
+  width:100%;border-top:1px dashed var(--border-soft);margin-top:6px;padding-top:6px;
+  font-size:.74rem;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;
+}
+.admin-log-row{
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;
+  font-size:.78rem;display:flex;flex-direction:column;gap:2px;
+}
+.admin-log-row .admin-log-time{color:var(--text-muted);font-size:.68rem;}
+
+.sw-update-banner{
+  position:fixed;left:50%;bottom:16px;transform:translateX(-50%);
+  z-index:999;display:flex;align-items:center;gap:12px;
+  background:var(--panel);border:1.5px solid var(--accent);border-radius:var(--radius-md);
+  padding:10px 14px;box-shadow:var(--shadow);font-size:.85rem;max-width:calc(100% - 32px);
+}
+.sw-update-banner.hidden{display:none;}

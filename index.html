@@ -210,6 +210,7 @@
           <button class="wh-library-filter-btn active" data-lib-sort="new">Mới nhất</button>
           <button class="wh-library-filter-btn" data-lib-sort="old">Cũ nhất</button>
           <button class="wh-library-filter-btn" data-lib-sort="trend">Xu hướng</button>
+          <button class="wh-library-filter-btn" data-lib-sort="likes">Yêu thích</button>
         </div>
       </div>
       <div class="wh-stats-sidebar-note hidden" id="wh-stats-sidebar-note">Thống kê tổng hợp từ tất cả danh sách — không cần chọn danh sách riêng.</div>
@@ -416,15 +417,19 @@
             <p class="auth-error hidden" id="admin-unlock-error"></p>
           </div>
           <div class="admin-content hidden" id="admin-content">
+            <div class="admin-quick-stats" id="admin-quick-stats"></div>
             <div class="auth-subtabs" id="admin-panel-tabs">
               <button type="button" class="auth-subtab-btn active" data-admin-tab="users">User <span class="admin-badge hidden" id="admin-badge-users"></span></button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="library">Thư viện <span class="admin-badge hidden" id="admin-badge-library"></span></button>
+              <button type="button" class="auth-subtab-btn" data-admin-tab="log">Nhật ký</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
               <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">🔒 Khoá</button>
             </div>
+            <input type="search" class="text-input" id="admin-users-search" placeholder="Tìm user theo tên hoặc email..." autocomplete="off" spellcheck="false">
             <div class="admin-pane" id="admin-pane-users"></div>
             <div class="admin-pane hidden" id="admin-pane-library"></div>
+            <div class="admin-pane hidden" id="admin-pane-log"></div>
             <div class="admin-pane hidden" id="admin-pane-database">
               <div id="admin-db-info" class="wh-preview-empty"></div>
               <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
@@ -693,6 +698,10 @@
     <div class="account-info-row"><span>Ngày đăng</span><b id="lib-detail-date">—</b></div>
     <p class="wh-preview-empty" id="lib-detail-note" style="margin:8px 0;"></p>
     <div class="lib-detail-preview" id="lib-detail-preview"></div>
+    <div class="lib-detail-actions-row">
+      <button class="pill-btn-outline lib-like-btn" id="lib-detail-like-btn">🤍 <span id="lib-detail-like-count">0</span></button>
+      <button class="pill-btn-outline" id="lib-detail-report-btn">🚩 Báo cáo</button>
+    </div>
     <button class="block-btn primary" id="lib-detail-download-btn" style="margin-top:12px;">Tải về Kho</button>
   </div>
 </div>
@@ -1019,6 +1028,15 @@
           <span class="settings-slider-val" id="settings-tts-volume-val">100%</span>
         </label>
       </div>
+      <div class="settings-section">
+        <div class="section-label">Sao lưu dữ liệu</div>
+        <p class="wh-preview-empty" style="margin:0 0 8px;">Xuất toàn bộ danh sách/tiến độ học ra 1 file JSON để lưu dự phòng, hoặc nhập lại từ file đã xuất trước đó.</p>
+        <div class="btn-row-2">
+          <button class="pill-btn-outline" id="settings-export-backup-btn">⬇️ Xuất dữ liệu</button>
+          <button class="pill-btn-outline" id="settings-import-backup-btn">⬆️ Nhập dữ liệu</button>
+        </div>
+        <input type="file" id="settings-import-backup-input" accept="application/json" class="hidden">
+      </div>
     </div>
   </div>
 </div>
@@ -1072,10 +1090,40 @@
   </div>
 </div>
 
+<!-- ============ BANNER: Có bản cập nhật mới ============ -->
+<div class="sw-update-banner hidden" id="sw-update-banner">
+  <span>🔄 Đã có bản cập nhật mới cho Nox.</span>
+  <button class="pill-btn primary" id="sw-update-reload-btn">Tải lại để cập nhật</button>
+</div>
+
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {});
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        function notifyUpdate(worker) {
+          const banner = document.getElementById("sw-update-banner");
+          if (!banner || !worker) return;
+          banner.classList.remove("hidden");
+          document.getElementById("sw-update-reload-btn").onclick = () => {
+            worker.postMessage("SKIP_WAITING");
+            banner.classList.add("hidden");
+          };
+        }
+        if (reg.waiting && navigator.serviceWorker.controller) notifyUpdate(reg.waiting);
+        reg.addEventListener("updatefound", () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener("statechange", () => {
+            if (nw.state === "installed" && navigator.serviceWorker.controller) notifyUpdate(nw);
+          });
+        });
+      }).catch(() => {});
+      let swReloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (swReloading) return;
+        swReloading = true;
+        window.location.reload();
+      });
     });
   }
 </script>
