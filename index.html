@@ -53,8 +53,14 @@
         </span>
       </button>
       <div class="sidebar-header-right">
-        <button class="bell-pill-btn hidden" id="admin-panel-quick-open" title="Admin Panel">🛠️</button>
-        <button class="bell-pill-btn" id="warehouse-quick-open" title="Kho">🗄️</button>
+        <button class="bell-pill-btn" id="warehouse-quick-open" title="Kho" aria-label="Kho">
+          <svg class="kho-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+            <path d="m7.5 4.3 9 5.1"/>
+          </svg>
+        </button>
         <button class="settings-gear-btn" id="settings-open" title="Cài đặt">⚙️</button>
       </div>
     </div>
@@ -191,7 +197,23 @@
         <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
         <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">⭱ Đăng lên Thư viện</button>
       </div>
+      <div id="wh-library-sidebar-section" class="hidden">
+        <div class="section-label">Loại nội dung</div>
+        <div class="wh-lib-filter-group">
+          <button class="wh-library-filter-btn active" data-lib-cat="flashcard">Thẻ</button>
+          <button class="wh-library-filter-btn" data-lib-cat="writing">Viết</button>
+          <button class="wh-library-filter-btn" data-lib-cat="listening">Nghe</button>
+          <button class="wh-library-filter-btn" data-lib-cat="dictionary">Từ điển</button>
+        </div>
+        <div class="section-label">Sắp xếp</div>
+        <div class="wh-lib-filter-group">
+          <button class="wh-library-filter-btn active" data-lib-sort="new">Mới nhất</button>
+          <button class="wh-library-filter-btn" data-lib-sort="old">Cũ nhất</button>
+          <button class="wh-library-filter-btn" data-lib-sort="trend">Xu hướng</button>
+        </div>
+      </div>
       <div class="wh-stats-sidebar-note hidden" id="wh-stats-sidebar-note">Thống kê tổng hợp từ tất cả danh sách — không cần chọn danh sách riêng.</div>
+      <div class="wh-stats-sidebar-note hidden" id="wh-admin-sidebar-note">Khu vực quản trị — chỉ tài khoản Admin thấy. Cần nhập mật khẩu admin để mở khoá.</div>
     </div>
   </aside>
 
@@ -344,6 +366,7 @@
         <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
         <button class="wh-cat-btn" data-wh-cat="library" id="wh-cat-library-btn">Thư viện</button>
         <button class="wh-cat-btn" data-wh-cat="stats" id="wh-cat-stats-btn">Thống kê</button>
+        <button class="wh-cat-btn hidden" data-wh-cat="admin" id="wh-cat-admin-btn">Admin</button>
       </div>
 
       <div class="wh-list-title" id="wh-current-list-title">Danh sách 1</div>
@@ -368,20 +391,50 @@
         </div>
 
         <div class="wh-library-view hidden" id="wh-library-view">
-          <div class="wh-library-side">
-            <div class="wh-library-side-label">Loại nội dung</div>
-            <button class="wh-library-filter-btn active" data-lib-cat="flashcard">Thẻ</button>
-            <button class="wh-library-filter-btn" data-lib-cat="writing">Viết</button>
-            <button class="wh-library-filter-btn" data-lib-cat="listening">Nghe</button>
-            <button class="wh-library-filter-btn" data-lib-cat="dictionary">Từ điển</button>
-            <div class="wh-library-side-label" style="margin-top:14px;">Sắp xếp</div>
-            <button class="wh-library-filter-btn active" data-lib-sort="new">Mới nhất</button>
-            <button class="wh-library-filter-btn" data-lib-sort="old">Cũ nhất</button>
-            <button class="wh-library-filter-btn" data-lib-sort="trend">Xu hướng</button>
-          </div>
           <div class="wh-library-main">
+            <div class="wh-library-search-row">
+              <span class="wh-library-search-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              </span>
+              <input type="search" class="text-input wh-library-search-input" id="wh-library-search" placeholder="Tìm gói theo tên, tác giả, ghi chú..." autocomplete="off" spellcheck="false">
+              <button type="button" class="wh-library-search-clear hidden" id="wh-library-search-clear" title="Xoá tìm kiếm" aria-label="Xoá tìm kiếm">✕</button>
+            </div>
             <div class="wh-library-quota" id="wh-library-quota"></div>
             <div class="wh-library-list" id="wh-library-list"></div>
+          </div>
+        </div>
+
+        <div class="wh-admin-view hidden" id="wh-admin-view">
+          <div class="admin-lock" id="admin-lock">
+            <div class="admin-lock-icon" aria-hidden="true">🔒</div>
+            <div class="admin-lock-title">Admin Panel đang khoá</div>
+            <p class="wh-preview-empty">Nhập mật khẩu đăng nhập của tài khoản Admin để mở khoá.</p>
+            <div class="admin-lock-form">
+              <input type="password" class="text-input" id="admin-unlock-input" placeholder="Mật khẩu admin...">
+              <button class="pill-btn primary" id="admin-unlock-btn">Mở khoá</button>
+            </div>
+            <p class="auth-error hidden" id="admin-unlock-error"></p>
+          </div>
+          <div class="admin-content hidden" id="admin-content">
+            <div class="auth-subtabs" id="admin-panel-tabs">
+              <button type="button" class="auth-subtab-btn active" data-admin-tab="users">User <span class="admin-badge hidden" id="admin-badge-users"></span></button>
+              <button type="button" class="auth-subtab-btn" data-admin-tab="library">Thư viện <span class="admin-badge hidden" id="admin-badge-library"></span></button>
+              <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
+              <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
+              <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">🔒 Khoá</button>
+            </div>
+            <div class="admin-pane" id="admin-pane-users"></div>
+            <div class="admin-pane hidden" id="admin-pane-library"></div>
+            <div class="admin-pane hidden" id="admin-pane-database">
+              <div id="admin-db-info" class="wh-preview-empty"></div>
+              <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
+              <div class="account-info-row">
+                <span>Giới hạn số tài khoản đăng ký</span>
+                <input type="number" class="text-input" id="admin-reg-cap-input" style="max-width:100px;" min="0" placeholder="Không giới hạn">
+              </div>
+              <button class="pill-btn primary" id="admin-reg-cap-save" style="width:100%;">Lưu giới hạn</button>
+            </div>
+            <div class="admin-pane hidden" id="admin-pane-features"></div>
           </div>
         </div>
 
@@ -579,7 +632,7 @@
     </div>
 
     <div class="auth-pane" id="auth-pane-login">
-      <input type="text" class="text-input" id="auth-login-name" placeholder="Tên đăng nhập" autocomplete="username">
+      <input type="text" class="text-input" id="auth-login-name" placeholder="Tên đăng nhập hoặc email" autocomplete="username">
       <input type="password" class="text-input" id="auth-login-pass" placeholder="Mật khẩu" autocomplete="current-password" style="margin-top:8px;">
       <button class="block-btn primary" id="auth-login-submit" style="margin-top:12px;">Đăng nhập</button>
       <button type="button" class="link-btn" id="auth-forgot-open" style="margin-top:10px;">Quên mật khẩu?</button>
@@ -589,6 +642,7 @@
     <div class="auth-pane hidden" id="auth-pane-register">
       <input type="text" class="text-input" id="auth-reg-name" placeholder="Tên (tối đa 10 ký tự)" maxlength="10">
       <input type="password" class="text-input" id="auth-reg-pass" placeholder="Mật khẩu (tối thiểu 6 ký tự)" autocomplete="new-password" style="margin-top:8px;">
+      <input type="password" class="text-input" id="auth-reg-pass2" placeholder="Nhập lại mật khẩu" autocomplete="new-password" style="margin-top:8px;">
       <input type="email" class="text-input" id="auth-reg-email" placeholder="Email" autocomplete="email" style="margin-top:8px;">
       <button class="block-btn primary" id="auth-reg-submit" style="margin-top:12px;">Tạo tài khoản</button>
       <p class="auth-error hidden" id="auth-reg-error"></p>
@@ -624,34 +678,6 @@
     </div>
     <button type="button" class="pill-btn-outline" id="acc-upgrade-btn" style="margin-top:10px;width:100%;">Xin nâng cấp lên Premium</button>
     <button type="button" class="block-btn" id="acc-logout-btn" style="margin-top:14px;">Đăng xuất</button>
-  </div>
-</div>
-
-<!-- ============ ADMIN PANEL ============ -->
-<div class="overlay hidden" id="admin-panel-overlay">
-  <div class="modal-panel">
-    <div class="popup-header">
-      <span>Admin Panel</span>
-      <button class="popup-close" id="admin-panel-close">✕</button>
-    </div>
-    <div class="auth-subtabs" id="admin-panel-tabs">
-      <button type="button" class="auth-subtab-btn active" data-admin-tab="users">User <span class="admin-badge hidden" id="admin-badge-users"></span></button>
-      <button type="button" class="auth-subtab-btn" data-admin-tab="library">Thư viện <span class="admin-badge hidden" id="admin-badge-library"></span></button>
-      <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
-      <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
-    </div>
-    <div class="admin-pane" id="admin-pane-users"></div>
-    <div class="admin-pane hidden" id="admin-pane-library"></div>
-    <div class="admin-pane hidden" id="admin-pane-database">
-      <div id="admin-db-info" class="wh-preview-empty"></div>
-      <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
-      <div class="account-info-row">
-        <span>Giới hạn số tài khoản đăng ký</span>
-        <input type="number" class="text-input" id="admin-reg-cap-input" style="max-width:100px;" min="0" placeholder="Không giới hạn">
-      </div>
-      <button class="pill-btn primary" id="admin-reg-cap-save" style="width:100%;">Lưu giới hạn</button>
-    </div>
-    <div class="admin-pane hidden" id="admin-pane-features"></div>
   </div>
 </div>
 
@@ -773,14 +799,6 @@
       <div class="settings-section" id="settings-account-status-section">
         <div class="section-label">Tài khoản</div>
         <p class="wh-preview-empty" id="settings-account-status-note">Chưa đăng nhập — dữ liệu chỉ lưu trên máy này. Bấm vào avatar ở góc trên bên trái để đăng nhập/đăng ký.</p>
-      </div>
-
-      <div class="settings-section hidden" id="settings-admin-unlock-section">
-        <div class="section-label">Admin Panel</div>
-        <div class="btn-row-2">
-          <input type="password" class="text-input" id="settings-admin-pass-input" placeholder="Nhập mật khẩu đăng nhập admin...">
-          <button class="pill-btn primary" id="settings-admin-unlock-btn">Mở khoá</button>
-        </div>
       </div>
 
       <div class="settings-section">

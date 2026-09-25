@@ -392,10 +392,17 @@ async function registerAccount(name, password, email) {
   return cred.user;
 }
 
-async function loginWithName(name, password) {
+async function loginWithName(nameOrEmail, password) {
   initFirebaseApp();
-  const key = nameKey(name);
-  if (!key) throw new Error("Nhập tên.");
+  const raw = (nameOrEmail || "").trim();
+  if (!raw) throw new Error("Nhập tên hoặc email.");
+  // Cho phép điền tên đăng nhập HOẶC email đều được — nếu có dạng email thì
+  // đăng nhập thẳng bằng email, ngược lại tra usernames/{tên} -> email như cũ.
+  if (raw.includes("@")) {
+    await firebase.auth().signInWithEmailAndPassword(raw, password);
+    return;
+  }
+  const key = nameKey(raw);
   const snap = await firebase.database().ref("usernames/" + key).once("value");
   const email = snap.val();
   if (!email) throw new Error("Không tìm thấy tài khoản với tên này.");
@@ -3974,7 +3981,7 @@ document.addEventListener("keydown", (e) => {
 const wh = { cat: "flashcard" };
 
 function whCatLabel(cat) {
-  return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", library: "Thư viện", stats: "Thống kê" }[cat];
+  return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", library: "Thư viện", stats: "Thống kê", admin: "Admin" }[cat];
 }
 
 document.querySelectorAll("[data-wh-cat]").forEach((btn) => {
@@ -3999,13 +4006,17 @@ function whActiveList() {
 function renderWarehouseTab() {
   const isStats = wh.cat === "stats";
   const isLibrary = wh.cat === "library";
-  document.getElementById("wh-library-upload-open").classList.toggle("hidden", isStats || isLibrary || accountRole === "guest");
-  document.getElementById("wh-sidebar-list-section").classList.toggle("hidden", isStats || isLibrary);
+  const isAdmin = wh.cat === "admin";
+  const isSpecial = isStats || isLibrary || isAdmin;
+  document.getElementById("wh-library-upload-open").classList.toggle("hidden", isSpecial || accountRole === "guest");
+  document.getElementById("wh-sidebar-list-section").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-stats-sidebar-note").classList.toggle("hidden", !isStats);
-  document.getElementById("wh-current-list-title").classList.toggle("hidden", isStats || isLibrary);
-  document.getElementById("wh-toolbar").classList.toggle("hidden", isStats || isLibrary);
-  document.getElementById("wh-legend").classList.toggle("hidden", isStats || isLibrary);
-  document.getElementById("wh-bottom-bar").classList.toggle("hidden", isStats || isLibrary);
+  document.getElementById("wh-library-sidebar-section").classList.toggle("hidden", !isLibrary);
+  document.getElementById("wh-admin-sidebar-note").classList.toggle("hidden", !isAdmin);
+  document.getElementById("wh-current-list-title").classList.toggle("hidden", isSpecial);
+  document.getElementById("wh-toolbar").classList.toggle("hidden", isSpecial);
+  document.getElementById("wh-legend").classList.toggle("hidden", isSpecial);
+  document.getElementById("wh-bottom-bar").classList.toggle("hidden", isSpecial);
   // Luôn ẩn hết các khung con trước — chỉ khung đúng với wh.cat hiện tại mới
   // được hiện lại bên dưới. Tránh trường hợp 1 khung bị "kẹt" hiện ra khi
   // chuyển cat (vd: bài Nghe bị chèn sang lúc xem Thống kê).
@@ -4013,6 +4024,7 @@ function renderWarehouseTab() {
   document.getElementById("wh-table-wrap").classList.add("hidden");
   document.getElementById("wh-library-view").classList.add("hidden");
   document.getElementById("wh-listening-view").classList.add("hidden");
+  document.getElementById("wh-admin-view").classList.add("hidden");
   if (isStats) {
     document.getElementById("wh-stats-view").classList.remove("hidden");
     renderStatsTab();
@@ -4021,6 +4033,11 @@ function renderWarehouseTab() {
   if (isLibrary) {
     document.getElementById("wh-library-view").classList.remove("hidden");
     renderLibraryTab();
+    return;
+  }
+  if (isAdmin) {
+    document.getElementById("wh-admin-view").classList.remove("hidden");
+    renderWhAdminView();
     return;
   }
 
@@ -5166,10 +5183,6 @@ function updateSettingsAccountStatusUI() {
   } else {
     note.textContent = "Chưa đăng nhập — dữ liệu chỉ lưu trên máy này. Bấm vào avatar ở góc trên bên trái để đăng nhập/đăng ký.";
   }
-  // Ô nhập mật khẩu mở khoá Admin Panel chỉ hiện với tài khoản có vai trò
-  // Admin (và chỉ khi chưa mở khoá trong phiên này).
-  const adminUnlockSection = document.getElementById("settings-admin-unlock-section");
-  if (adminUnlockSection) adminUnlockSection.classList.toggle("hidden", !(accountRole === "admin" && !adminUnlocked));
 }
 
 document.getElementById("settings-open").addEventListener("click", () => {
@@ -5198,13 +5211,11 @@ function updateDbConfigUI() {
 }
 
 document.getElementById("db-config-open-btn").addEventListener("click", () => {
-  document.getElementById("admin-panel-overlay").classList.add("hidden");
   updateDbConfigUI();
   document.getElementById("db-config-overlay").classList.remove("hidden");
 });
 function closeDbConfigOverlay() {
   document.getElementById("db-config-overlay").classList.add("hidden");
-  document.getElementById("admin-panel-overlay").classList.remove("hidden");
 }
 document.getElementById("db-config-close").addEventListener("click", closeDbConfigOverlay);
 document.getElementById("db-config-overlay").addEventListener("click", (e) => {
@@ -5753,6 +5764,16 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.30",
+    changes: [
+      "Admin Panel: chuyển thành 1 tab (Admin) bên trong Kho thay vì popup — khoá bằng mật khẩu đăng nhập của Admin, có nút Khoá lại; bỏ hẳn icon 🛠️ và ô mở khoá trong Cài đặt",
+      "Admin > User: thêm nút Xoá tài khoản (xoá hồ sơ + tên đăng nhập khỏi hệ thống, yêu cầu nhập lại mật khẩu admin) và nút Xem mật khẩu (Firebase không lưu mật khẩu ở dạng đọc được nên thao tác này gửi email đặt lại mật khẩu cho user, cũng yêu cầu mật khẩu admin)",
+      "Đăng ký: thêm ô Nhập lại mật khẩu để đối chiếu trước khi tạo tài khoản",
+      "Đăng nhập: ô Tên đăng nhập giờ nhận cả tên HOẶC email",
+      "Kho: đổi icon 🗄️ sang icon hộp mới; chuyển bộ lọc Loại nội dung/Sắp xếp của tab Thư viện ra khung điều khiển bên trái (giống các tab khác); thêm thanh tìm kiếm gói phía trên danh sách Thư viện",
+    ],
+  },
+  {
     version: "2.29",
     changes: [
       "Thêm hệ thống tài khoản: Đăng ký/Đăng nhập bằng Tên (≤10 ký tự, duy nhất) + mật khẩu + email, Quên mật khẩu qua email",
@@ -6269,9 +6290,17 @@ function refreshAccountUI() {
     nameEl.textContent = "Khách";
   }
   roleEl.textContent = currentUser ? roleLabel(accountRole) : "Chưa đăng nhập — bấm để đăng nhập";
-  document.getElementById("admin-panel-quick-open").classList.toggle("hidden", !(accountRole === "admin" && adminUnlocked));
   document.getElementById("wh-cat-library-btn").classList.toggle("hidden", accountRole === "guest");
+  document.getElementById("wh-cat-admin-btn").classList.toggle("hidden", accountRole !== "admin");
+  if (accountRole !== "admin") {
+    adminUnlocked = false;
+    sessionStorage.removeItem(ADMIN_PASS_SESSION_KEY);
+  }
   if (wh.cat === "library" && accountRole === "guest") {
+    wh.cat = "flashcard";
+    document.querySelectorAll(".wh-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.whCat === "flashcard"));
+  }
+  if (wh.cat === "admin" && accountRole !== "admin") {
     wh.cat = "flashcard";
     document.querySelectorAll(".wh-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.whCat === "flashcard"));
   }
@@ -6334,8 +6363,13 @@ document.getElementById("auth-login-submit").addEventListener("click", async () 
 document.getElementById("auth-reg-submit").addEventListener("click", async () => {
   const name = document.getElementById("auth-reg-name").value;
   const pass = document.getElementById("auth-reg-pass").value;
+  const pass2 = document.getElementById("auth-reg-pass2").value;
   const email = document.getElementById("auth-reg-email").value;
   document.getElementById("auth-reg-error").classList.add("hidden");
+  if (pass !== pass2) {
+    showAuthError("auth-reg-error", "Mật khẩu nhập lại không khớp.");
+    return;
+  }
   try {
     await registerAccount(name, pass, email);
     document.getElementById("auth-overlay").classList.add("hidden");
@@ -6462,22 +6496,52 @@ document.getElementById("acc-change-email-btn").addEventListener("click", async 
 });
 
 /* ============================================================
-   ADMIN PANEL
+   ADMIN PANEL — giờ là 1 tab (Admin) trong Kho, khoá bằng mật khẩu
+   đăng nhập của chính tài khoản Admin (reauthenticate).
    ============================================================ */
-document.getElementById("settings-admin-unlock-btn").addEventListener("click", async () => {
-  const pass = document.getElementById("settings-admin-pass-input").value;
-  if (!pass || !currentUser) return;
+async function adminReauthenticate(password) {
+  if (!currentUser || !password) return false;
   try {
-    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, pass);
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, password);
     await currentUser.reauthenticateWithCredential(cred);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function renderWhAdminView() {
+  const isUnlocked = accountRole === "admin" && adminUnlocked;
+  document.getElementById("admin-lock").classList.toggle("hidden", isUnlocked);
+  document.getElementById("admin-content").classList.toggle("hidden", !isUnlocked);
+  if (isUnlocked) switchAdminTab("users");
+}
+document.getElementById("admin-unlock-btn").addEventListener("click", async () => {
+  const input = document.getElementById("admin-unlock-input");
+  const pass = input.value;
+  const errEl = document.getElementById("admin-unlock-error");
+  errEl.classList.add("hidden");
+  if (!pass || !currentUser) return;
+  const ok = await adminReauthenticate(pass);
+  if (ok) {
     adminUnlocked = true;
     sessionStorage.setItem(ADMIN_PASS_SESSION_KEY, "1");
-    document.getElementById("settings-admin-pass-input").value = "";
-    showToast("Đã mở khoá Admin Panel — bấm icon 🛠️ cạnh Kho để mở.");
+    input.value = "";
+    renderWhAdminView();
     refreshAccountUI();
-  } catch (err) {
-    showToast("Sai mật khẩu.");
+  } else {
+    errEl.textContent = "Sai mật khẩu.";
+    errEl.classList.remove("hidden");
   }
+});
+document.getElementById("admin-unlock-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); document.getElementById("admin-unlock-btn").click(); }
+});
+document.getElementById("admin-relock-btn").addEventListener("click", () => {
+  adminUnlocked = false;
+  sessionStorage.removeItem(ADMIN_PASS_SESSION_KEY);
+  renderWhAdminView();
+  showToast("Đã khoá lại Admin Panel.");
 });
 
 function switchAdminTab(tab) {
@@ -6492,14 +6556,6 @@ function switchAdminTab(tab) {
 }
 document.querySelectorAll("#admin-panel-tabs [data-admin-tab]").forEach((btn) => {
   btn.addEventListener("click", () => switchAdminTab(btn.dataset.adminTab));
-});
-document.getElementById("admin-panel-quick-open").addEventListener("click", () => {
-  document.getElementById("admin-panel-overlay").classList.remove("hidden");
-  switchAdminTab("users");
-});
-document.getElementById("admin-panel-close").addEventListener("click", () => document.getElementById("admin-panel-overlay").classList.add("hidden"));
-document.getElementById("admin-panel-overlay").addEventListener("click", (e) => {
-  if (e.target.id === "admin-panel-overlay") document.getElementById("admin-panel-overlay").classList.add("hidden");
 });
 
 async function renderAdminUsersTab() {
@@ -6558,6 +6614,47 @@ function buildAdminUserRow(u, highlightPending) {
     renderAdminUsersTab();
   });
   actions.appendChild(banBtn);
+
+  const resetBtn = document.createElement("button");
+  resetBtn.className = "pill-btn-outline";
+  resetBtn.textContent = "Xem mật khẩu";
+  resetBtn.title = "Firebase không lưu mật khẩu ở dạng đọc được — thao tác này gửi email đặt lại mật khẩu cho user";
+  resetBtn.addEventListener("click", async () => {
+    if (!u.email) { showToast("Tài khoản này không có email."); return; }
+    const pass = await showPrompt("Nhập mật khẩu admin để xác nhận", "");
+    if (!pass) return;
+    const ok = await adminReauthenticate(pass);
+    if (!ok) { showToast("Sai mật khẩu admin."); return; }
+    try {
+      await firebase.auth().sendPasswordResetEmail(u.email);
+      showToast("Không thể xem trực tiếp mật khẩu (Firebase mã hoá, kể cả Admin cũng không đọc được) — đã gửi email đặt lại mật khẩu tới " + u.email + ".");
+    } catch (err) {
+      showToast(friendlyAuthError(err));
+    }
+  });
+  actions.appendChild(resetBtn);
+
+  const delAccBtn = document.createElement("button");
+  delAccBtn.className = "pill-btn-outline";
+  delAccBtn.textContent = "Xoá tài khoản";
+  delAccBtn.addEventListener("click", async () => {
+    const ok1 = await showConfirm(`Xoá tài khoản "${u.name}" khỏi hệ thống? Hồ sơ và tên đăng nhập sẽ bị xoá vĩnh viễn (không thể hoàn tác).`);
+    if (!ok1) return;
+    const pass = await showPrompt("Nhập mật khẩu admin để xác nhận", "");
+    if (!pass) return;
+    const ok = await adminReauthenticate(pass);
+    if (!ok) { showToast("Sai mật khẩu admin."); return; }
+    try {
+      if (u.nameLower) await firebase.database().ref("usernames/" + u.nameLower).remove();
+      await firebase.database().ref("users/" + u.uid + "/profile").remove();
+      showToast("Đã xoá tài khoản " + u.name + " khỏi hệ thống.");
+      renderAdminUsersTab();
+    } catch (err) {
+      showToast("Lỗi khi xoá: " + (err && err.message ? err.message : "?"));
+    }
+  });
+  actions.appendChild(delAccBtn);
+
   row.appendChild(actions);
   return row;
 }
@@ -6656,7 +6753,7 @@ function renderAdminFeaturesTab() {
 /* ============================================================
    THƯ VIỆN (Kho > Thư viện)
    ============================================================ */
-const libUi = { cat: "flashcard", sort: "new" };
+const libUi = { cat: "flashcard", sort: "new", search: "" };
 document.querySelectorAll(".wh-library-filter-btn[data-lib-cat]").forEach((btn) => {
   btn.addEventListener("click", () => {
     libUi.cat = btn.dataset.libCat;
@@ -6670,6 +6767,20 @@ document.querySelectorAll(".wh-library-filter-btn[data-lib-sort]").forEach((btn)
     document.querySelectorAll(".wh-library-filter-btn[data-lib-sort]").forEach((b) => b.classList.toggle("active", b === btn));
     renderLibraryTab();
   });
+});
+const whLibSearchInput = document.getElementById("wh-library-search");
+const whLibSearchClear = document.getElementById("wh-library-search-clear");
+whLibSearchInput.addEventListener("input", () => {
+  libUi.search = whLibSearchInput.value;
+  whLibSearchClear.classList.toggle("hidden", !libUi.search);
+  renderLibraryTab();
+});
+whLibSearchClear.addEventListener("click", () => {
+  libUi.search = "";
+  whLibSearchInput.value = "";
+  whLibSearchClear.classList.add("hidden");
+  whLibSearchInput.focus();
+  renderLibraryTab();
 });
 
 async function renderLibraryTab() {
@@ -6689,8 +6800,21 @@ async function renderLibraryTab() {
   if (libUi.sort === "new") entries.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   else if (libUi.sort === "old") entries.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
   else entries.sort((a, b) => (b.downloads || 0) - (a.downloads || 0));
+  const q = (libUi.search || "").trim().toLowerCase();
+  if (q) {
+    entries = entries.filter((p) =>
+      (p.title || "").toLowerCase().includes(q) ||
+      (!p.anon && (p.authorName || "").toLowerCase().includes(q)) ||
+      (p.note || "").toLowerCase().includes(q)
+    );
+  }
   listEl.innerHTML = "";
-  if (!entries.length) { listEl.innerHTML = `<p class="wh-library-empty">Chưa có gói nào ở mục này.</p>`; return; }
+  if (!entries.length) {
+    listEl.innerHTML = q
+      ? `<p class="wh-library-empty">Không tìm thấy gói nào khớp với "${escapeHtml(libUi.search)}".</p>`
+      : `<p class="wh-library-empty">Chưa có gói nào ở mục này.</p>`;
+    return;
+  }
   const canDownload = dl === Infinity || remain > 0;
   entries.forEach((p) => {
     const card = document.createElement("div");

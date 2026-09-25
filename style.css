@@ -1088,6 +1088,42 @@ input,textarea{font-family:inherit;}
 }
 .wh-stats-sidebar-note{font-size:.78rem;color:var(--text-muted);padding:10px 2px;line-height:1.5;}
 
+/* ---- Kho sidebar: icon, khối điều khiển Thư viện, Admin ---- */
+.kho-icon{width:20px;height:20px;flex-shrink:0;}
+#wh-library-sidebar-section{display:flex;flex-direction:column;gap:8px;}
+#wh-library-sidebar-section.hidden{display:none;}
+.wh-lib-filter-group{display:flex;flex-direction:column;gap:6px;}
+
+.wh-library-search-row{
+  position:relative;display:flex;align-items:center;
+}
+.wh-library-search-icon{
+  position:absolute;left:10px;display:flex;align-items:center;color:var(--text-muted);pointer-events:none;
+}
+.wh-library-search-icon svg{width:16px;height:16px;}
+.wh-library-search-input{padding-left:32px;padding-right:32px;}
+.wh-library-search-clear{
+  position:absolute;right:6px;
+  width:24px;height:24px;border:none;background:none;color:var(--text-muted);
+  border-radius:50%;font-size:.8rem;display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.wh-library-search-clear:hover{background:var(--accent-soft);color:var(--text);}
+.wh-library-search-clear.hidden{display:none;}
+
+/* ---- Kho > Admin (khoá bằng mật khẩu) ---- */
+.wh-admin-view{max-width:720px;}
+.admin-lock{
+  display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
+  border:1.5px dashed var(--border);border-radius:var(--radius-md);
+  padding:40px 20px;margin-top:20px;
+}
+.admin-lock-icon{font-size:2rem;}
+.admin-lock-title{font-weight:800;font-size:1.05rem;}
+.admin-lock-form{display:flex;gap:8px;max-width:320px;width:100%;margin-top:10px;}
+.admin-lock-form .text-input{flex:1;}
+.admin-content.hidden,.admin-lock.hidden{display:none;}
+.admin-relock-btn{flex:0 0 auto;}
+
 .dot-learning{background:var(--learning);}
 .dot-known{background:var(--known);}
 .dot-difficult{background:var(--difficult);}
