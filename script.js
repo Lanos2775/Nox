@@ -40,6 +40,8 @@ function defaultState() {
     studyTime: { date: todayKey(), writingSec: 0, listeningSec: 0, writingGoalMin: 60, listeningGoalMin: 60 },
     studyTimeTotal: { writingSec: 0, listeningSec: 0 },
     bubblePos: null,
+    trash: [],
+    myShares: [],
   };
 }
 
@@ -4046,10 +4048,10 @@ document.addEventListener("keydown", (e) => {
 /* ============================================================
    TAB 4: KHO (WAREHOUSE)
    ============================================================ */
-const wh = { cat: "flashcard", tagFilter: [] };
+const wh = { cat: "flashcard", tagFilter: [], selectedItems: new Set(), selectedListId: null, sortCol: null, sortDir: "asc" };
 
 function whCatLabel(cat) {
-  return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", library: "Thư viện", stats: "Thống kê", admin: "Admin" }[cat];
+  return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", library: "Thư viện", stats: "Thống kê", admin: "Admin", trash: "Thùng rác" }[cat];
 }
 
 document.querySelectorAll("[data-wh-cat]").forEach((btn) => {
@@ -4059,6 +4061,98 @@ document.querySelectorAll("[data-wh-cat]").forEach((btn) => {
     wh.cat = btn.dataset.whCat;
     renderWarehouseTab();
   });
+});
+
+/* ============================================================
+   THÙNG RÁC — giữ mục/danh sách/lần "xoá hết" đã xoá trong 24h,
+   độc lập với toast Hoàn tác 6 giây (2 lớp an toàn khác nhau).
+   entry: { id, type: "item"|"list"|"clear", cat, listId, listName, payload, deletedAt }
+   ============================================================ */
+const TRASH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+function pushTrash(type, cat, listId, listName, payload) {
+  state.trash = state.trash || [];
+  state.trash.push({ id: uid(), type, cat, listId, listName, payload, deletedAt: Date.now() });
+  saveState();
+}
+function pruneTrash() {
+  const before = (state.trash || []).length;
+  state.trash = (state.trash || []).filter((e) => Date.now() - e.deletedAt < TRASH_MAX_AGE_MS);
+  if (state.trash.length !== before) saveState();
+}
+function trashEntryLabel(e) {
+  if (e.type === "item") return `Mục: "${e.payload.en}"`;
+  if (e.type === "list") return `Danh sách: "${e.payload.name}" (${(e.payload.items || []).length} mục)`;
+  return `Xoá hết ${e.payload.length} mục trong "${e.listName}"`;
+}
+function renderTrashTab() {
+  pruneTrash();
+  const box = document.getElementById("wh-trash-list");
+  const entries = (state.trash || []).slice().sort((a, b) => b.deletedAt - a.deletedAt);
+  document.getElementById("wh-trash-empty-btn").disabled = !entries.length;
+  box.innerHTML = "";
+  if (!entries.length) { box.innerHTML = `<p class="wh-preview-empty">Thùng rác trống.</p>`; return; }
+  entries.forEach((e) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    const remainMin = Math.max(0, Math.ceil((TRASH_MAX_AGE_MS - (Date.now() - e.deletedAt)) / 60000));
+    const remainTxt = remainMin >= 60 ? `${Math.ceil(remainMin / 60)} giờ` : `${remainMin} phút`;
+    row.innerHTML = `<div class="admin-row-main"><b>${escapeHtml(trashEntryLabel(e))}</b><span class="admin-row-sub">${whCatLabel(e.cat)} · còn ${remainTxt} trước khi mất hẳn</span></div>`;
+    const actions = document.createElement("div");
+    actions.className = "admin-row-actions";
+    const restoreBtn = document.createElement("button");
+    restoreBtn.className = "pill-btn primary";
+    restoreBtn.textContent = "Khôi phục";
+    restoreBtn.addEventListener("click", () => {
+      restoreTrashEntry(e);
+      state.trash = state.trash.filter((x) => x.id !== e.id);
+      saveState();
+      renderTrashTab();
+    });
+    actions.appendChild(restoreBtn);
+    const delBtn = document.createElement("button");
+    delBtn.className = "pill-btn-outline";
+    delBtn.textContent = "Xoá vĩnh viễn";
+    delBtn.addEventListener("click", async () => {
+      const ok = await showConfirm("Xoá vĩnh viễn khỏi thùng rác? Không thể hoàn tác.");
+      if (!ok) return;
+      state.trash = state.trash.filter((x) => x.id !== e.id);
+      saveState();
+      renderTrashTab();
+    });
+    actions.appendChild(delBtn);
+    row.appendChild(actions);
+    box.appendChild(row);
+  });
+}
+function restoreTrashEntry(e) {
+  if (e.type === "item") {
+    const l = getList(e.cat, e.listId);
+    if (!l) { showToast(`Không tìm thấy danh sách "${e.listName}" để khôi phục mục — có thể danh sách đã bị xoá hẳn.`); return; }
+    l.items.push(e.payload);
+    saveState();
+    if (wh.cat === e.cat) renderWarehouseTab();
+    showToast(`Đã khôi phục mục "${e.payload.en}" vào "${l.name}".`);
+  } else if (e.type === "list") {
+    getCategory(e.cat).push(e.payload);
+    saveState();
+    if (wh.cat === e.cat) renderWarehouseTab();
+    showToast(`Đã khôi phục danh sách "${e.payload.name}".`);
+  } else if (e.type === "clear") {
+    const l = getList(e.cat, e.listId);
+    if (!l) { showToast(`Không tìm thấy danh sách "${e.listName}" để khôi phục — có thể danh sách đã bị xoá hẳn.`); return; }
+    l.items.push(...e.payload);
+    saveState();
+    if (wh.cat === e.cat) renderWarehouseTab();
+    showToast(`Đã khôi phục ${e.payload.length} mục vào "${l.name}".`);
+  }
+}
+document.getElementById("wh-trash-empty-btn").addEventListener("click", async () => {
+  if (!(state.trash || []).length) return;
+  const ok = await showConfirm("Dọn sạch thùng rác? Toàn bộ mục/danh sách đã xoá sẽ mất vĩnh viễn, không thể hoàn tác.");
+  if (!ok) return;
+  state.trash = [];
+  saveState();
+  renderTrashTab();
 });
 
 function whActiveList() {
@@ -4075,7 +4169,8 @@ function renderWarehouseTab() {
   const isStats = wh.cat === "stats";
   const isLibrary = wh.cat === "library";
   const isAdmin = wh.cat === "admin";
-  const isSpecial = isStats || isLibrary || isAdmin;
+  const isTrash = wh.cat === "trash";
+  const isSpecial = isStats || isLibrary || isAdmin || isTrash;
   document.getElementById("wh-library-upload-open").classList.toggle("hidden", isSpecial || accountRole === "guest");
   document.getElementById("wh-sidebar-list-section").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-stats-sidebar-note").classList.toggle("hidden", !isStats);
@@ -4094,6 +4189,7 @@ function renderWarehouseTab() {
   document.getElementById("wh-library-view").classList.add("hidden");
   document.getElementById("wh-listening-view").classList.add("hidden");
   document.getElementById("wh-admin-view").classList.add("hidden");
+  document.getElementById("wh-trash-view").classList.add("hidden");
   if (isStats) {
     document.getElementById("wh-stats-view").classList.remove("hidden");
     renderStatsTab();
@@ -4107,6 +4203,11 @@ function renderWarehouseTab() {
   if (isAdmin) {
     document.getElementById("wh-admin-view").classList.remove("hidden");
     renderWhAdminView();
+    return;
+  }
+  if (isTrash) {
+    document.getElementById("wh-trash-view").classList.remove("hidden");
+    renderTrashTab();
     return;
   }
 
@@ -4397,12 +4498,29 @@ function renderWhTable() {
   table.innerHTML = "";
   const list = whActiveList();
   const tagRow = document.getElementById("wh-tag-filter-row");
+  if (!list || list.id !== wh.selectedListId) {
+    wh.selectedItems = new Set();
+    wh.selectedListId = list ? list.id : null;
+  }
+  updateWhBulkBar();
   if (!list || !list.items.length) {
     table.innerHTML = `<div class="wh-empty-row">Chưa có mục nào trong danh sách này</div>`;
     document.getElementById("wh-progress").textContent = "Tiến độ: 0%";
     tagRow.classList.add("hidden");
     return;
   }
+
+  // ---- Sắp xếp theo cột (bấm tiêu đề "Tiếng Anh"/"Tiếng Việt") ----
+  if (wh.sortCol) {
+    list.items.sort((a, b) => {
+      const cmp = (a[wh.sortCol] || "").localeCompare(b[wh.sortCol] || "", "vi");
+      return wh.sortDir === "desc" ? -cmp : cmp;
+    });
+  }
+  ["en", "vi"].forEach((col) => {
+    const arrow = document.getElementById("wh-col-sort-arrow-" + col);
+    if (arrow) arrow.textContent = wh.sortCol === col ? (wh.sortDir === "desc" ? "↓" : "↑") : "";
+  });
 
   // ---- Bộ lọc theo thẻ (tags) ----
   const allTags = [...new Set(list.items.flatMap((it) => it.tags || []))].sort();
@@ -4439,6 +4557,7 @@ function renderWhTable() {
   if (!visibleItems.length) {
     table.innerHTML = `<div class="wh-empty-row">Không có mục nào khớp thẻ đã chọn.</div>`;
   }
+  document.getElementById("wh-select-all").checked = visibleItems.length > 0 && visibleItems.every((it) => wh.selectedItems.has(it.id));
   visibleItems.forEach((item) => {
     const row = document.createElement("div");
     row.className = "wh-row";
@@ -4446,6 +4565,7 @@ function renderWhTable() {
     row.dataset.itemId = item.id;
     const dotClass = item.status === "known" ? "dot-known" : item.status === "difficult" ? "dot-difficult" : "dot-learning";
     row.innerHTML = `
+      <span class="wh-row-select"><input type="checkbox" ${wh.selectedItems.has(item.id) ? "checked" : ""}></span>
       <span class="wh-row-handle" title="Kéo để sắp xếp lại">≡</span>
       <span class="wh-row-en">${escapeHtml(item.en)}</span>
       <span class="wh-row-ipa" id="wh-ipa-${item.id}"></span>
@@ -4461,6 +4581,11 @@ function renderWhTable() {
         <button data-act="del" title="Xoá">🗑</button>
       </span>`;
     
+    row.querySelector(".wh-row-select input").addEventListener("change", (e) => {
+      if (e.target.checked) wh.selectedItems.add(item.id); else wh.selectedItems.delete(item.id);
+      updateWhBulkBar();
+      document.getElementById("wh-select-all").checked = visibleItems.every((it) => wh.selectedItems.has(it.id));
+    });
     row.querySelector('[data-act="play"]').addEventListener("click", () => playAudio(item.en));
     row.querySelector('[data-act="copy"]').addEventListener("click", () => {
       const text = `${item.en} — ${item.vi}`;
@@ -4492,6 +4617,7 @@ function renderWhTable() {
       list.items = list.items.filter((i) => i.id !== item.id);
       saveState();
       renderWarehouseTab();
+      pushTrash("item", wh.cat, list.id, list.name, removedItem);
       showUndoToast(`Đã xoá "${removedItem.en}".`, () => {
         const l = getList(wh.cat, list.id);
         if (!l) return;
@@ -4574,6 +4700,97 @@ function renderWhTable() {
   document.getElementById("wh-progress").textContent = `Tiến độ: ${pct}%`;
 }
 
+/* ---- Chọn nhiều dòng (multi-select) + thanh hành động hàng loạt ---- */
+function updateWhBulkBar() {
+  const bar = document.getElementById("wh-bulk-bar");
+  const n = wh.selectedItems.size;
+  bar.classList.toggle("hidden", n === 0);
+  if (n) document.getElementById("wh-bulk-count").textContent = `Đã chọn ${n} mục`;
+}
+document.getElementById("wh-select-all").addEventListener("change", (e) => {
+  const list = whActiveList();
+  if (!list) return;
+  const visibleItems = wh.tagFilter.length
+    ? list.items.filter((it) => wh.tagFilter.every((t) => (it.tags || []).includes(t)))
+    : list.items;
+  if (e.target.checked) visibleItems.forEach((it) => wh.selectedItems.add(it.id));
+  else visibleItems.forEach((it) => wh.selectedItems.delete(it.id));
+  renderWhTable();
+});
+document.getElementById("wh-bulk-cancel").addEventListener("click", () => {
+  wh.selectedItems.clear();
+  renderWhTable();
+});
+document.getElementById("wh-bulk-delete").addEventListener("click", async () => {
+  const list = whActiveList();
+  if (!list) return;
+  const ids = new Set(wh.selectedItems);
+  const ok = await showConfirm(`Xoá ${ids.size} mục đã chọn?`);
+  if (!ok) return;
+  const removed = list.items.filter((it) => ids.has(it.id));
+  const removedIdxs = removed.map((it) => list.items.indexOf(it));
+  list.items = list.items.filter((it) => !ids.has(it.id));
+  wh.selectedItems.clear();
+  saveState();
+  renderWarehouseTab();
+  const cat = wh.cat, listId = list.id;
+  removed.forEach((it) => pushTrash("item", cat, listId, list.name, it));
+  showUndoToast(`Đã xoá ${removed.length} mục.`, () => {
+    const l = getList(cat, listId);
+    if (!l) return;
+    removed.forEach((it, i) => l.items.splice(Math.min(removedIdxs[i], l.items.length), 0, it));
+    saveState();
+    if (wh.cat === cat) renderWarehouseTab();
+  });
+});
+document.getElementById("wh-bulk-move").addEventListener("click", async () => {
+  const list = whActiveList();
+  if (!list) return;
+  const others = getCategory(wh.cat).filter((l) => l.id !== list.id);
+  if (!others.length) { showToast("Không có danh sách nào khác để chuyển tới."); return; }
+  const targetId = await showSelect(`Chuyển ${wh.selectedItems.size} mục sang danh sách nào?`, others.map((l) => ({ value: l.id, label: l.name })));
+  if (!targetId) return;
+  const target = getList(wh.cat, targetId);
+  if (!target) return;
+  const ids = new Set(wh.selectedItems);
+  const moved = list.items.filter((it) => ids.has(it.id));
+  list.items = list.items.filter((it) => !ids.has(it.id));
+  target.items.push(...moved);
+  wh.selectedItems.clear();
+  saveState();
+  renderWarehouseTab();
+  showToast(`Đã chuyển ${moved.length} mục sang "${target.name}".`);
+});
+document.getElementById("wh-bulk-tag").addEventListener("click", async () => {
+  const list = whActiveList();
+  if (!list) return;
+  const raw = await showPrompt("Gắn thẻ cho các mục đã chọn (cách nhau bởi dấu phẩy)", "");
+  if (!raw) return;
+  const tags = raw.split(",").map((t) => t.trim()).filter(Boolean);
+  if (!tags.length) return;
+  const ids = new Set(wh.selectedItems);
+  list.items.forEach((it) => {
+    if (!ids.has(it.id)) return;
+    const existing = new Set(it.tags || []);
+    tags.forEach((t) => existing.add(t));
+    it.tags = [...existing];
+  });
+  saveState();
+  renderWarehouseTab();
+  showToast(`Đã gắn thẻ cho ${ids.size} mục.`);
+});
+
+/* ---- Sắp xếp bảng theo cột (bấm tiêu đề "Tiếng Anh" / "Tiếng Việt") ---- */
+document.querySelectorAll(".wh-col-sort-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const col = btn.dataset.sortCol;
+    if (wh.sortCol === col) wh.sortDir = wh.sortDir === "asc" ? "desc" : "asc";
+    else { wh.sortCol = col; wh.sortDir = "asc"; }
+    saveState();
+    renderWhTable();
+  });
+});
+
 async function addWhList() {
   const defaultName = "Danh sách " + (getCategory(wh.cat).length + 1);
   const name = await showPrompt("Tên danh sách mới", defaultName);
@@ -4613,6 +4830,7 @@ document.getElementById("wh-delete-list").addEventListener("click", async () => 
   state.selected.writing = state.selected.writing.filter((id) => id !== list.id);
   saveState();
   renderWarehouseTab();
+  pushTrash("list", cat, list.id, list.name, list);
   showUndoToast(`Đã xoá danh sách "${list.name}".`, () => {
     const arr = getCategory(cat);
     arr.splice(Math.min(removedIdx, arr.length), 0, list);
@@ -4632,6 +4850,7 @@ document.getElementById("wh-clear-all").addEventListener("click", async () => {
   list.items = [];
   saveState();
   renderWarehouseTab();
+  pushTrash("clear", cat, listId, list.name, removedItems);
   showUndoToast(`Đã xoá ${removedItems.length} mục.`, () => {
     const l = getList(cat, listId);
     if (!l) return;
@@ -4715,15 +4934,32 @@ function renderWhPreview() {
   const box = document.getElementById("wh-preview-list");
   box.innerHTML = "";
   const isDict = wh.cat === "dictionary";
+  const list = whActiveList();
+  const existingKeys = new Set((list ? list.items : []).map((it) => (it.en || "").toLowerCase().trim()));
+  const dupCount = whPreviewItems.filter((it) => existingKeys.has((it.en || "").toLowerCase().trim())).length;
   document.getElementById("wh-preview-hint").textContent =
-    `Xem trước ${whPreviewItems.length} mục — có thể chỉnh sửa từng ô, xoá mục không cần, rồi nhấn OK để thêm vào danh sách.`;
+    `Xem trước ${whPreviewItems.length} mục — có thể chỉnh sửa từng ô, xoá mục không cần, rồi nhấn OK để thêm vào danh sách.`
+    + (dupCount ? ` ⚠️ ${dupCount} mục trùng với từ đã có trong danh sách này (đánh dấu vàng).` : "");
   if (!whPreviewItems.length) {
     box.innerHTML = `<div class="wh-preview-empty">Không có mục nào để xem trước.</div>`;
     return;
   }
+  if (dupCount) {
+    const dupBtn = document.createElement("button");
+    dupBtn.type = "button";
+    dupBtn.className = "pill-btn-outline";
+    dupBtn.style.marginBottom = "8px";
+    dupBtn.textContent = `Bỏ ${dupCount} mục trùng`;
+    dupBtn.addEventListener("click", () => {
+      whPreviewItems = whPreviewItems.filter((it) => !existingKeys.has((it.en || "").toLowerCase().trim()));
+      renderWhPreview();
+    });
+    box.appendChild(dupBtn);
+  }
   whPreviewItems.forEach((it, idx) => {
+    const isDup = existingKeys.has((it.en || "").toLowerCase().trim());
     const row = document.createElement("div");
-    row.className = "wh-preview-row" + (isDict ? "" : " simple");
+    row.className = "wh-preview-row" + (isDict ? "" : " simple") + (isDup ? " wh-preview-dup" : "");
     row.dataset.idx = idx;
     row.innerHTML = isDict
       ? `<input class="wh-preview-en" value="${escapeHtml(it.en)}" placeholder="Từ tiếng Anh">
@@ -5967,6 +6203,15 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.33",
+    changes: [
+      "Thêm vào (nhập liệu hàng loạt): cảnh báo mục trùng với dữ liệu đã có trong danh sách (tô vàng + nút 'Bỏ N mục trùng')",
+      "Kho: thêm checkbox chọn nhiều dòng + thanh hành động hàng loạt (Gắn thẻ / Chuyển danh sách / Xoá / Bỏ chọn), có checkbox 'chọn tất cả'",
+      "Kho: thêm sắp xếp theo cột — bấm tiêu đề 'Tiếng Anh'/'Tiếng Việt' để sort A-Z/Z-A (được lưu lại thứ tự)",
+      "Kho: thêm tab 🗑 Thùng rác — mục/danh sách/lần 'xoá hết' đã xoá được giữ 24 giờ, có thể Khôi phục hoặc Xoá vĩnh viễn, độc lập với toast Hoàn tác 6 giây trước đó",
+    ],
+  },
   {
     version: "2.32",
     changes: [
@@ -7558,6 +7803,7 @@ initAuthWatcher();
 loadFeaturesConfig();
 updateMobilePanelVisibility();
 startQuizTipRotation();
+pruneTrash();
 saveState();
 
 /* ---- Màn hình loading: hiện cố định ~1.3s rồi tự ẩn ---- */

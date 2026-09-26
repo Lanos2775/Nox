@@ -882,7 +882,7 @@ input,textarea{font-family:inherit;}
 }
 .wh-table-header{
   display:grid;
-  grid-template-columns:20px 1fr 92px 64px 18px 1fr 14px 100px;
+  grid-template-columns:18px 20px 1fr 92px 64px 18px 1fr 14px 100px;
   align-items:center;gap:10px;
   padding:8px 14px;
   border-bottom:1.5px solid var(--border);
@@ -892,7 +892,7 @@ input,textarea{font-family:inherit;}
 }
 .wh-row{
   display:grid;
-  grid-template-columns:20px 1fr 92px 64px 18px 1fr 14px 100px;
+  grid-template-columns:18px 20px 1fr 92px 64px 18px 1fr 14px 100px;
   align-items:center;gap:10px;
   padding:9px 14px;border-bottom:1px solid var(--border-soft);
   font-size:.85rem;
@@ -904,6 +904,8 @@ input,textarea{font-family:inherit;}
 .wh-row.drag-over-bottom{box-shadow:inset 0 -2px 0 var(--accent);}
 .wh-row-handle{color:var(--text-muted);cursor:grab;font-size:.9rem;}
 .wh-row-handle:active{cursor:grabbing;}
+.wh-row-select{display:flex;align-items:center;}
+.wh-row-select input,#wh-select-all{width:14px;height:14px;cursor:pointer;}
 .wh-row-en,.wh-row-vi{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .wh-row-ipa{
   color:var(--text-muted);
@@ -930,10 +932,25 @@ input,textarea{font-family:inherit;}
 .wh-row-actions button:hover{background:var(--accent-soft);}
 .wh-empty-row{padding:30px;text-align:center;color:var(--text-muted);font-size:.85rem;}
 
+.wh-col-sort-btn{
+  background:none;border:none;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;
+  cursor:pointer;padding:0;display:flex;align-items:center;gap:3px;
+}
+.wh-col-sort-btn:hover{color:var(--accent);}
+.wh-col-sort-arrow{font-size:.85em;}
+
+.wh-bulk-bar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:var(--radius-sm);
+  padding:8px 12px;margin:8px 0;font-size:.82rem;
+}
+.wh-bulk-bar.hidden{display:none;}
+.wh-bulk-bar #wh-bulk-count{font-weight:700;margin-right:auto;}
+
 /* Cột Phiên âm / Loại từ chỉ hiện ở tab Từ điển */
 .wh-table-wrap.compact-cols .wh-table-header,
 .wh-table-wrap.compact-cols .wh-row{
-  grid-template-columns:20px 1fr 18px 1fr 14px 100px;
+  grid-template-columns:18px 20px 1fr 18px 1fr 14px 100px;
 }
 .wh-table-wrap.compact-cols .wh-col-ipa,
 .wh-table-wrap.compact-cols .wh-col-pos,
@@ -1113,6 +1130,11 @@ input,textarea{font-family:inherit;}
 
 /* ---- Kho > Admin (khoá bằng mật khẩu) ---- */
 .wh-admin-view{max-width:720px;}
+.wh-trash-view{max-width:720px;}
+.wh-trash-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;}
+.wh-trash-header .pill-btn-outline{flex-shrink:0;}
+.wh-trash-header .pill-btn-outline:disabled{opacity:.4;cursor:default;}
+#wh-trash-list{display:flex;flex-direction:column;gap:8px;}
 .admin-lock{
   display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;
   border:1.5px dashed var(--border);border-radius:var(--radius-md);
@@ -1231,6 +1253,7 @@ input,textarea{font-family:inherit;}
   padding:8px;background:var(--panel);
 }
 .wh-preview-row.simple{grid-template-columns:1fr 1.5fr 32px;}
+.wh-preview-row.wh-preview-dup{background:color-mix(in srgb, #eab308 18%, transparent);border-radius:var(--radius-sm);}
 .wh-preview-row input,.wh-preview-row textarea{
   width:100%;
   border:1.5px solid var(--border);border-radius:6px;
