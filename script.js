@@ -343,6 +343,7 @@ function pushStateToCloud(force) {
    Đồng bộ dữ liệu giờ đi theo UID (connectSync(uid)) thay vì mã thủ công.
    ============================================================ */
 let currentUser = null;      // firebase.auth().currentUser, null = Khách
+let pendingShareCode = new URLSearchParams(location.search).get("share"); // ?share=MÃ trên link chia sẻ riêng tư
 let accountProfile = null;   // /users/{uid}/profile
 let accountRole = "guest";   // "guest" | "free" | "premium" | "admin"
 let profileListenerRef = null;
@@ -467,6 +468,18 @@ function initAuthWatcher() {
       disconnectSync();
     }
     refreshAccountUI();
+    if (pendingShareCode) {
+      const code = pendingShareCode;
+      pendingShareCode = null;
+      history.replaceState(null, "", location.pathname);
+      if (user) {
+        document.getElementById("wh-redeem-input").value = code;
+        document.getElementById("wh-redeem-error").classList.add("hidden");
+        document.getElementById("wh-redeem-overlay").classList.remove("hidden");
+      } else {
+        showToast(`Đăng nhập rồi mở "Nhập từ mã chia sẻ" và nhập mã ${code} để nhận danh sách được chia sẻ.`, 5000);
+      }
+    }
   });
 }
 
@@ -1038,6 +1051,61 @@ function showConfirm(message) {
     okBtn.addEventListener("click", onOk);
     cancelBtn.addEventListener("click", onCancel);
   });
+}
+
+/* Popup chọn 1 giá trị trong danh sách — dùng cho "Chuyển sang danh sách khác",
+   "Nhập từ mã chia sẻ vào danh sách nào", v.v. options = [{value, label}]. */
+let selectResolve = null;
+function closeGenericSelect(val) {
+  document.getElementById("generic-select-overlay").classList.add("hidden");
+  if (selectResolve) { const r = selectResolve; selectResolve = null; r(val); }
+}
+function showSelect(title, options) {
+  return new Promise((resolve) => {
+    selectResolve = resolve;
+    document.getElementById("generic-select-title").textContent = title;
+    const body = document.getElementById("generic-select-body");
+    body.innerHTML = "";
+    if (!options.length) {
+      body.innerHTML = `<p class="wh-preview-empty">Không có lựa chọn nào khác.</p>`;
+    }
+    options.forEach((opt) => {
+      const row = document.createElement("div");
+      row.className = "popup-list-item";
+      row.innerHTML = `<span>${escapeHtml(opt.label)}</span>`;
+      row.addEventListener("click", () => closeGenericSelect(opt.value));
+      body.appendChild(row);
+    });
+    document.getElementById("generic-select-overlay").classList.remove("hidden");
+  });
+}
+document.getElementById("generic-select-cancel-x").addEventListener("click", () => closeGenericSelect(null));
+document.getElementById("generic-select-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "generic-select-overlay") closeGenericSelect(null);
+});
+
+/* Toast có nút "Hoàn tác" — dùng cho các thao tác xoá dễ bấm nhầm. */
+function showUndoToast(message, restoreFn, duration = 6000) {
+  const container = document.getElementById("toast-container");
+  const el = document.createElement("div");
+  el.className = "toast toast-undo";
+  el.innerHTML = `<span>${escapeHtml(message)}</span><button type="button" class="toast-undo-btn">Hoàn tác</button>`;
+  container.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("show"));
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 300);
+  }
+  el.querySelector(".toast-undo-btn").addEventListener("click", () => {
+    if (done) return;
+    restoreFn();
+    finish();
+    showToast("Đã hoàn tác.");
+  });
+  setTimeout(finish, duration);
 }
 
 /* ============================================================
@@ -3978,7 +4046,7 @@ document.addEventListener("keydown", (e) => {
 /* ============================================================
    TAB 4: KHO (WAREHOUSE)
    ============================================================ */
-const wh = { cat: "flashcard" };
+const wh = { cat: "flashcard", tagFilter: [] };
 
 function whCatLabel(cat) {
   return { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", dictionary: "Từ điển", library: "Thư viện", stats: "Thống kê", admin: "Admin" }[cat];
@@ -4014,6 +4082,7 @@ function renderWarehouseTab() {
   document.getElementById("wh-library-sidebar-section").classList.toggle("hidden", !isLibrary);
   document.getElementById("wh-admin-sidebar-note").classList.toggle("hidden", !isAdmin);
   document.getElementById("wh-current-list-title").classList.toggle("hidden", isSpecial);
+  document.getElementById("wh-tag-filter-row").classList.toggle("hidden", true);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-legend").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-bottom-bar").classList.toggle("hidden", isSpecial);
@@ -4327,12 +4396,50 @@ function renderWhTable() {
   const table = document.getElementById("wh-table");
   table.innerHTML = "";
   const list = whActiveList();
+  const tagRow = document.getElementById("wh-tag-filter-row");
   if (!list || !list.items.length) {
     table.innerHTML = `<div class="wh-empty-row">Chưa có mục nào trong danh sách này</div>`;
     document.getElementById("wh-progress").textContent = "Tiến độ: 0%";
+    tagRow.classList.add("hidden");
     return;
   }
-  list.items.forEach((item) => {
+
+  // ---- Bộ lọc theo thẻ (tags) ----
+  const allTags = [...new Set(list.items.flatMap((it) => it.tags || []))].sort();
+  wh.tagFilter = (wh.tagFilter || []).filter((t) => allTags.includes(t)); // tự dọn thẻ không còn tồn tại trong danh sách
+  tagRow.innerHTML = "";
+  if (allTags.length) {
+    tagRow.classList.remove("hidden");
+    allTags.forEach((tag) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "wh-tag-chip" + (wh.tagFilter.includes(tag) ? " active" : "");
+      chip.textContent = "#" + tag;
+      chip.addEventListener("click", () => {
+        const i = wh.tagFilter.indexOf(tag);
+        if (i >= 0) wh.tagFilter.splice(i, 1); else wh.tagFilter.push(tag);
+        renderWhTable();
+      });
+      tagRow.appendChild(chip);
+    });
+    if (wh.tagFilter.length) {
+      const clearChip = document.createElement("button");
+      clearChip.type = "button";
+      clearChip.className = "wh-tag-chip wh-tag-chip-clear";
+      clearChip.textContent = "Xoá lọc ✕";
+      clearChip.addEventListener("click", () => { wh.tagFilter = []; renderWhTable(); });
+      tagRow.appendChild(clearChip);
+    }
+  } else {
+    tagRow.classList.add("hidden");
+  }
+  const visibleItems = wh.tagFilter.length
+    ? list.items.filter((it) => wh.tagFilter.every((t) => (it.tags || []).includes(t)))
+    : list.items;
+  if (!visibleItems.length) {
+    table.innerHTML = `<div class="wh-empty-row">Không có mục nào khớp thẻ đã chọn.</div>`;
+  }
+  visibleItems.forEach((item) => {
     const row = document.createElement("div");
     row.className = "wh-row";
     row.draggable = true;
@@ -4348,18 +4455,50 @@ function renderWhTable() {
       <span class="wh-row-dot ${dotClass}" title="${escapeHtml(statusLabel(wh.cat === "dictionary" ? "flashcard" : wh.cat, item.status))}"></span>
       <span class="wh-row-actions">
         <button data-act="play" title="Phát âm">🔊︎</button>
+        <button data-act="copy" title="Sao chép">📋</button>
         <button data-act="edit" title="Sửa">✎</button>
+        <button data-act="move" title="Chuyển sang danh sách khác">⇄</button>
         <button data-act="del" title="Xoá">🗑</button>
       </span>`;
     
     row.querySelector('[data-act="play"]').addEventListener("click", () => playAudio(item.en));
+    row.querySelector('[data-act="copy"]').addEventListener("click", () => {
+      const text = `${item.en} — ${item.vi}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => showToast("Đã sao chép."), () => showToast(text));
+      } else {
+        showToast(text);
+      }
+    });
     row.querySelector('[data-act="edit"]').addEventListener("click", () => openWhEdit(item.id));
+    row.querySelector('[data-act="move"]').addEventListener("click", async () => {
+      const others = getCategory(wh.cat).filter((l) => l.id !== list.id);
+      if (!others.length) { showToast("Không có danh sách nào khác để chuyển tới."); return; }
+      const targetId = await showSelect("Chuyển sang danh sách nào?", others.map((l) => ({ value: l.id, label: l.name })));
+      if (!targetId) return;
+      const target = getList(wh.cat, targetId);
+      if (!target) return;
+      list.items = list.items.filter((i) => i.id !== item.id);
+      target.items.push(item);
+      saveState();
+      renderWarehouseTab();
+      showToast(`Đã chuyển "${item.en}" sang "${target.name}".`);
+    });
     row.querySelector('[data-act="del"]').addEventListener("click", async () => {
       const ok = await showConfirm("Xoá mục này?");
       if (!ok) return;
+      const removedIdx = list.items.findIndex((i) => i.id === item.id);
+      const removedItem = list.items[removedIdx];
       list.items = list.items.filter((i) => i.id !== item.id);
       saveState();
       renderWarehouseTab();
+      showUndoToast(`Đã xoá "${removedItem.en}".`, () => {
+        const l = getList(wh.cat, list.id);
+        if (!l) return;
+        l.items.splice(Math.min(removedIdx, l.items.length), 0, removedItem);
+        saveState();
+        renderWarehouseTab();
+      });
     });
     row.querySelector(".wh-row-dot").addEventListener("click", () => {
       const order = ["new", "known", "difficult"];
@@ -4466,21 +4605,40 @@ document.getElementById("wh-delete-list").addEventListener("click", async () => 
   }
   const ok = await showConfirm(`Xoá danh sách "${list.name}"? Toàn bộ mục bên trong sẽ mất.`);
   if (!ok) return;
-  state.categories[wh.cat] = lists.filter((l) => l.id !== list.id);
-  state.activeWhList[wh.cat] = null;
+  const cat = wh.cat;
+  const removedIdx = lists.findIndex((l) => l.id === list.id);
+  state.categories[cat] = lists.filter((l) => l.id !== list.id);
+  state.activeWhList[cat] = null;
   state.selected.flashcard = state.selected.flashcard.filter((id) => id !== list.id);
   state.selected.writing = state.selected.writing.filter((id) => id !== list.id);
   saveState();
   renderWarehouseTab();
+  showUndoToast(`Đã xoá danh sách "${list.name}".`, () => {
+    const arr = getCategory(cat);
+    arr.splice(Math.min(removedIdx, arr.length), 0, list);
+    state.activeWhList[cat] = list.id;
+    saveState();
+    if (wh.cat === cat) renderWarehouseTab();
+  });
 });
 document.getElementById("wh-clear-all").addEventListener("click", async () => {
   const list = whActiveList();
   if (!list || !list.items.length) return;
   const ok = await showConfirm("Xoá toàn bộ mục trong danh sách này?");
   if (!ok) return;
+  const removedItems = list.items.slice();
+  const listId = list.id;
+  const cat = wh.cat;
   list.items = [];
   saveState();
   renderWarehouseTab();
+  showUndoToast(`Đã xoá ${removedItems.length} mục.`, () => {
+    const l = getList(cat, listId);
+    if (!l) return;
+    l.items = removedItems;
+    saveState();
+    if (wh.cat === cat) renderWarehouseTab();
+  });
 });
 document.getElementById("wh-reset-status").addEventListener("click", () => {
   const list = whActiveList();
@@ -4798,6 +4956,7 @@ function openWhEdit(itemId) {
   whEditItemId = itemId;
   document.getElementById("wh-edit-en").value = item.en;
   document.getElementById("wh-edit-vi").value = item.vi;
+  document.getElementById("wh-edit-tags").value = (item.tags || []).join(", ");
   const altsSection = document.getElementById("wh-edit-alts-section");
   const altsList = document.getElementById("wh-edit-alts-list");
   altsList.innerHTML = "";
@@ -4817,6 +4976,9 @@ document.getElementById("wh-edit-save").addEventListener("click", () => {
   if (!item) return;
   item.en = document.getElementById("wh-edit-en").value.trim();
   item.vi = document.getElementById("wh-edit-vi").value.trim();
+  const tags = document.getElementById("wh-edit-tags").value.split(",").map((t) => t.trim()).filter(Boolean);
+  if (tags.length) item.tags = tags;
+  else delete item.tags;
   if (wh.cat === "writing") {
     const alts = [...document.querySelectorAll("#wh-edit-alts-list input")]
       .map((inp) => inp.value.trim())
@@ -5805,6 +5967,18 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.32",
+    changes: [
+      "Kho: thêm thẻ (tags) cho từng mục — sửa mục có ô nhập tags, thanh chip lọc theo tag phía trên bảng",
+      "Kho: thêm nút Tìm kiếm toàn bộ (icon 🔍 cạnh icon Kho) — tìm xuyên suốt mọi danh sách/loại nội dung, bấm kết quả để nhảy thẳng tới đó",
+      "Kho: thêm nút ⇄ Chuyển mục sang danh sách khác, nút ⧉ Nhân bản danh sách",
+      "Kho: thêm Chia sẻ riêng tư qua mã 6 ký tự (khác Thư viện công khai — không cần Admin duyệt, chỉ ai có mã/link mới nhập được) và popup Nhập từ mã chia sẻ; mở link có ?share=MÃ sẽ tự gợi ý nhập",
+      "Kho: xoá 1 mục / xoá cả danh sách / xoá hết mục giờ có toast Hoàn tác trong 6 giây",
+      "Kho: thêm nút 🖨️ Xuất Worksheet — in ra định dạng từ + chỗ trống viết nghĩa kèm trang đáp án (qua hộp thoại In của trình duyệt để giữ đúng dấu tiếng Việt)",
+      "Kho: thêm nút 📋 Sao chép nhanh trên mỗi dòng",
+    ],
+  },
   {
     version: "2.31",
     changes: [
@@ -7143,6 +7317,227 @@ document.getElementById("lib-upload-submit").addEventListener("click", async () 
   await firebase.database().ref("library").push(pkg);
   document.getElementById("library-upload-overlay").classList.add("hidden");
   showToast(pkg.status === "approved" ? "Đã đăng lên Thư viện." : "Đã gửi lên Thư viện — chờ Admin duyệt.");
+});
+
+/* ---- Nhân bản danh sách hiện tại ---- */
+document.getElementById("wh-duplicate-list").addEventListener("click", () => {
+  const list = whActiveList();
+  if (!list) return;
+  const clone = defaultList(list.name + " (bản sao)");
+  clone.items = list.items.map((it) => ({ ...it, id: uid() }));
+  getCategory(wh.cat).push(clone);
+  state.activeWhList[wh.cat] = clone.id;
+  saveState();
+  renderWarehouseTab();
+  showToast(`Đã nhân bản thành "${clone.name}".`);
+});
+
+/* ============================================================
+   CHIA SẺ RIÊNG TƯ (khác Thư viện công khai — không cần Admin
+   duyệt, không hiện công khai, chỉ ai có mã/link mới nhập được)
+   ============================================================ */
+function genShareCode() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+function copyShareLink(code) {
+  const link = `${location.origin}${location.pathname}?share=${code}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(() => showToast("Đã sao chép link chia sẻ: " + link), () => showToast("Mã chia sẻ: " + code));
+  } else {
+    showToast("Mã chia sẻ: " + code);
+  }
+}
+function renderShareOverlay() {
+  const list = whActiveList();
+  document.getElementById("wh-share-current-list").textContent = list ? `Danh sách hiện tại: "${list.name}" (${list.items.length} mục)` : "Chưa chọn danh sách nào.";
+  document.getElementById("wh-share-create-btn").disabled = !list || !list.items.length;
+  const box = document.getElementById("wh-share-my-list");
+  const mine = state.myShares || [];
+  box.innerHTML = "";
+  if (!mine.length) { box.innerHTML = `<p class="wh-preview-empty">Bạn chưa tạo mã chia sẻ nào.</p>`; return; }
+  mine.slice().reverse().forEach((s) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    row.innerHTML = `<div class="admin-row-main"><b>${escapeHtml(s.listName)}</b><span class="admin-row-sub">Mã: <code>${s.code}</code> · ${whCatLabel(s.cat)}</span></div>`;
+    const actions = document.createElement("div");
+    actions.className = "admin-row-actions";
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "pill-btn-outline";
+    copyBtn.textContent = "Sao chép link";
+    copyBtn.addEventListener("click", () => copyShareLink(s.code));
+    actions.appendChild(copyBtn);
+    const revokeBtn = document.createElement("button");
+    revokeBtn.className = "pill-btn-outline";
+    revokeBtn.textContent = "Thu hồi";
+    revokeBtn.addEventListener("click", async () => {
+      const ok = await showConfirm(`Thu hồi mã chia sẻ "${s.code}"? Người có mã sẽ không nhập được nữa.`);
+      if (!ok) return;
+      await firebase.database().ref("shares/" + s.code).remove().catch(() => {});
+      state.myShares = (state.myShares || []).filter((x) => x.code !== s.code);
+      saveState();
+      renderShareOverlay();
+      showToast("Đã thu hồi mã chia sẻ.");
+    });
+    actions.appendChild(revokeBtn);
+    row.appendChild(actions);
+    box.appendChild(row);
+  });
+}
+document.getElementById("wh-share-open").addEventListener("click", () => {
+  if (accountRole === "guest") { showToast("Cần đăng nhập để tạo mã chia sẻ."); return; }
+  renderShareOverlay();
+  document.getElementById("wh-share-overlay").classList.remove("hidden");
+});
+document.getElementById("wh-share-close").addEventListener("click", () => document.getElementById("wh-share-overlay").classList.add("hidden"));
+document.getElementById("wh-share-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "wh-share-overlay") document.getElementById("wh-share-overlay").classList.add("hidden");
+});
+document.getElementById("wh-share-create-btn").addEventListener("click", async () => {
+  const list = whActiveList();
+  if (!list || !list.items.length || !currentUser) return;
+  const code = genShareCode();
+  const pkg = {
+    ownerUid: currentUser.uid, ownerName: (accountProfile && accountProfile.name) || "?",
+    cat: wh.cat, title: list.name, items: list.items, createdAt: Date.now(),
+  };
+  try {
+    await firebase.database().ref("shares/" + code).set(pkg);
+    state.myShares = state.myShares || [];
+    state.myShares.push({ code, cat: wh.cat, listName: list.name, createdAt: Date.now() });
+    saveState();
+    renderShareOverlay();
+    copyShareLink(code);
+  } catch (err) {
+    showToast("Lỗi khi tạo mã: " + (err && err.message ? err.message : "?"));
+  }
+});
+
+async function redeemShareCode(rawCode) {
+  const code = (rawCode || "").trim().toUpperCase();
+  const errEl = document.getElementById("wh-redeem-error");
+  errEl.classList.add("hidden");
+  if (!code) return;
+  if (!currentUser) { showToast("Cần đăng nhập để nhập từ mã chia sẻ."); return; }
+  try {
+    const snap = await firebase.database().ref("shares/" + code).once("value");
+    const pkg = snap.val();
+    if (!pkg) { errEl.textContent = "Không tìm thấy mã này (có thể sai hoặc đã bị thu hồi)."; errEl.classList.remove("hidden"); return; }
+    const cat = pkg.cat;
+    const existingKeys = new Set(allItems(cat).map((it) => (it.en || it.name || "").toLowerCase().trim()));
+    const newItems = (pkg.items || []).filter((it) => !existingKeys.has((it.en || it.name || "").toLowerCase().trim()));
+    const list = defaultList(pkg.title || "Danh sách chia sẻ");
+    list.items = newItems.map((it) => ({ ...it, id: uid() }));
+    getCategory(cat).push(list);
+    saveState();
+    document.getElementById("wh-redeem-overlay").classList.add("hidden");
+    showToast(`Đã thêm "${list.name}" vào Kho (${newItems.length} mục mới, bỏ qua ${pkg.items.length - newItems.length} mục trùng).`);
+    if (wh.cat === cat) renderWarehouseTab();
+  } catch (err) {
+    errEl.textContent = "Lỗi: " + (err && err.message ? err.message : "?");
+    errEl.classList.remove("hidden");
+  }
+}
+document.getElementById("wh-redeem-open").addEventListener("click", () => {
+  if (accountRole === "guest") { showToast("Cần đăng nhập để nhập từ mã chia sẻ."); return; }
+  document.getElementById("wh-redeem-input").value = "";
+  document.getElementById("wh-redeem-error").classList.add("hidden");
+  document.getElementById("wh-redeem-overlay").classList.remove("hidden");
+});
+document.getElementById("wh-redeem-close").addEventListener("click", () => document.getElementById("wh-redeem-overlay").classList.add("hidden"));
+document.getElementById("wh-redeem-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "wh-redeem-overlay") document.getElementById("wh-redeem-overlay").classList.add("hidden");
+});
+document.getElementById("wh-redeem-submit").addEventListener("click", () => redeemShareCode(document.getElementById("wh-redeem-input").value));
+document.getElementById("wh-redeem-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); document.getElementById("wh-redeem-submit").click(); }
+});
+
+/* ---- Xuất Worksheet (in ra / lưu PDF qua hộp thoại In của trình duyệt —
+   tránh lỗi font tiếng Việt khi build PDF bằng thư viện JS) ---- */
+document.getElementById("wh-worksheet-btn").addEventListener("click", () => {
+  const list = whActiveList();
+  if (!list || !list.items.length) { showToast("Danh sách hiện tại chưa có mục nào."); return; }
+  const rows = list.items.map((it, i) => `
+    <tr><td class="wno">${i + 1}</td><td class="wen">${escapeHtml(it.en)}</td><td class="wblank"></td></tr>`).join("");
+  const answerItems = list.items.map((it) => `<li>${escapeHtml(it.en)} — ${escapeHtml(it.vi)}</li>`).join("");
+  const html = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8">
+<title>${escapeHtml(list.name)} — Worksheet</title>
+<style>
+  body{font-family:Arial,'Segoe UI',sans-serif;padding:24px;color:#111;}
+  h1{font-size:1.3rem;margin-bottom:4px;}
+  p.sub{color:#666;margin-top:0;margin-bottom:20px;font-size:.85rem;}
+  table{width:100%;border-collapse:collapse;}
+  td{border-bottom:1px solid #ccc;padding:9px 6px;vertical-align:bottom;font-size:.95rem;}
+  td.wno{width:28px;color:#888;}
+  td.wen{width:40%;font-weight:600;}
+  td.wblank{border-bottom:1px solid #333;}
+  .answer-key{margin-top:40px;page-break-before:always;}
+  .answer-key h2{font-size:1.05rem;}
+  .answer-key ol{columns:2;font-size:.85rem;line-height:1.6;padding-left:18px;}
+  @media print { .no-print{display:none;} }
+</style></head><body>
+  <button class="no-print" onclick="window.print()" style="margin-bottom:16px;">In / Lưu PDF</button>
+  <h1>${escapeHtml(list.name)}</h1>
+  <p class="sub">Worksheet — điền nghĩa tiếng Việt vào chỗ trống (${list.items.length} từ)</p>
+  <table>${rows}</table>
+  <div class="answer-key"><h2>Đáp án</h2><ol>${answerItems}</ol></div>
+</body></html>`;
+  const win = window.open("", "_blank");
+  if (!win) { showToast("Trình duyệt đã chặn cửa sổ mới — hãy cho phép popup để xuất worksheet."); return; }
+  win.document.write(html);
+  win.document.close();
+  setTimeout(() => { try { win.print(); } catch (e) { /* ignore */ } }, 400);
+});
+
+/* ============================================================
+   TÌM KIẾM TOÀN BỘ (xuyên suốt tất cả danh sách/loại nội dung)
+   ============================================================ */
+document.getElementById("global-search-open").addEventListener("click", () => {
+  document.getElementById("global-search-input").value = "";
+  document.getElementById("global-search-results").innerHTML = `<p class="wh-preview-empty">Gõ ít nhất 2 ký tự để tìm.</p>`;
+  document.getElementById("global-search-overlay").classList.remove("hidden");
+  setTimeout(() => document.getElementById("global-search-input").focus(), 50);
+});
+document.getElementById("global-search-close").addEventListener("click", () => document.getElementById("global-search-overlay").classList.add("hidden"));
+document.getElementById("global-search-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "global-search-overlay") document.getElementById("global-search-overlay").classList.add("hidden");
+});
+document.getElementById("global-search-input").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const box = document.getElementById("global-search-results");
+  if (q.length < 2) { box.innerHTML = `<p class="wh-preview-empty">Gõ ít nhất 2 ký tự để tìm.</p>`; return; }
+  const cats = ["flashcard", "writing", "listening", "dictionary"];
+  const results = [];
+  cats.forEach((cat) => {
+    getCategory(cat).forEach((list) => {
+      (list.items || []).forEach((item) => {
+        const hay = [item.en, item.vi, ...(item.tags || [])].filter(Boolean).join(" ").toLowerCase();
+        if (hay.includes(q)) results.push({ cat, list, item });
+      });
+    });
+  });
+  box.innerHTML = "";
+  if (!results.length) { box.innerHTML = `<p class="wh-preview-empty">Không tìm thấy kết quả nào.</p>`; return; }
+  results.slice(0, 60).forEach((r) => {
+    const row = document.createElement("div");
+    row.className = "global-search-row";
+    row.innerHTML = `<div><b>${escapeHtml(r.item.en)}</b> → ${escapeHtml(r.item.vi)}</div><div class="admin-row-sub">${whCatLabel(r.cat)} · ${escapeHtml(r.list.name)}</div>`;
+    row.addEventListener("click", () => {
+      wh.cat = r.cat;
+      wh.tagFilter = [];
+      state.activeWhList[r.cat] = r.list.id;
+      saveState();
+      document.querySelectorAll(".wh-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.whCat === r.cat));
+      switchTab("warehouse");
+      renderWarehouseTab();
+      document.getElementById("global-search-overlay").classList.add("hidden");
+    });
+    box.appendChild(row);
+  });
+  if (results.length > 60) box.insertAdjacentHTML("beforeend", `<p class="wh-preview-empty">...và ${results.length - 60} kết quả khác, hãy gõ cụ thể hơn.</p>`);
 });
 
 /* ============================================================

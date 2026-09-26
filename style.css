@@ -434,6 +434,7 @@ input,textarea{font-family:inherit;}
 
 .btn-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .btn-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+.btn-row-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;}
 
 .pill-btn,.pill-btn-outline{
   border:1.5px solid var(--border);
@@ -920,10 +921,10 @@ input,textarea{font-family:inherit;}
 }
 .wh-row-arrow{color:var(--text-muted);text-align:center;}
 .wh-row-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
-.wh-row-actions{display:flex;gap:8px;justify-content:flex-end;}
+.wh-row-actions{display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;}
 .wh-row-actions button{
   border:1.5px solid var(--border);border-radius:var(--radius-sm);
-  width:26px;height:26px;font-size:.75rem;background:var(--panel);color:var(--text);
+  width:24px;height:24px;font-size:.72rem;background:var(--panel);color:var(--text);
   display:flex;align-items:center;justify-content:center;
 }
 .wh-row-actions button:hover{background:var(--accent-soft);}
@@ -1323,7 +1324,37 @@ input,textarea{font-family:inherit;}
   max-width:70vw;text-align:center;
 }
 .toast.show{opacity:1;transform:translateY(0);}
+.toast-undo{
+  display:flex;align-items:center;gap:12px;pointer-events:auto;
+  max-width:min(90vw,420px);
+}
+.toast-undo-btn{
+  flex-shrink:0;background:none;border:1.5px solid var(--bg);color:var(--bg);
+  border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700;cursor:pointer;
+}
+.toast-undo-btn:hover{background:var(--bg);color:var(--text);}
 .confirm-message{font-size:.88rem;color:var(--text);margin:0 0 4px;line-height:1.5;}
+
+/* ---- Chọn 1 trong danh sách (generic select popup) ---- */
+.generic-select-body{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;margin-top:4px;}
+
+/* ---- Bộ lọc theo thẻ (tags) trong Kho ---- */
+.wh-tag-filter-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.wh-tag-filter-row.hidden{display:none;}
+.wh-tag-chip{
+  border:1.5px solid var(--border);background:none;color:var(--text-muted);
+  border-radius:20px;padding:3px 11px;font-size:.76rem;cursor:pointer;
+}
+.wh-tag-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.wh-tag-chip-clear{border-style:dashed;color:var(--difficult);}
+
+/* ---- Tìm kiếm toàn bộ ---- */
+.global-search-results{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto;margin-top:10px;}
+.global-search-row{
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px 12px;cursor:pointer;font-size:.88rem;
+}
+.global-search-row:hover{border-color:var(--accent);background:var(--accent-soft);}
 
 /* ============ PWA / MOBILE APP FEEL ============ */
 html{-webkit-tap-highlight-color:transparent;}

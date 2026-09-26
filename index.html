@@ -53,6 +53,11 @@
         </span>
       </button>
       <div class="sidebar-header-right">
+        <button class="bell-pill-btn" id="global-search-open" title="Tìm kiếm toàn bộ" aria-label="Tìm kiếm toàn bộ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:19px;height:19px;">
+            <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
+          </svg>
+        </button>
         <button class="bell-pill-btn" id="warehouse-quick-open" title="Kho" aria-label="Kho">
           <svg class="kho-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
@@ -189,13 +194,17 @@
           </div>
         </div>
         <div class="wh-list-grid" id="wh-list-grid"></div>
-        <div class="btn-row-3">
+        <div class="btn-row-4">
           <button class="icon-btn-sq" id="wh-add-list" title="Thêm danh sách">＋</button>
           <button class="icon-btn-sq" id="wh-rename-list" title="Chỉnh sửa danh sách">✎</button>
+          <button class="icon-btn-sq" id="wh-duplicate-list" title="Nhân bản danh sách">⧉</button>
           <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách">🗑</button>
         </div>
         <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
+        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">🖨️ Xuất Worksheet (in/PDF)</button>
         <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">⭱ Đăng lên Thư viện</button>
+        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">🔗 Chia sẻ riêng tư</button>
+        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">🔑 Nhập từ mã chia sẻ</button>
       </div>
       <div id="wh-library-sidebar-section" class="hidden">
         <div class="section-label">Loại nội dung</div>
@@ -371,6 +380,7 @@
       </div>
 
       <div class="wh-list-title" id="wh-current-list-title">Danh sách 1</div>
+      <div class="wh-tag-filter-row hidden" id="wh-tag-filter-row"></div>
 
       <div class="wh-scroll-area" id="wh-scroll-area">
         <div class="wh-table-wrap" id="wh-table-wrap">
@@ -587,6 +597,7 @@
       <div id="wh-edit-alts-list"></div>
       <button type="button" class="pill-btn-outline" id="wh-edit-alts-add" style="margin-top:8px;width:100%;">+ Thêm đáp án khác</button>
     </div>
+    <input type="text" class="text-input" id="wh-edit-tags" placeholder="Thẻ (tags), cách nhau bởi dấu phẩy — vd: unit21, khó" style="margin-top:10px;">
     <button class="block-btn primary" id="wh-edit-save" style="margin-top:14px;">Lưu</button>
   </div>
 </div>
@@ -725,6 +736,46 @@
   </div>
 </div>
 
+<!-- ============ POPUP: Chia sẻ riêng tư (qua mã) ============ -->
+<div class="overlay hidden" id="wh-share-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Chia sẻ riêng tư</span>
+      <button class="popup-close" id="wh-share-close">✕</button>
+    </div>
+    <p class="wh-preview-empty" style="margin:0 0 10px;">Tạo 1 mã ngẫu nhiên cho danh sách hiện tại — chỉ ai có mã/link mới nhập được, không hiện công khai trong Thư viện và không cần Admin duyệt.</p>
+    <p class="wh-preview-empty" id="wh-share-current-list" style="font-weight:700;"></p>
+    <button class="block-btn primary" id="wh-share-create-btn" style="margin-top:8px;">Tạo mã chia sẻ mới</button>
+    <div class="section-label" style="margin-top:16px;">Mã đã tạo</div>
+    <div id="wh-share-my-list"></div>
+  </div>
+</div>
+
+<!-- ============ POPUP: Nhập từ mã chia sẻ ============ -->
+<div class="overlay hidden" id="wh-redeem-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Nhập từ mã chia sẻ</span>
+      <button class="popup-close" id="wh-redeem-close">✕</button>
+    </div>
+    <input type="text" class="text-input" id="wh-redeem-input" placeholder="Nhập mã 6 ký tự..." maxlength="6" style="text-transform:uppercase;">
+    <button class="block-btn primary" id="wh-redeem-submit" style="margin-top:10px;">Nhập vào Kho</button>
+    <p class="auth-error hidden" id="wh-redeem-error"></p>
+  </div>
+</div>
+
+<!-- ============ POPUP: Tìm kiếm toàn bộ (mọi danh sách/loại) ============ -->
+<div class="overlay hidden" id="global-search-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span>Tìm kiếm toàn bộ</span>
+      <button class="popup-close" id="global-search-close">✕</button>
+    </div>
+    <input type="search" class="text-input" id="global-search-input" placeholder="Gõ để tìm trong tất cả danh sách..." autocomplete="off" spellcheck="false">
+    <div id="global-search-results" class="global-search-results"></div>
+  </div>
+</div>
+
 <!-- ============ GENERIC PROMPT MODAL ============ -->
 <div class="overlay hidden" id="generic-prompt-overlay">
   <div class="modal-panel small">
@@ -751,6 +802,18 @@
     </div>
   </div>
 </div>
+
+<!-- ============ GENERIC SELECT MODAL (chọn 1 trong danh sách) ============ -->
+<div class="overlay hidden" id="generic-select-overlay">
+  <div class="modal-panel small">
+    <div class="popup-header">
+      <span id="generic-select-title">Chọn</span>
+      <button class="popup-close" id="generic-select-cancel-x">✕</button>
+    </div>
+    <div id="generic-select-body" class="generic-select-body"></div>
+  </div>
+</div>
+
 
 <!-- ============ DIARY (NHẬT KÝ) POPUP ============ -->
 <!-- ============ REMINDER (NHẮC TỪ) POPUP ============ -->
