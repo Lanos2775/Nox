@@ -839,6 +839,72 @@ input,textarea{font-family:inherit;}
 .quiz-result-title{font-size:1.3rem;font-weight:800;margin-bottom:6px;}
 .quiz-result-score{font-size:2rem;font-weight:800;color:var(--accent);margin-bottom:20px;}
 
+/* ---- Quiz: nhiều dạng câu hỏi, combo, xem lại câu sai ---- */
+.quiz-qtype-btn{
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:9px 10px;font-size:.82rem;font-weight:600;background:var(--panel);color:var(--text-muted);
+}
+.quiz-qtype-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
+
+.quiz-combo-badge{
+  display:inline-flex;align-items:center;gap:4px;margin:0 auto 10px;
+  background:linear-gradient(90deg,#f59e0b,#ef4444);color:#fff;
+  border-radius:20px;padding:5px 14px;font-size:.85rem;font-weight:800;
+  width:fit-content;animation:quiz-combo-pop .3s ease;
+}
+.quiz-combo-badge.hidden{display:none;}
+@keyframes quiz-combo-pop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+.quiz-qtype-tag{
+  text-align:center;font-size:.72rem;font-weight:700;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;
+}
+
+.quiz-tf-grid{margin-bottom:0;}
+.quiz-tf-grid.hidden{display:none;}
+.quiz-tf-shown{
+  border:1.5px solid var(--border);border-radius:var(--radius-lg);
+  padding:30px 20px;text-align:center;font-size:1.1rem;font-weight:700;
+  margin-bottom:16px;background:var(--panel);
+}
+.quiz-tf-btn{
+  border:1.5px solid var(--border);border-radius:var(--radius-md);
+  padding:16px;font-size:1rem;font-weight:700;background:var(--panel);color:var(--text);
+}
+.quiz-tf-btn:hover{background:var(--accent-soft);}
+.quiz-tf-btn.correct{background:var(--known-soft);border-color:var(--known);color:var(--known);}
+.quiz-tf-btn.wrong{background:var(--difficult-soft);border-color:var(--difficult);color:var(--difficult);}
+
+.quiz-type-wrap,.quiz-scramble-wrap{display:flex;flex-direction:column;gap:10px;}
+.quiz-type-wrap.hidden,.quiz-scramble-wrap.hidden{display:none;}
+.quiz-type-wrap input,.quiz-scramble-wrap input{
+  text-align:center;font-size:1.05rem;font-weight:700;padding:14px;
+}
+.quiz-type-wrap input.correct,.quiz-scramble-wrap input.correct{border-color:var(--known);color:var(--known);background:var(--known-soft);}
+.quiz-type-wrap input.wrong,.quiz-scramble-wrap input.wrong{border-color:var(--difficult);color:var(--difficult);background:var(--difficult-soft);}
+.quiz-scramble-letters{
+  text-align:center;font-size:1.6rem;font-weight:800;letter-spacing:.25em;
+  border:1.5px dashed var(--border);border-radius:var(--radius-md);
+  padding:20px;background:var(--accent-soft);color:var(--accent);
+}
+
+.quiz-result-combo{font-size:.85rem;color:var(--text-muted);margin:-12px 0 20px;}
+.quiz-review-section{margin-top:26px;text-align:left;}
+.quiz-review-section.hidden{display:none;}
+.quiz-review-toggle{
+  width:100%;text-align:center;background:none;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);padding:8px;font-size:.82rem;font-weight:700;color:var(--text);
+}
+.quiz-review-list{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:40vh;overflow-y:auto;}
+.quiz-review-list.hidden{display:none;}
+.quiz-review-row{
+  border:1.5px solid var(--difficult);border-radius:var(--radius-sm);
+  padding:8px 12px;font-size:.82rem;background:var(--difficult-soft);
+}
+.quiz-review-row b{display:block;margin-bottom:2px;}
+.quiz-review-row .quiz-review-your{color:var(--difficult);}
+.quiz-review-row .quiz-review-correct{color:var(--known);}
+
 /* ---- Warehouse (Kho) ---- */
 .wh-topbar{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;flex-shrink:0;}
 .wh-topbar-label{

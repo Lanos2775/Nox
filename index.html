@@ -157,6 +157,17 @@
           <button class="pill-btn" data-lang="v-e">V - E</button>
         </div>
 
+        <div class="section-label">Dạng câu hỏi (chọn 1 hoặc nhiều, sẽ trộn ngẫu nhiên)</div>
+        <div class="btn-row-2">
+          <button class="quiz-qtype-btn active" data-qtype="mc">🔤 Trắc nghiệm</button>
+          <button class="quiz-qtype-btn active" data-qtype="type">⌨️ Gõ đáp án</button>
+        </div>
+        <div class="btn-row-2">
+          <button class="quiz-qtype-btn active" data-qtype="tf">✅ Đúng / Sai</button>
+          <button class="quiz-qtype-btn active" data-qtype="scramble">🔀 Xáo chữ</button>
+        </div>
+        <p class="wh-preview-empty" id="quiz-qtype-hint" style="margin:2px 0 0;"></p>
+
         <div class="section-label">Thời gian</div>
         <div class="btn-row-2">
           <button class="pill-btn active" data-timemode="infinite">Vô hạn</button>
@@ -347,21 +358,48 @@
           <span id="quiz-listen-label">Nhấn Space để nghe</span>
           <span class="quiz-listen-count" id="quiz-listen-remaining"></span>
         </div>
+        <div class="quiz-combo-badge hidden" id="quiz-combo-badge">🔥 Combo x<span id="quiz-combo-val">0</span></div>
+        <div class="quiz-qtype-tag" id="quiz-qtype-tag"></div>
         <div class="quiz-question-text" id="quiz-question-text">Câu hỏi ...</div>
-        <div class="quiz-choice-grid">
+
+        <div class="quiz-choice-grid" id="quiz-choice-grid">
           <button class="quiz-choice-btn" data-choice="0" data-no-click-sound><span class="choice-letter">A</span><span class="choice-text"></span></button>
           <button class="quiz-choice-btn" data-choice="1" data-no-click-sound><span class="choice-letter">B</span><span class="choice-text"></span></button>
           <button class="quiz-choice-btn" data-choice="2" data-no-click-sound><span class="choice-letter">C</span><span class="choice-text"></span></button>
           <button class="quiz-choice-btn" data-choice="3" data-no-click-sound><span class="choice-letter">D</span><span class="choice-text"></span></button>
+        </div>
+
+        <div class="quiz-tf-grid hidden" id="quiz-tf-wrap">
+          <div class="quiz-tf-shown" id="quiz-tf-shown"></div>
+          <div class="btn-row-2">
+            <button class="quiz-tf-btn quiz-tf-true" data-tf="true" data-no-click-sound>✅ Đúng</button>
+            <button class="quiz-tf-btn quiz-tf-false" data-tf="false" data-no-click-sound>❌ Sai</button>
+          </div>
+        </div>
+
+        <div class="quiz-type-wrap hidden" id="quiz-type-wrap">
+          <input type="text" id="quiz-type-input" class="text-input" placeholder="Gõ đáp án rồi nhấn Enter ..." autocomplete="off" spellcheck="false">
+          <button class="block-btn primary" id="quiz-type-submit">Kiểm tra</button>
+        </div>
+
+        <div class="quiz-scramble-wrap hidden" id="quiz-scramble-wrap">
+          <div class="quiz-scramble-letters" id="quiz-scramble-letters"></div>
+          <input type="text" id="quiz-scramble-input" class="text-input" placeholder="Gõ lại từ đúng thứ tự rồi nhấn Enter ..." autocomplete="off" spellcheck="false">
+          <button class="block-btn primary" id="quiz-scramble-submit">Kiểm tra</button>
         </div>
       </div>
 
       <div class="quiz-result-block hidden" id="quiz-result-block">
         <div class="quiz-result-title">Hoàn thành!</div>
         <div class="quiz-result-score" id="quiz-result-score">0 / 0</div>
+        <div class="quiz-result-combo" id="quiz-result-combo"></div>
         <div class="btn-row-2">
           <button class="block-btn primary" id="quiz-restart">Chơi lại</button>
           <button class="block-btn" id="quiz-result-exit">Thoát</button>
+        </div>
+        <div class="quiz-review-section hidden" id="quiz-review-section">
+          <button type="button" class="quiz-review-toggle" id="quiz-review-toggle">Xem lại câu sai (<span id="quiz-review-count">0</span>) ▾</button>
+          <div class="quiz-review-list hidden" id="quiz-review-list"></div>
         </div>
       </div>
     </section>

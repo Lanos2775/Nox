@@ -1,4 +1,4 @@
-const CACHE_NAME = "nox-cache-v58";
+const CACHE_NAME = "nox-cache-v59";
 const CORE_ASSETS = [
   "./",
   "./index.html",

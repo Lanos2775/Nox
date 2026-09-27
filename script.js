@@ -3635,6 +3635,7 @@ const quiz = {
   countMode: "custom",
   count: 10,
   lang: "random",
+  questionTypes: { mc: true, type: true, tf: true, scramble: true },
   timeMode: "infinite",
   countdownSeconds: 10,
   listenMode: false,
@@ -3646,6 +3647,9 @@ const quiz = {
   qIndex: 0,
   correct: 0,
   wrong: 0,
+  comboCurrent: 0,
+  comboBest: 0,
+  wrongLog: [],
   timerSec: 0,
   timerHandle: null,
   paused: false,
@@ -3698,6 +3702,32 @@ document.querySelectorAll('[data-lang]').forEach((btn) => {
     quiz.lang = btn.dataset.lang;
   });
 });
+
+/* ---- Dạng câu hỏi: chọn nhiều (đa lựa chọn, tối thiểu phải giữ lại 1 dạng) ---- */
+function updateQuizQtypeHint() {
+  const active = Object.keys(quiz.questionTypes).filter((k) => quiz.questionTypes[k]);
+  const hint = document.getElementById("quiz-qtype-hint");
+  if (quiz.listenMode) {
+    hint.textContent = "Chế độ nghe chỉ hỗ trợ dạng Trắc nghiệm — các lựa chọn khác sẽ bị bỏ qua khi bật.";
+  } else if (active.length <= 1) {
+    hint.textContent = "Chỉ 1 dạng — bật thêm để mỗi câu hỏi trộn ngẫu nhiên nhiều kiểu khác nhau.";
+  } else {
+    hint.textContent = `Mỗi câu sẽ ngẫu nhiên là 1 trong ${active.length} dạng đã bật.`;
+  }
+}
+document.querySelectorAll("[data-qtype]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.qtype;
+    const activeCount = Object.values(quiz.questionTypes).filter(Boolean).length;
+    if (quiz.questionTypes[key] && activeCount <= 1) {
+      showToast("Phải giữ lại ít nhất 1 dạng câu hỏi.");
+      return;
+    }
+    quiz.questionTypes[key] = !quiz.questionTypes[key];
+    btn.classList.toggle("active", quiz.questionTypes[key]);
+    updateQuizQtypeHint();
+  });
+});
 document.querySelectorAll('[data-timemode]').forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll('[data-timemode]').forEach((b) => b.classList.remove("active"));
@@ -3734,27 +3764,89 @@ document.querySelectorAll("[data-listenmode]").forEach((btn) => {
     btn.classList.add("active");
     quiz.listenMode = btn.dataset.listenmode === "on";
     document.getElementById("quiz-listen-count-row").classList.toggle("hidden", !quiz.listenMode);
+    updateQuizQtypeHint();
   });
 });
+updateQuizQtypeHint();
 document.getElementById("quiz-listen-count-input").addEventListener("input", (e) => {
   quiz.listenMaxCount = Math.max(1, parseInt(e.target.value) || 3);
 });
 
+/* Chọn nhiễu "khôn" hơn: ưu tiên các đáp án có độ dài GẦN GIỐNG đáp án đúng
+   (thay vì hoàn toàn ngẫu nhiên), để tránh trường hợp nhiễu quá ngắn/dài lộ
+   liễu — vẫn xáo trộn trong nhóm gần giống đó để không bị đoán theo khuôn mẫu. */
+function pickSmartDistractors(correct, pool, count) {
+  const unique = [...new Set(pool)].filter((p) => p && p !== correct);
+  if (unique.length <= count) return shuffleArr(unique);
+  const scored = unique
+    .map((p) => ({ p, diff: Math.abs(p.length - correct.length) }))
+    .sort((a, b) => a.diff - b.diff);
+  const topPool = scored.slice(0, Math.max(count * 3, count + 3)).map((s) => s.p);
+  return shuffleArr(topPool).slice(0, count);
+}
+function scrambleWord(word) {
+  const letters = word.split("");
+  let scrambled = word;
+  let tries = 0;
+  while (scrambled.toLowerCase() === word.toLowerCase() && tries < 8) {
+    scrambled = shuffleArr(letters).join("");
+    tries++;
+  }
+  return scrambled.split("").join(" "); // giãn cách chữ cho dễ đọc
+}
+const QUIZ_TYPE_LIST = ["mc", "type", "tf", "scramble"];
 function buildQuizQuestions() {
   const pool = quizSourceItems().filter((i) => i.en && i.vi);
   const shuffled = shuffleArr(pool);
   const n = quiz.countMode === "untilWrong" ? shuffled.length : Math.min(quiz.count, shuffled.length);
   const chosen = shuffled.slice(0, n);
+  const enabledTypes = quiz.listenMode
+    ? ["mc"] // Chế độ nghe chỉ hỗ trợ trắc nghiệm (đọc câu hỏi bằng audio)
+    : QUIZ_TYPE_LIST.filter((t) => quiz.questionTypes[t]);
+  const typesPool = enabledTypes.length ? enabledTypes : ["mc"];
   return chosen.map((item) => {
     let dir = quiz.lang;
     if (quiz.listenMode) dir = "e-v"; // listen mode chỉ hỗ trợ E→V
     else if (dir === "random") dir = Math.random() < 0.5 ? "e-v" : "v-e";
     const questionText = dir === "e-v" ? item.en : item.vi;
     const correctAnswer = dir === "e-v" ? item.vi : item.en;
-    const distractPool = pool.filter((p) => p !== item).map((p) => (dir === "e-v" ? p.vi : p.en));
-    const distractors = shuffleArr(distractPool).slice(0, 3);
-    const choices = shuffleArr([correctAnswer, ...distractors]);
-    return { questionText, correctAnswer, choices, item };
+    const distractPool = pool.filter((p) => p !== item).map((p) => (dir === "e-v" ? p.vi : p.en)).filter(Boolean);
+
+    let qType = typesPool[Math.floor(Math.random() * typesPool.length)];
+    // Xáo chữ chỉ hợp lý với 1 từ tiếng Anh (không dấu cách), không áp dụng
+    // được cho cụm từ hoặc nghĩa tiếng Việt nhiều dấu — fallback dạng khác.
+    if (qType === "scramble" && !/^[A-Za-z]{3,12}$/.test(item.en || "")) {
+      const fallback = typesPool.filter((t) => t !== "scramble");
+      qType = fallback.length ? fallback[Math.floor(Math.random() * fallback.length)] : "type";
+    }
+    // Không đủ mục khác trong pool để tạo nhiễu → trắc nghiệm/đúng-sai không
+    // khả thi, chuyển sang dạng gõ đáp án.
+    if ((qType === "mc" || qType === "tf") && distractPool.length < 1 && typesPool.includes("type")) {
+      qType = "type";
+    }
+
+    const q = { item, dir, questionText, correctAnswer, qType };
+
+    if (qType === "mc") {
+      const distractors = pickSmartDistractors(correctAnswer, distractPool, 3);
+      while (distractors.length < 3) distractors.push(correctAnswer); // hiếm khi pool quá nhỏ
+      q.choices = shuffleArr([correctAnswer, ...distractors.slice(0, 3)]);
+    } else if (qType === "tf") {
+      const isTrue = Math.random() < 0.5 || !distractPool.length;
+      if (isTrue) {
+        q.tfShown = correctAnswer;
+        q.tfAnswer = true;
+      } else {
+        q.tfShown = shuffleArr(distractPool)[0];
+        q.tfAnswer = q.tfShown === correctAnswer;
+      }
+    } else if (qType === "scramble") {
+      q.scrambleLetters = scrambleWord(item.en);
+      q.questionText = item.vi;
+      q.correctAnswer = item.en;
+      q.dir = "v-e";
+    }
+    return q;
   });
 }
 
@@ -3764,14 +3856,17 @@ document.getElementById("quiz-start-btn").addEventListener("click", () => {
     return;
   }
   const pool = quizSourceItems().filter((i) => i.en && i.vi);
-  if (pool.length < 4) {
-    showToast("Cần ít nhất 4 mục có đủ nghĩa Anh - Việt trong danh sách & độ khó đã chọn.");
+  if (pool.length < 2) {
+    showToast("Cần ít nhất 2 mục có đủ nghĩa Anh - Việt trong danh sách & độ khó đã chọn.");
     return;
   }
   quiz.questions = buildQuizQuestions();
   quiz.qIndex = 0;
   quiz.correct = 0;
   quiz.wrong = 0;
+  quiz.comboCurrent = 0;
+  quiz.comboBest = 0;
+  quiz.wrongLog = [];
   quiz.timerSec = 0;
   quiz.paused = false;
   quiz.running = true;
@@ -3884,6 +3979,23 @@ function renderQuizQuestion(skipAnimation) {
   const oldReveal = block.querySelector(".quiz-reveal-question");
   if (oldReveal) oldReveal.remove();
 
+  // ---- Huy hiệu combo (chuỗi đúng liên tiếp trong bài hiện tại) ----
+  const comboBadge = document.getElementById("quiz-combo-badge");
+  if (quiz.comboCurrent >= 2) {
+    document.getElementById("quiz-combo-val").textContent = quiz.comboCurrent;
+    comboBadge.classList.remove("hidden");
+  } else {
+    comboBadge.classList.add("hidden");
+  }
+
+  // ---- Nhãn dạng câu hỏi + ẩn/hiện đúng khung UI cho dạng đó ----
+  const QTYPE_LABEL = { mc: "🔤 Trắc nghiệm", type: "⌨️ Gõ đáp án", tf: "✅ Đúng / Sai", scramble: "🔀 Xáo chữ" };
+  document.getElementById("quiz-qtype-tag").textContent = QTYPE_LABEL[q.qType] || "";
+  document.getElementById("quiz-choice-grid").classList.toggle("hidden", q.qType !== "mc");
+  document.getElementById("quiz-tf-wrap").classList.toggle("hidden", q.qType !== "tf");
+  document.getElementById("quiz-type-wrap").classList.toggle("hidden", q.qType !== "type");
+  document.getElementById("quiz-scramble-wrap").classList.toggle("hidden", q.qType !== "scramble");
+
   if (quiz.listenMode) {
     listenHint.classList.remove("hidden");
     questionTextEl.classList.add("hidden");
@@ -3894,12 +4006,31 @@ function renderQuizQuestion(skipAnimation) {
     questionTextEl.textContent = q.questionText;
   }
 
-  const btns = document.querySelectorAll(".quiz-choice-btn");
-  btns.forEach((btn, i) => {
-    btn.classList.remove("correct", "wrong");
-    btn.querySelector(".choice-text").textContent = q.choices[i] || "";
-    btn.disabled = false;
-  });
+  if (q.qType === "mc") {
+    const btns = document.querySelectorAll(".quiz-choice-btn");
+    btns.forEach((btn, i) => {
+      btn.classList.remove("correct", "wrong");
+      btn.querySelector(".choice-text").textContent = q.choices[i] || "";
+      btn.disabled = false;
+    });
+  } else if (q.qType === "tf") {
+    const shownEl = document.getElementById("quiz-tf-shown");
+    shownEl.textContent = q.tfShown;
+    document.querySelectorAll(".quiz-tf-btn").forEach((b) => { b.classList.remove("correct", "wrong"); b.disabled = false; });
+  } else if (q.qType === "type") {
+    const input = document.getElementById("quiz-type-input");
+    input.value = "";
+    input.classList.remove("correct", "wrong");
+    input.disabled = false;
+    if (!skipAnimation) setTimeout(() => input.focus(), 350);
+  } else if (q.qType === "scramble") {
+    document.getElementById("quiz-scramble-letters").textContent = q.scrambleLetters;
+    const input = document.getElementById("quiz-scramble-input");
+    input.value = "";
+    input.classList.remove("correct", "wrong");
+    input.disabled = false;
+    if (!skipAnimation) setTimeout(() => input.focus(), 350);
+  }
 
   if (!skipAnimation) quizSlideIn(block);
 
@@ -3913,6 +4044,49 @@ function renderQuizQuestion(skipAnimation) {
   }
 }
 
+/* ---- Ghi nhận 1 câu trả lời: cộng/trừ điểm, đổi trạng thái mục trong Kho
+   (known nếu đúng, difficult nếu sai), cập nhật combo, log câu sai để xem
+   lại ở màn kết quả — dùng CHUNG cho cả 4 dạng câu hỏi. ---- */
+function recordQuizAnswer(q, isCorrect, yourAnswerText) {
+  logStudyAction("quiz", isCorrect);
+  if (isCorrect) {
+    playCorrectSound();
+    quiz.correct++;
+    quiz.comboCurrent++;
+    quiz.comboBest = Math.max(quiz.comboBest, quiz.comboCurrent);
+    q.item.status = "known";
+  } else {
+    playWrongSound();
+    quiz.wrong++;
+    quiz.comboCurrent = 0;
+    q.item.status = "difficult";
+    quiz.wrongLog.push({ questionText: q.questionText, correctAnswer: q.correctAnswer, yourAnswer: yourAnswerText || "(bỏ trống)" });
+  }
+  saveState();
+  document.getElementById("quiz-correct-count").textContent = quiz.correct;
+  document.getElementById("quiz-wrong-count").textContent = quiz.wrong;
+}
+
+/* ---- Chuyển sang câu tiếp theo (hoặc kết thúc) sau khi trả lời — dùng
+   chung cho cả 4 dạng, gọi sau recordQuizAnswer() với 1 khoảng nghỉ để
+   người chơi kịp thấy đáp án đúng/sai trước khi chuyển câu. ---- */
+function advanceQuizAfterAnswer(isCorrect, delay) {
+  setTimeout(() => {
+    if (quiz.countMode === "untilWrong" && !isCorrect) {
+      endQuiz();
+      return;
+    }
+    quiz.qIndex++;
+    if (quiz.qIndex >= quiz.questions.length) {
+      endQuiz();
+    } else {
+      const block = document.getElementById("quiz-question-block");
+      block.classList.add("quiz-slide-out");
+      setTimeout(() => renderQuizQuestion(), 300);
+    }
+  }, delay);
+}
+
 document.querySelectorAll(".quiz-choice-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     if (!quiz.running || quiz.answered) return;
@@ -3920,24 +4094,12 @@ document.querySelectorAll(".quiz-choice-btn").forEach((btn) => {
     const q = quiz.questions[quiz.qIndex];
     const chosenText = btn.querySelector(".choice-text").textContent;
     const isCorrect = chosenText === q.correctAnswer;
-    logStudyAction("quiz", isCorrect);
     document.querySelectorAll(".quiz-choice-btn").forEach((b) => {
       b.disabled = true;
       if (b.querySelector(".choice-text").textContent === q.correctAnswer) b.classList.add("correct");
     });
-    if (!isCorrect) {
-      playWrongSound();
-      btn.classList.add("wrong");
-      quiz.wrong++;
-      q.item.status = "difficult";
-    } else {
-      playCorrectSound();
-      quiz.correct++;
-      q.item.status = "known";
-    }
-    saveState();
-    document.getElementById("quiz-correct-count").textContent = quiz.correct;
-    document.getElementById("quiz-wrong-count").textContent = quiz.wrong;
+    if (!isCorrect) btn.classList.add("wrong");
+    recordQuizAnswer(q, isCorrect, chosenText);
 
     // Nếu listen mode: hiện câu hỏi sau khi chọn đáp án
     if (quiz.listenMode) {
@@ -3947,25 +4109,73 @@ document.querySelectorAll(".quiz-choice-btn").forEach((btn) => {
       const reveal = document.createElement("div");
       reveal.className = "quiz-reveal-question quiz-slide-in";
       reveal.textContent = q.questionText;
-      const choiceGrid = block.querySelector(".quiz-choice-grid");
+      const choiceGrid = document.getElementById("quiz-choice-grid");
       block.insertBefore(reveal, choiceGrid);
     }
 
-    setTimeout(() => {
-      if (quiz.countMode === "untilWrong" && !isCorrect) {
-        endQuiz();
-        return;
-      }
-      quiz.qIndex++;
-      if (quiz.qIndex >= quiz.questions.length) {
-        endQuiz();
-      } else {
-        const block = document.getElementById("quiz-question-block");
-        block.classList.add("quiz-slide-out");
-        setTimeout(() => renderQuizQuestion(), 300);
-      }
-    }, 1200);
+    advanceQuizAfterAnswer(isCorrect, 1200);
   });
+});
+
+/* ---- Dạng Đúng/Sai ---- */
+document.querySelectorAll(".quiz-tf-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (!quiz.running || quiz.answered) return;
+    quiz.answered = true;
+    const q = quiz.questions[quiz.qIndex];
+    const chosenTrue = btn.dataset.tf === "true";
+    const isCorrect = chosenTrue === q.tfAnswer;
+    document.querySelectorAll(".quiz-tf-btn").forEach((b) => {
+      b.disabled = true;
+      if ((b.dataset.tf === "true") === q.tfAnswer) b.classList.add("correct");
+    });
+    if (!isCorrect) btn.classList.add("wrong");
+    recordQuizAnswer(q, isCorrect, chosenTrue ? "Đúng" : "Sai");
+    advanceQuizAfterAnswer(isCorrect, 1000);
+  });
+});
+
+/* ---- Dạng Gõ đáp án ---- */
+function submitQuizTypeAnswer() {
+  if (!quiz.running || quiz.answered) return;
+  const q = quiz.questions[quiz.qIndex];
+  const input = document.getElementById("quiz-type-input");
+  const typed = input.value;
+  let isCorrect;
+  if (q.dir === "v-e") {
+    isCorrect = wrGradeAnswer(typed, q.item).correct;
+  } else {
+    isCorrect = expandSlashAnswer(q.item.vi || "").some((opt) => normalizeAnswer(typed) === normalizeAnswer(opt));
+  }
+  quiz.answered = true;
+  input.disabled = true;
+  input.classList.add(isCorrect ? "correct" : "wrong");
+  if (!isCorrect) input.value = `${typed || "(bỏ trống)"} → ${q.correctAnswer}`;
+  recordQuizAnswer(q, isCorrect, typed);
+  advanceQuizAfterAnswer(isCorrect, 1200);
+}
+document.getElementById("quiz-type-submit").addEventListener("click", submitQuizTypeAnswer);
+document.getElementById("quiz-type-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); submitQuizTypeAnswer(); }
+});
+
+/* ---- Dạng Xáo chữ ---- */
+function submitQuizScrambleAnswer() {
+  if (!quiz.running || quiz.answered) return;
+  const q = quiz.questions[quiz.qIndex];
+  const input = document.getElementById("quiz-scramble-input");
+  const typed = input.value;
+  const isCorrect = normalizeAnswer(typed) === normalizeAnswer(q.correctAnswer);
+  quiz.answered = true;
+  input.disabled = true;
+  input.classList.add(isCorrect ? "correct" : "wrong");
+  if (!isCorrect) input.value = `${typed || "(bỏ trống)"} → ${q.correctAnswer}`;
+  recordQuizAnswer(q, isCorrect, typed);
+  advanceQuizAfterAnswer(isCorrect, 1200);
+}
+document.getElementById("quiz-scramble-submit").addEventListener("click", submitQuizScrambleAnswer);
+document.getElementById("quiz-scramble-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); submitQuizScrambleAnswer(); }
 });
 
 // click vào ô listen hint để nghe lại
@@ -3981,9 +4191,31 @@ function endQuiz() {
   document.getElementById("quiz-question-block").classList.add("hidden");
   document.getElementById("quiz-topbar").classList.add("hidden");
   document.getElementById("quiz-result-block").classList.remove("hidden");
-  document.getElementById("quiz-result-score").textContent = `${quiz.correct} / ${quiz.qIndex + (quiz.correct + quiz.wrong > quiz.qIndex ? 1 : 0) || quiz.questions.length}`;
   document.getElementById("quiz-result-score").textContent = `${quiz.correct} / ${quiz.correct + quiz.wrong}`;
+  document.getElementById("quiz-result-combo").textContent = quiz.comboBest >= 2 ? `🔥 Chuỗi đúng liên tiếp dài nhất: ${quiz.comboBest}` : "";
+
+  const reviewSection = document.getElementById("quiz-review-section");
+  const reviewList = document.getElementById("quiz-review-list");
+  const reviewToggle = document.getElementById("quiz-review-toggle");
+  reviewList.classList.add("hidden");
+  reviewToggle.textContent = `Xem lại câu sai (${quiz.wrongLog.length}) ▾`;
+  if (quiz.wrongLog.length) {
+    reviewSection.classList.remove("hidden");
+    reviewList.innerHTML = quiz.wrongLog.map((w) => `
+      <div class="quiz-review-row">
+        <b>${escapeHtml(w.questionText)}</b>
+        <div class="quiz-review-your">Bạn trả lời: ${escapeHtml(w.yourAnswer)}</div>
+        <div class="quiz-review-correct">Đáp án đúng: ${escapeHtml(w.correctAnswer)}</div>
+      </div>`).join("");
+  } else {
+    reviewSection.classList.add("hidden");
+  }
 }
+document.getElementById("quiz-review-toggle").addEventListener("click", () => {
+  const list = document.getElementById("quiz-review-list");
+  const open = list.classList.toggle("hidden");
+  document.getElementById("quiz-review-toggle").textContent = `Xem lại câu sai (${quiz.wrongLog.length}) ${open ? "▾" : "▴"}`;
+});
 function exitQuiz() {
   quiz.running = false;
   clearInterval(quiz.timerHandle);
@@ -6203,6 +6435,16 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.34",
+    changes: [
+      "Quizz: thêm 3 dạng câu hỏi mới trộn ngẫu nhiên cùng Trắc nghiệm — ⌨️ Gõ đáp án, ✅ Đúng/Sai, 🔀 Xáo chữ (chọn dạng nào muốn bật ở màn thiết lập)",
+      "Quizz: đáp án nhiễu trong Trắc nghiệm giờ ưu tiên chọn các đáp án có độ dài gần giống đáp án đúng thay vì hoàn toàn ngẫu nhiên, đỡ bị đoán mò",
+      "Quizz: thêm huy hiệu 🔥 Combo hiện ngay lúc làm bài khi trả lời đúng liên tiếp ≥2 câu",
+      "Quizz: màn kết quả thêm chuỗi đúng liên tiếp dài nhất + danh sách xem lại từng câu trả lời sai (câu hỏi/đáp án của bạn/đáp án đúng)",
+      "Quizz: trả lời đúng/sai giờ luôn đổi trạng thái mục tương ứng trong Kho (Đã biết / Khó) ở cả 4 dạng câu hỏi, không chỉ riêng Trắc nghiệm như trước",
+    ],
+  },
   {
     version: "2.33",
     changes: [
