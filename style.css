@@ -92,23 +92,23 @@ input,textarea{font-family:inherit;}
   justify-content:space-between;
   margin-bottom:14px;
 }
-.sidebar-header-right{display:flex;align-items:center;gap:8px;}
+.sidebar-header-right{display:flex;align-items:center;gap:5px;flex-shrink:0;}
 .bell-pill-btn{
-  width:44px;height:36px;
+  width:30px;height:28px;
   border:1.5px solid var(--border);
   border-radius:var(--radius-sm);
   background:var(--panel);color:var(--text);
-  font-size:1rem;
+  font-size:.85rem;
   display:flex;align-items:center;justify-content:center;
 }
 .bell-pill-btn:hover{background:var(--accent-soft);}
 .bell-pill-btn.active{background:var(--accent);border-color:var(--accent);filter:brightness(1.05);}
 .settings-gear-btn{
-  width:44px;height:36px;
+  width:30px;height:28px;
   border:1.5px solid var(--border);
   border-radius:var(--radius-sm);
   background:var(--panel);color:var(--text);
-  font-size:1rem;
+  font-size:.85rem;
   display:flex;align-items:center;justify-content:center;
 }
 .settings-gear-btn:hover{background:var(--accent-soft);}
@@ -756,6 +756,7 @@ input,textarea{font-family:inherit;}
 .quiz-pill{border:1.5px solid var(--border-soft);border-radius:20px;padding:5px 12px;font-size:.78rem;font-weight:700;margin-left:auto;}
 .quiz-pill-danger{color:var(--difficult);}
 .quiz-pill-success{color:var(--known);}
+.quiz-pill-points{color:#d4a017;}
 .quiz-timer{margin-left:8px;font-size:.85rem;font-weight:700;display:flex;align-items:center;gap:6px;}
 .timer-pause-btn{border:1px solid var(--border);border-radius:50%;width:22px;height:22px;background:var(--panel);font-size:.7rem;}
 .quiz-empty{text-align:center;color:var(--text-muted);padding:60px 20px;font-size:.95rem;}
@@ -855,6 +856,14 @@ input,textarea{font-family:inherit;}
 .quiz-combo-badge.hidden{display:none;}
 @keyframes quiz-combo-pop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
 
+.quiz-boss-badge{
+  display:block;width:fit-content;margin:0 auto 10px;
+  background:linear-gradient(90deg,#a855f7,#6366f1);color:#fff;
+  border-radius:20px;padding:5px 14px;font-size:.85rem;font-weight:800;
+  animation:quiz-combo-pop .3s ease;
+}
+.quiz-boss-badge.hidden{display:none;}
+
 .quiz-qtype-tag{
   text-align:center;font-size:.72rem;font-weight:700;color:var(--text-muted);
   text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;
@@ -889,6 +898,25 @@ input,textarea{font-family:inherit;}
 }
 
 .quiz-result-combo{font-size:.85rem;color:var(--text-muted);margin:-12px 0 20px;}
+
+/* ---- Quizz: Thách đấu bạn bè ---- */
+.quiz-challenge-code{
+  text-align:center;font-size:1.8rem;font-weight:800;letter-spacing:.3em;
+  border:1.5px dashed var(--accent);border-radius:var(--radius-md);
+  padding:16px;background:var(--accent-soft);color:var(--accent);
+}
+.quiz-challenge-leaderboard{margin-top:16px;text-align:left;}
+.quiz-challenge-leaderboard.hidden{display:none;}
+.quiz-challenge-row{
+  display:flex;align-items:center;gap:8px;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:7px 12px;font-size:.85rem;margin-bottom:6px;
+}
+.quiz-challenge-row .rank{font-weight:800;color:var(--text-muted);width:20px;flex-shrink:0;}
+.quiz-challenge-row .name{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.quiz-challenge-row .pts{font-weight:800;color:#d4a017;flex-shrink:0;}
+.quiz-challenge-row.me{border-color:var(--accent);background:var(--accent-soft);}
+
 .quiz-review-section{margin-top:26px;text-align:left;}
 .quiz-review-section.hidden{display:none;}
 .quiz-review-toggle{
@@ -1173,7 +1201,7 @@ input,textarea{font-family:inherit;}
 .wh-stats-sidebar-note{font-size:.78rem;color:var(--text-muted);padding:10px 2px;line-height:1.5;}
 
 /* ---- Kho sidebar: icon, khối điều khiển Thư viện, Admin ---- */
-.kho-icon{width:20px;height:20px;flex-shrink:0;}
+.kho-icon{width:15px;height:15px;flex-shrink:0;}
 #wh-library-sidebar-section{display:flex;flex-direction:column;gap:8px;}
 #wh-library-sidebar-section.hidden{display:none;}
 .wh-lib-filter-group{display:flex;flex-direction:column;gap:6px;}

@@ -482,6 +482,17 @@ function initAuthWatcher() {
         showToast(`Đăng nhập rồi mở "Nhập từ mã chia sẻ" và nhập mã ${code} để nhận danh sách được chia sẻ.`, 5000);
       }
     }
+    if (pendingChallengeCode) {
+      const code = pendingChallengeCode;
+      pendingChallengeCode = null;
+      history.replaceState(null, "", location.pathname);
+      if (user) {
+        switchTab("quiz");
+        openChallengeJoinOverlay(code);
+      } else {
+        showToast(`Đăng nhập rồi bấm "Nhập mã thách đấu" và nhập mã ${code} để chơi.`, 5000);
+      }
+    }
   });
 }
 
@@ -882,8 +893,8 @@ let listPickerCat = null; // one of: "flashcard", "writing", "quiz-flashcard", "
 
 // resolves a virtual picker key to { realCat, getArr(), ensureDefault() }
 function pickerContext(cat) {
-  if (cat === "quiz-flashcard" || cat === "quiz-dictionary") {
-    const realCat = cat === "quiz-flashcard" ? "flashcard" : "dictionary";
+  if (cat === "quiz-flashcard" || cat === "quiz-writing" || cat === "quiz-dictionary") {
+    const realCat = cat.replace("quiz-", "");
     return {
       realCat,
       getArr: () => quiz.selectedLists[realCat],
@@ -901,7 +912,7 @@ function pickerContext(cat) {
 
 function openListPicker(cat) {
   listPickerCat = cat;
-  const titles = { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", "quiz-flashcard": "Thẻ (Quizz)", "quiz-dictionary": "Từ điển (Quizz)" };
+  const titles = { flashcard: "Thẻ", writing: "Viết", listening: "Nghe", "quiz-flashcard": "Thẻ (Quizz)", "quiz-writing": "Viết (Quizz)", "quiz-dictionary": "Từ điển (Quizz)" };
   listPickerTitle.textContent = titles[cat] || cat;
   const ctx = pickerContext(cat);
   ctx.ensureDefault();
@@ -929,7 +940,7 @@ function renderListPickerBody() {
       if (listPickerCat === "flashcard") renderFlashcardTab();
       if (listPickerCat === "writing") renderWritingTab();
       if (listPickerCat === "listening") renderNgheTab();
-      if (listPickerCat === "quiz-flashcard" || listPickerCat === "quiz-dictionary") updateQuizCountSliderMax();
+      if (listPickerCat === "quiz-flashcard" || listPickerCat === "quiz-writing" || listPickerCat === "quiz-dictionary") updateQuizCountSliderMax();
     });
     listPickerBody.appendChild(row);
   });
@@ -3629,8 +3640,8 @@ document.getElementById("nghe-choose-list").addEventListener("click", () => open
    TAB 3: QUIZZ
    ============================================================ */
 const quiz = {
-  source: "flashcard",
-  selectedLists: { flashcard: [], dictionary: [] },
+  sources: { flashcard: true, writing: true, dictionary: false },
+  selectedLists: { flashcard: [], writing: [], dictionary: [] },
   difficulty: "all",
   countMode: "custom",
   count: 10,
@@ -3649,11 +3660,14 @@ const quiz = {
   wrong: 0,
   comboCurrent: 0,
   comboBest: 0,
+  points: 0,
   wrongLog: [],
   timerSec: 0,
   timerHandle: null,
   paused: false,
   answered: false,
+  qStartTime: 0,
+  challengeCode: null, // mã Thách đấu bạn bè đang chơi theo (nếu có)
 };
 
 // Quizz mặc định KHÔNG chọn sẵn danh sách nào — người dùng tự chọn qua "Chọn danh sách"
@@ -3662,23 +3676,43 @@ function ensureQuizSelected(cat) {
   quiz.selectedLists[cat] = quiz.selectedLists[cat].filter((id) => ids.includes(id));
 }
 function quizSourceItems() {
-  ensureQuizSelected(quiz.source);
-  let items = itemsFromLists(quiz.source, quiz.selectedLists[quiz.source]);
+  const activeSources = Object.keys(quiz.sources).filter((k) => quiz.sources[k]);
+  let items = [];
+  activeSources.forEach((src) => {
+    ensureQuizSelected(src);
+    items = items.concat(itemsFromLists(src, quiz.selectedLists[src]));
+  });
   if (quiz.difficulty !== "all") items = items.filter((i) => i.status === quiz.difficulty);
   return items;
 }
 
+const QUIZ_SOURCE_LABEL = { flashcard: "Thẻ", writing: "Viết", dictionary: "Từ điển" };
+function renderQuizChooseListRow() {
+  const row = document.getElementById("quiz-choose-list-row");
+  row.innerHTML = "";
+  Object.keys(quiz.sources).filter((k) => quiz.sources[k]).forEach((src) => {
+    const btn = document.createElement("button");
+    btn.className = "block-btn";
+    btn.textContent = `Chọn ds (${QUIZ_SOURCE_LABEL[src]})`;
+    btn.addEventListener("click", () => openListPicker("quiz-" + src));
+    row.appendChild(btn);
+  });
+}
 document.querySelectorAll('[data-source]').forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelectorAll('[data-source]').forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    quiz.source = btn.dataset.source;
+    const key = btn.dataset.source;
+    const activeCount = Object.values(quiz.sources).filter(Boolean).length;
+    if (quiz.sources[key] && activeCount <= 1) {
+      showToast("Phải giữ lại ít nhất 1 nguồn.");
+      return;
+    }
+    quiz.sources[key] = !quiz.sources[key];
+    btn.classList.toggle("active", quiz.sources[key]);
+    renderQuizChooseListRow();
     updateQuizCountSliderMax();
   });
 });
-document.getElementById("quiz-choose-list").addEventListener("click", () => {
-  openListPicker(quiz.source === "flashcard" ? "quiz-flashcard" : "quiz-dictionary");
-});
+renderQuizChooseListRow();
 document.querySelectorAll('[data-difficulty]').forEach((btn) => {
   btn.addEventListener("click", () => {
     document.querySelectorAll('[data-difficulty]').forEach((b) => b.classList.remove("active"));
@@ -3703,29 +3737,17 @@ document.querySelectorAll('[data-lang]').forEach((btn) => {
   });
 });
 
-/* ---- Dạng câu hỏi: chọn nhiều (đa lựa chọn, tối thiểu phải giữ lại 1 dạng) ---- */
-function updateQuizQtypeHint() {
-  const active = Object.keys(quiz.questionTypes).filter((k) => quiz.questionTypes[k]);
-  const hint = document.getElementById("quiz-qtype-hint");
-  if (quiz.listenMode) {
-    hint.textContent = "Chế độ nghe chỉ hỗ trợ dạng Trắc nghiệm — các lựa chọn khác sẽ bị bỏ qua khi bật.";
-  } else if (active.length <= 1) {
-    hint.textContent = "Chỉ 1 dạng — bật thêm để mỗi câu hỏi trộn ngẫu nhiên nhiều kiểu khác nhau.";
-  } else {
-    hint.textContent = `Mỗi câu sẽ ngẫu nhiên là 1 trong ${active.length} dạng đã bật.`;
-  }
-}
+/* ---- Loại câu hỏi: chọn nhiều (đa lựa chọn, tối thiểu phải giữ lại 1 loại) ---- */
 document.querySelectorAll("[data-qtype]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.qtype;
     const activeCount = Object.values(quiz.questionTypes).filter(Boolean).length;
     if (quiz.questionTypes[key] && activeCount <= 1) {
-      showToast("Phải giữ lại ít nhất 1 dạng câu hỏi.");
+      showToast("Phải giữ lại ít nhất 1 loại câu hỏi.");
       return;
     }
     quiz.questionTypes[key] = !quiz.questionTypes[key];
     btn.classList.toggle("active", quiz.questionTypes[key]);
-    updateQuizQtypeHint();
   });
 });
 document.querySelectorAll('[data-timemode]').forEach((btn) => {
@@ -3764,10 +3786,8 @@ document.querySelectorAll("[data-listenmode]").forEach((btn) => {
     btn.classList.add("active");
     quiz.listenMode = btn.dataset.listenmode === "on";
     document.getElementById("quiz-listen-count-row").classList.toggle("hidden", !quiz.listenMode);
-    updateQuizQtypeHint();
   });
 });
-updateQuizQtypeHint();
 document.getElementById("quiz-listen-count-input").addEventListener("input", (e) => {
   quiz.listenMaxCount = Math.max(1, parseInt(e.target.value) || 3);
 });
@@ -3775,13 +3795,14 @@ document.getElementById("quiz-listen-count-input").addEventListener("input", (e)
 /* Chọn nhiễu "khôn" hơn: ưu tiên các đáp án có độ dài GẦN GIỐNG đáp án đúng
    (thay vì hoàn toàn ngẫu nhiên), để tránh trường hợp nhiễu quá ngắn/dài lộ
    liễu — vẫn xáo trộn trong nhóm gần giống đó để không bị đoán theo khuôn mẫu. */
-function pickSmartDistractors(correct, pool, count) {
+function pickSmartDistractors(correct, pool, count, hard) {
   const unique = [...new Set(pool)].filter((p) => p && p !== correct);
   if (unique.length <= count) return shuffleArr(unique);
   const scored = unique
     .map((p) => ({ p, diff: Math.abs(p.length - correct.length) }))
     .sort((a, b) => a.diff - b.diff);
-  const topPool = scored.slice(0, Math.max(count * 3, count + 3)).map((s) => s.p);
+  // Câu Boss: thu hẹp nhóm ứng viên còn sát độ dài đáp án đúng hơn nữa → nhiễu khó nhận ra hơn.
+  const topPool = scored.slice(0, Math.max(count * (hard ? 1.5 : 3), count + (hard ? 1 : 3))).map((s) => s.p);
   return shuffleArr(topPool).slice(0, count);
 }
 function scrambleWord(word) {
@@ -3804,7 +3825,9 @@ function buildQuizQuestions() {
     ? ["mc"] // Chế độ nghe chỉ hỗ trợ trắc nghiệm (đọc câu hỏi bằng audio)
     : QUIZ_TYPE_LIST.filter((t) => quiz.questionTypes[t]);
   const typesPool = enabledTypes.length ? enabledTypes : ["mc"];
-  return chosen.map((item) => {
+  return chosen.map((item, idx) => {
+    // Cứ mỗi 5 câu có 1 câu "Boss": nhiễu khó hơn (Trắc nghiệm) + nhân đôi điểm.
+    const isBoss = chosen.length >= 5 && (idx + 1) % 5 === 0;
     let dir = quiz.lang;
     if (quiz.listenMode) dir = "e-v"; // listen mode chỉ hỗ trợ E→V
     else if (dir === "random") dir = Math.random() < 0.5 ? "e-v" : "v-e";
@@ -3825,10 +3848,10 @@ function buildQuizQuestions() {
       qType = "type";
     }
 
-    const q = { item, dir, questionText, correctAnswer, qType };
+    const q = { item, dir, questionText, correctAnswer, qType, isBoss };
 
     if (qType === "mc") {
-      const distractors = pickSmartDistractors(correctAnswer, distractPool, 3);
+      const distractors = pickSmartDistractors(correctAnswer, distractPool, 3, isBoss);
       while (distractors.length < 3) distractors.push(correctAnswer); // hiếm khi pool quá nhỏ
       q.choices = shuffleArr([correctAnswer, ...distractors.slice(0, 3)]);
     } else if (qType === "tf") {
@@ -3850,26 +3873,19 @@ function buildQuizQuestions() {
   });
 }
 
-document.getElementById("quiz-start-btn").addEventListener("click", () => {
-  if (quiz.selectedLists[quiz.source].length === 0) {
-    showToast("Hãy chọn ít nhất một danh sách trước khi bắt đầu.");
-    return;
-  }
-  const pool = quizSourceItems().filter((i) => i.en && i.vi);
-  if (pool.length < 2) {
-    showToast("Cần ít nhất 2 mục có đủ nghĩa Anh - Việt trong danh sách & độ khó đã chọn.");
-    return;
-  }
-  quiz.questions = buildQuizQuestions();
+function beginQuizSession(questions, challengeCode) {
+  quiz.questions = questions;
   quiz.qIndex = 0;
   quiz.correct = 0;
   quiz.wrong = 0;
   quiz.comboCurrent = 0;
   quiz.comboBest = 0;
+  quiz.points = 0;
   quiz.wrongLog = [];
   quiz.timerSec = 0;
   quiz.paused = false;
   quiz.running = true;
+  quiz.challengeCode = challengeCode || null;
   document.getElementById("quiz-setup-panel").classList.add("hidden");
   document.getElementById("quiz-start-btn").classList.add("hidden");
   document.getElementById("quiz-topbar").classList.remove("hidden");
@@ -3879,6 +3895,20 @@ document.getElementById("quiz-start-btn").addEventListener("click", () => {
   document.getElementById("quiz-question-block").classList.remove("hidden");
   startQuizTimer();
   renderQuizQuestion();
+}
+document.getElementById("quiz-start-btn").addEventListener("click", () => {
+  const activeSources = Object.keys(quiz.sources).filter((k) => quiz.sources[k]);
+  const hasAnyList = activeSources.some((src) => quiz.selectedLists[src].length > 0);
+  if (!hasAnyList) {
+    showToast("Hãy chọn ít nhất một danh sách trước khi bắt đầu.");
+    return;
+  }
+  const pool = quizSourceItems().filter((i) => i.en && i.vi);
+  if (pool.length < 2) {
+    showToast("Cần ít nhất 2 mục có đủ nghĩa Anh - Việt trong danh sách & độ khó đã chọn.");
+    return;
+  }
+  beginQuizSession(buildQuizQuestions(), null);
 });
 
 function startQuizTimer() {
@@ -3969,8 +3999,10 @@ function renderQuizQuestion(skipAnimation) {
   document.getElementById("quiz-total-count2").textContent = total;
   document.getElementById("quiz-correct-count").textContent = quiz.correct;
   document.getElementById("quiz-wrong-count").textContent = quiz.wrong;
+  document.getElementById("quiz-points-val").textContent = quiz.points;
 
   const q = quiz.questions[quiz.qIndex];
+  quiz.qStartTime = Date.now();
   const block = document.getElementById("quiz-question-block");
   const listenHint = document.getElementById("quiz-listen-hint");
   const questionTextEl = document.getElementById("quiz-question-text");
@@ -3978,6 +4010,8 @@ function renderQuizQuestion(skipAnimation) {
   // xoá reveal cũ nếu có
   const oldReveal = block.querySelector(".quiz-reveal-question");
   if (oldReveal) oldReveal.remove();
+
+  document.getElementById("quiz-boss-badge").classList.toggle("hidden", !q.isBoss);
 
   // ---- Huy hiệu combo (chuỗi đúng liên tiếp trong bài hiện tại) ----
   const comboBadge = document.getElementById("quiz-combo-badge");
@@ -4047,6 +4081,22 @@ function renderQuizQuestion(skipAnimation) {
 /* ---- Ghi nhận 1 câu trả lời: cộng/trừ điểm, đổi trạng thái mục trong Kho
    (known nếu đúng, difficult nếu sai), cập nhật combo, log câu sai để xem
    lại ở màn kết quả — dùng CHUNG cho cả 4 dạng câu hỏi. ---- */
+/* ---- Tính điểm 1 câu trả lời đúng: 100 điểm cơ bản + thưởng theo tốc độ
+   trả lời (đếm ngược: theo % thời gian còn lại; vô hạn: càng nhanh càng
+   thưởng nhiều, giảm dần theo giây) — câu Boss (cứ mỗi 5 câu 1 lần) x2. ---- */
+function computeQuizPoints(q) {
+  const base = 100;
+  let bonus;
+  if (quiz.timeMode === "countdown") {
+    const frac = Math.max(0, Math.min(1, quiz.remaining / quiz.countdownSeconds));
+    bonus = Math.round(frac * 50);
+  } else {
+    const elapsedSec = (Date.now() - quiz.qStartTime) / 1000;
+    bonus = Math.max(0, 50 - Math.round(elapsedSec * 5));
+  }
+  const pts = base + bonus;
+  return q.isBoss ? pts * 2 : pts;
+}
 function recordQuizAnswer(q, isCorrect, yourAnswerText) {
   logStudyAction("quiz", isCorrect);
   if (isCorrect) {
@@ -4055,16 +4105,20 @@ function recordQuizAnswer(q, isCorrect, yourAnswerText) {
     quiz.comboCurrent++;
     quiz.comboBest = Math.max(quiz.comboBest, quiz.comboCurrent);
     q.item.status = "known";
+    q.earnedPoints = computeQuizPoints(q);
+    quiz.points += q.earnedPoints;
   } else {
     playWrongSound();
     quiz.wrong++;
     quiz.comboCurrent = 0;
     q.item.status = "difficult";
+    q.earnedPoints = 0;
     quiz.wrongLog.push({ questionText: q.questionText, correctAnswer: q.correctAnswer, yourAnswer: yourAnswerText || "(bỏ trống)" });
   }
   saveState();
   document.getElementById("quiz-correct-count").textContent = quiz.correct;
   document.getElementById("quiz-wrong-count").textContent = quiz.wrong;
+  document.getElementById("quiz-points-val").textContent = quiz.points;
 }
 
 /* ---- Chuyển sang câu tiếp theo (hoặc kết thúc) sau khi trả lời — dùng
@@ -4191,7 +4245,7 @@ function endQuiz() {
   document.getElementById("quiz-question-block").classList.add("hidden");
   document.getElementById("quiz-topbar").classList.add("hidden");
   document.getElementById("quiz-result-block").classList.remove("hidden");
-  document.getElementById("quiz-result-score").textContent = `${quiz.correct} / ${quiz.correct + quiz.wrong}`;
+  document.getElementById("quiz-result-score").textContent = `${quiz.correct} / ${quiz.correct + quiz.wrong} · ⭐ ${quiz.points} điểm`;
   document.getElementById("quiz-result-combo").textContent = quiz.comboBest >= 2 ? `🔥 Chuỗi đúng liên tiếp dài nhất: ${quiz.comboBest}` : "";
 
   const reviewSection = document.getElementById("quiz-review-section");
@@ -4210,12 +4264,142 @@ function endQuiz() {
   } else {
     reviewSection.classList.add("hidden");
   }
+
+  if (quiz.challengeCode) submitChallengeScoreAndShowLeaderboard(quiz.challengeCode);
+  else document.getElementById("quiz-challenge-leaderboard").classList.add("hidden");
 }
 document.getElementById("quiz-review-toggle").addEventListener("click", () => {
   const list = document.getElementById("quiz-review-list");
   const open = list.classList.toggle("hidden");
   document.getElementById("quiz-review-toggle").textContent = `Xem lại câu sai (${quiz.wrongLog.length}) ${open ? "▾" : "▴"}`;
 });
+/* ============================================================
+   THÁCH ĐẤU BẠN BÈ — đóng gói đúng bộ câu hỏi vừa làm thành 1 mã,
+   bạn bè bấm link/nhập mã sẽ làm ĐÚNG bộ câu đó và so điểm với nhau.
+   Dùng chung mã 6 ký tự + node Firebase riêng "quiz_challenges".
+   ============================================================ */
+function serializeQuizQuestions(questions) {
+  // Không gửi item Kho thật (người nhận có thể không có từ đó trong Kho của họ)
+  // — chỉ gửi đủ dữ liệu tĩnh để hiển thị lại và chấm điểm.
+  return questions.map((q) => ({
+    qType: q.qType, dir: q.dir, questionText: q.questionText, correctAnswer: q.correctAnswer,
+    choices: q.choices || null, tfShown: q.tfShown ?? null, tfAnswer: q.tfAnswer ?? null,
+    scrambleLetters: q.scrambleLetters || null, isBoss: !!q.isBoss,
+    enText: q.dir === "v-e" ? q.correctAnswer : q.questionText, // để phát âm nếu cần
+  }));
+}
+function deserializeQuizQuestions(rawList) {
+  return (rawList || []).map((q) => ({ ...q, item: { en: q.enText || q.correctAnswer, vi: "", status: "new" } }));
+}
+document.getElementById("quiz-challenge-create-btn").addEventListener("click", async () => {
+  if (!currentUser) { showToast("Cần đăng nhập để tạo mã thách đấu."); return; }
+  const code = genShareCode();
+  const payload = {
+    creatorUid: currentUser.uid,
+    creatorName: (accountProfile && accountProfile.name) || "?",
+    questions: serializeQuizQuestions(quiz.questions),
+    createdAt: Date.now(),
+    scores: {
+      [currentUser.uid]: { name: (accountProfile && accountProfile.name) || "?", correct: quiz.correct, wrong: quiz.wrong, points: quiz.points, comboBest: quiz.comboBest, at: Date.now() },
+    },
+  };
+  try {
+    await firebase.database().ref("quiz_challenges/" + code).set(payload);
+    document.getElementById("quiz-challenge-code-display").textContent = code;
+    document.getElementById("quiz-challenge-share-overlay").classList.remove("hidden");
+    document.getElementById("quiz-challenge-copy-link-btn").onclick = () => {
+      const link = `${location.origin}${location.pathname}?challenge=${code}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => showToast("Đã sao chép link mời."), () => showToast("Mã: " + code));
+      } else {
+        showToast("Mã: " + code);
+      }
+    };
+  } catch (err) {
+    showToast("Lỗi khi tạo mã thách đấu: " + (err && err.message ? err.message : "?"));
+  }
+});
+document.getElementById("quiz-challenge-share-close").addEventListener("click", () => document.getElementById("quiz-challenge-share-overlay").classList.add("hidden"));
+document.getElementById("quiz-challenge-share-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "quiz-challenge-share-overlay") document.getElementById("quiz-challenge-share-overlay").classList.add("hidden");
+});
+
+function renderChallengeLeaderboardInto(containerEl, scoresObj) {
+  const rows = Object.entries(scoresObj || {}).map(([uid, s]) => ({ uid, ...s })).sort((a, b) => (b.points || 0) - (a.points || 0));
+  containerEl.innerHTML = "";
+  if (!rows.length) { containerEl.innerHTML = `<p class="wh-preview-empty">Chưa có ai làm bài này.</p>`; return; }
+  rows.forEach((r, i) => {
+    const row = document.createElement("div");
+    row.className = "quiz-challenge-row" + (currentUser && r.uid === currentUser.uid ? " me" : "");
+    row.innerHTML = `<span class="rank">#${i + 1}</span><span class="name">${escapeHtml(r.name || "?")}</span><span>${r.correct}/${(r.correct || 0) + (r.wrong || 0)}</span><span class="pts">⭐ ${r.points || 0}</span>`;
+    containerEl.appendChild(row);
+  });
+}
+async function submitChallengeScoreAndShowLeaderboard(code) {
+  const box = document.getElementById("quiz-challenge-leaderboard");
+  const list = document.getElementById("quiz-challenge-leaderboard-list");
+  box.classList.remove("hidden");
+  list.innerHTML = `<p class="wh-preview-empty">Đang cập nhật bảng xếp hạng...</p>`;
+  try {
+    if (currentUser) {
+      await firebase.database().ref(`quiz_challenges/${code}/scores/${currentUser.uid}`).set({
+        name: (accountProfile && accountProfile.name) || "?", correct: quiz.correct, wrong: quiz.wrong, points: quiz.points, comboBest: quiz.comboBest, at: Date.now(),
+      });
+    }
+    const snap = await firebase.database().ref(`quiz_challenges/${code}/scores`).once("value");
+    renderChallengeLeaderboardInto(list, snap.val());
+  } catch (err) {
+    list.innerHTML = `<p class="wh-preview-empty">Không tải được bảng xếp hạng.</p>`;
+  }
+}
+
+let pendingChallengeCode = new URLSearchParams(location.search).get("challenge");
+async function openChallengeJoinOverlay(code) {
+  const descEl = document.getElementById("quiz-challenge-join-desc");
+  const errEl = document.getElementById("quiz-challenge-join-error");
+  const leaderboardEl = document.getElementById("quiz-challenge-join-leaderboard");
+  errEl.classList.add("hidden");
+  descEl.textContent = "Đang tải lời thách đấu...";
+  leaderboardEl.innerHTML = "";
+  document.getElementById("quiz-challenge-join-overlay").classList.remove("hidden");
+  try {
+    const snap = await firebase.database().ref("quiz_challenges/" + code).once("value");
+    const data = snap.val();
+    if (!data) {
+      descEl.textContent = "";
+      errEl.textContent = "Không tìm thấy mã thách đấu này (có thể sai mã).";
+      errEl.classList.remove("hidden");
+      document.getElementById("quiz-challenge-join-start-btn").onclick = null;
+      return;
+    }
+    descEl.textContent = `${data.creatorName || "Ai đó"} thách bạn làm ${((data.questions || []).length)} câu hỏi này. Cùng so điểm nhé!`;
+    renderChallengeLeaderboardInto(leaderboardEl, data.scores);
+    document.getElementById("quiz-challenge-join-start-btn").onclick = () => {
+      if (!currentUser) { showToast("Cần đăng nhập để làm bài thách đấu."); return; }
+      document.getElementById("quiz-challenge-join-overlay").classList.add("hidden");
+      switchTab("quiz");
+      // Thách đấu luôn chơi ở chế độ thường (không nghe) để mọi người cùng điều kiện
+      quiz.listenMode = false;
+      document.querySelectorAll("[data-listenmode]").forEach((b) => b.classList.toggle("active", b.dataset.listenmode !== "on"));
+      document.getElementById("quiz-listen-count-row").classList.add("hidden");
+      beginQuizSession(deserializeQuizQuestions(data.questions), code);
+    };
+  } catch (err) {
+    descEl.textContent = "";
+    errEl.textContent = "Lỗi khi tải: " + (err && err.message ? err.message : "?");
+    errEl.classList.remove("hidden");
+  }
+}
+document.getElementById("quiz-challenge-join-open-btn").addEventListener("click", async () => {
+  const code = await showPrompt("Nhập mã thách đấu (6 ký tự)", "");
+  if (!code) return;
+  openChallengeJoinOverlay(code.trim().toUpperCase());
+});
+document.getElementById("quiz-challenge-join-close").addEventListener("click", () => document.getElementById("quiz-challenge-join-overlay").classList.add("hidden"));
+document.getElementById("quiz-challenge-join-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "quiz-challenge-join-overlay") document.getElementById("quiz-challenge-join-overlay").classList.add("hidden");
+});
+
 function exitQuiz() {
   quiz.running = false;
   clearInterval(quiz.timerHandle);
@@ -4230,7 +4414,12 @@ function exitQuiz() {
 document.getElementById("quiz-exit").addEventListener("click", exitQuiz);
 document.getElementById("quiz-result-exit").addEventListener("click", exitQuiz);
 document.getElementById("quiz-restart").addEventListener("click", () => {
-  document.getElementById("quiz-start-btn").click();
+  if (quiz.challengeCode) {
+    // Thách đấu: chơi lại ĐÚNG bộ câu hỏi đó (không random lại), điểm mới sẽ ghi đè điểm cũ của mình
+    beginQuizSession(quiz.questions, quiz.challengeCode);
+  } else {
+    document.getElementById("quiz-start-btn").click();
+  }
 });
 
 /* ---- Màn hình chờ Quiz: xoay vòng mẹo nhỏ cho đỡ nhàm ---- */
@@ -6435,6 +6624,16 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.35",
+    changes: [
+      "Quizz: tính điểm — mỗi câu đúng 100 điểm + thưởng theo tốc độ trả lời (tối đa +50), cứ 5 câu có 1 câu Boss x2 điểm với đáp án nhiễu khó hơn; điểm hiện ngay trên thanh trên và ở màn kết quả",
+      "Quizz: Thách đấu bạn bè — sau khi làm xong, tạo mã/link mời để bạn bè làm đúng bộ câu hỏi đó, có bảng xếp hạng điểm; hoặc bấm 'Nhập mã thách đấu' để tham gia",
+      "Quizz: Nguồn thêm 'Viết' và chọn được đồng thời Thẻ / Viết / Từ điển, mỗi nguồn có nút chọn danh sách riêng",
+      "Quizz: đổi 'Dạng câu hỏi' thành 'Loại câu hỏi', bỏ chú thích và icon trong 4 nút chọn",
+      "Giao diện: thu nhỏ các nút Tìm kiếm / Kho / Cài đặt trên đầu sidebar để không che tên User",
+    ],
+  },
   {
     version: "2.34",
     changes: [
