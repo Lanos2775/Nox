@@ -8405,23 +8405,27 @@ document.getElementById("global-search-input").addEventListener("input", (e) => 
 /* ============================================================
    INIT
    ============================================================ */
-ensureSelected("flashcard");
-ensureSelected("writing");
-ensureSelected("flashcard", "wrFcSource");
-renderFlashcardTab();
-updateQuizCountSliderMax();
-if (state.reminder.enabled) {
-  startReminderCycle();
-  scheduleReminderAutoOff();
-} else {
-  scheduleReminderAutoOn();
+try {
+  ensureSelected("flashcard");
+  ensureSelected("writing");
+  ensureSelected("flashcard", "wrFcSource");
+  renderFlashcardTab();
+  updateQuizCountSliderMax();
+  if (state.reminder.enabled) {
+    startReminderCycle();
+    scheduleReminderAutoOff();
+  } else {
+    scheduleReminderAutoOn();
+  }
+  initAuthWatcher();
+  loadFeaturesConfig();
+  updateMobilePanelVisibility();
+  startQuizTipRotation();
+  pruneTrash();
+  saveState();
+} catch (err) {
+  console.error("Nox INIT lỗi:", err);
 }
-initAuthWatcher();
-loadFeaturesConfig();
-updateMobilePanelVisibility();
-startQuizTipRotation();
-pruneTrash();
-saveState();
 
 /* ---- Màn hình loading: hiện cố định ~1.3s rồi tự ẩn ---- */
 setTimeout(() => {

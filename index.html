@@ -18,11 +18,9 @@
 <link rel="stylesheet" href="style.css">
 
 <!-- Firebase (đồng bộ dữ liệu giữa các thiết bị) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<!-- Lightweight Charts (TradingView) — dùng để vẽ biểu đồ "Đà học tập" ở tab Thống kê -->
-<script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -35,6 +33,24 @@
     <circle cx="136.4" cy="70.4" r="4" fill="#8b5cf6"/>
   </svg>
   <div class="app-loading-text">Nox</div>
+  <div id="app-loading-rescue" style="display:none;flex-direction:column;align-items:center;gap:10px;margin-top:6px;">
+    <div style="color:#c9c0ea;font-size:13px;">Tải lâu hơn dự kiến…</div>
+    <button id="app-loading-rescue-btn" type="button" style="padding:9px 16px;border:0;border-radius:10px;background:#8b5cf6;color:#fff;font-size:14px;cursor:pointer;">Làm mới &amp; thử lại</button>
+  </div>
+  <script>
+    /* Chống kẹt màn hình loading: độc lập với script.js nên vẫn chạy kể cả khi script.js lỗi/cũ. */
+    setTimeout(function () {
+      var el = document.getElementById("app-loading");
+      if (!el || el.classList.contains("hidden")) return;
+      document.getElementById("app-loading-rescue").style.display = "flex";
+      document.getElementById("app-loading-rescue-btn").onclick = function () {
+        var jobs = [];
+        if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+        if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+        Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
+      };
+    }, 5000);
+  </script>
 </div>
 
 <div class="app-shell">
@@ -1303,6 +1319,6 @@
     });
   }
 </script>
-<script src="script.js"></script>
+<script defer src="script.js"></script>
 </body>
 </html>
