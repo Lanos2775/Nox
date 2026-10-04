@@ -69,6 +69,11 @@
         </span>
       </button>
       <div class="sidebar-header-right">
+        <button class="bell-pill-btn" id="translate-open-btn" title="Dịch nhanh" aria-label="Dịch nhanh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:15px;height:15px;">
+            <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
+          </svg>
+        </button>
         <button class="bell-pill-btn" id="global-search-open" title="Tìm kiếm toàn bộ" aria-label="Tìm kiếm toàn bộ">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:15px;height:15px;">
             <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
@@ -251,16 +256,6 @@
       </div>
 
       <input type="text" id="fc-search" class="text-input fc-inline-search" placeholder="Tìm thẻ ...">
-
-      <div class="quick-translate-bar" id="quick-translate-bar-2">
-        <input type="text" id="qt2-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
-        <button class="qt-swap-btn" id="qt2-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
-        <div class="qt-result-wrap">
-          <div class="qt-box qt-result-box" id="qt2-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
-          <button class="qt-play-btn" id="qt2-play" title="Phát âm từ tiếng Anh">🔊︎</button>
-          <button class="qt-save-btn" id="qt2-save" title="Lưu nhanh vào Từ điển">🔖</button>
-        </div>
-      </div>
     </section>
 
     <!-- ---- Writing main ---- -->
@@ -279,23 +274,13 @@
 
       <div class="wr-quicksave-words hidden" id="wr-quicksave-words"></div>
 
-      <div class="quick-translate-bar hidden" id="quick-translate-bar">
-        <input type="text" id="qt-input" class="qt-box qt-input-box" placeholder="Nhập từ hoặc cụm từ cần dịch ...">
-        <button class="qt-swap-btn" id="qt-dir-toggle" title="Đổi chiều dịch (V → E)">⇄</button>
-        <div class="qt-result-wrap">
-          <div class="qt-box qt-result-box" id="qt-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
-          <button class="qt-play-btn" id="qt-play" title="Phát âm từ tiếng Anh">🔊︎</button>
-          <button class="qt-save-btn" id="qt-save" title="Lưu nhanh vào Từ điển">🔖</button>
-        </div>
-      </div>
-
       <div class="wr-typing-dots-row">
         <span class="wr-typing-dots hidden" id="wr-typing-dots"><span></span><span></span><span></span></span>
       </div>
 
       <div class="nghe-input-bar">
         <input type="text" id="wr-answer-input" class="nghe-answer-input" placeholder="Nhập câu trả lời tiếng Anh ... (Enter để kiểm tra)">
-        <button class="nghe-input-icon-btn" id="wr-translate-toggle-btn" title="Bật/tắt thanh dịch nhanh (xem/đổi phím tắt trong Cài đặt)">⇄</button>
+        <button class="nghe-input-icon-btn" id="wr-translate-toggle-btn" title="Mở/đóng popup dịch nhanh (đổi phím tắt trong Cài đặt)">⇄</button>
         <button class="nghe-input-icon-btn" id="wr-hint-btn" title="Gợi ý từ tiếp theo (xem/đổi phím tắt trong Cài đặt)">?</button>
       </div>
     </section>
@@ -804,22 +789,33 @@
 <!-- ============ TOAST ============ -->
 <div class="toast-container" id="toast-container"></div>
 
-<!-- ============ POPUP: Dịch nhanh ============ -->
-<div class="overlay hidden" id="translate-overlay">
-  <div class="modal-panel small">
-    <div class="popup-header">
-      <span>Dịch nhanh</span>
-      <button class="popup-close" id="translate-close">✕</button>
+<!-- ============ POPUP: Dịch nhanh ============
+     Popup NỔI dùng chung toàn app: không có lớp nền chặn trang, KHÔNG đóng khi bấm ra ngoài
+     (đóng bằng ✕, Esc hoặc phím tắt). Có thể kéo di chuyển ở máy tính. -->
+<div class="overlay translate-overlay hidden" id="translate-overlay">
+  <div class="translate-popup" id="translate-popup" role="dialog" aria-label="Dịch nhanh">
+    <div class="translate-header" id="translate-drag-handle">
+      <span class="translate-title">Dịch nhanh</span>
+      <span class="translate-hotkey" id="translate-hotkey-hint" title="Phím tắt mở/đóng (đổi trong Cài đặt)"></span>
+      <button type="button" class="popup-close" id="translate-close" title="Đóng (Esc hoặc phím tắt)">✕</button>
     </div>
-    <div class="translate-block">
-      <div class="translate-label">Tiếng Việt</div>
-      <div class="translate-text" id="translate-src"></div>
+    <div class="translate-sources" id="translate-sources"></div>
+    <div class="translate-dir-row">
+      <span class="translate-lang" id="translate-lang-from">Tiếng Việt</span>
+      <button type="button" class="qt-swap-btn" id="translate-dir-toggle" title="Đổi chiều dịch">⇄</button>
+      <span class="translate-lang" id="translate-lang-to">Tiếng Anh</span>
     </div>
-    <div class="translate-block">
-      <div class="translate-label">Tiếng Anh</div>
-      <div class="translate-text" id="translate-result">Đang dịch ...</div>
+    <div class="translate-input-wrap">
+      <textarea id="translate-input" class="qt-box qt-input-box translate-input" rows="2" spellcheck="false" placeholder="Nhập hoặc dán tiếng Việt ..."></textarea>
+      <button type="button" class="translate-clear-btn" id="translate-clear" title="Xoá nội dung">✕</button>
     </div>
-    <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="block-btn" style="display:block;text-align:center;margin-top:12px;text-decoration:none;">Mở Google Translate</a>
+    <div class="qt-box qt-result-box translate-result" id="translate-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
+    <div class="translate-actions">
+      <button type="button" class="pill-btn-outline" id="translate-play" title="Phát âm tiếng Anh">🔊︎ Phát âm</button>
+      <button type="button" class="pill-btn-outline" id="translate-save" title="Lưu nhanh vào Từ điển">🔖 Lưu Từ điển</button>
+      <button type="button" class="pill-btn-outline" id="translate-copy" title="Sao chép bản dịch">📋 Sao chép</button>
+    </div>
+    <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="translate-google">Mở Google Translate ↗</a>
   </div>
 </div>
 
@@ -993,6 +989,23 @@
           <input type="checkbox" id="settings-qt-autodetect">
           <span>Tự nhận diện Anh / Việt</span>
         </label>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-qt-follow-sel">
+          <span>Tự lấy chữ vừa bôi đen khi popup đang mở</span>
+        </label>
+        <label class="settings-checkbox-row">
+          <input type="checkbox" id="settings-qt-follow-card">
+          <span>Tự điền thẻ / câu hiện tại khi đổi thẻ, đổi câu</span>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <div class="section-label">Phím tắt (Chung)</div>
+        <div class="settings-keybind-row">
+          <span>Mở/đóng popup dịch nhanh</span>
+          <button type="button" class="keybind-btn" id="settings-keybind-translate" data-action="translateKey">F2</button>
+        </div>
+        <div class="settings-keybind-note">Nên chọn phím F1–F12 hoặc Alt/Ctrl để gọi được cả khi đang gõ chữ. Phím chữ cái chỉ hoạt động khi bạn không đang gõ.</div>
       </div>
 
       <div class="settings-section">
@@ -1000,10 +1013,6 @@
         <div class="settings-keybind-row">
           <span>Dùng gợi ý</span>
           <button type="button" class="keybind-btn" id="settings-keybind-hint" data-action="wrHintKey">Alt trái</button>
-        </div>
-        <div class="settings-keybind-row">
-          <span>Mở/đóng thanh dịch</span>
-          <button type="button" class="keybind-btn" id="settings-keybind-translate" data-action="wrTranslateKey">F2</button>
         </div>
         <div class="settings-keybind-row">
           <span>Đọc câu đúng/gợi ý</span>
