@@ -110,7 +110,10 @@
       </div>
 
       <div class="panel-section">
-        <div class="section-label">Chọn danh sách</div>
+        <div class="fc-switch-row">
+          <button type="button" class="section-label-btn" id="fc-source-toggle" title="Đổi nguồn: danh sách Thẻ hoặc danh sách Từ điển">Danh sách: Thẻ ⇄</button>
+          <button type="button" class="section-label-btn" id="fc-view-toggle" title="Đổi giao diện: Đọc (cả danh sách) hoặc Lật thẻ">Giao diện: Đọc ⇄</button>
+        </div>
         <div class="nghe-item-list list-quickselect-scroll" id="fc-list-quickselect"></div>
       </div>
     </div>
@@ -232,30 +235,42 @@
 
     <!-- ---- Flashcard main ---- -->
     <section class="tab-content" data-content="flashcard">
-      <div class="active-list-bar">
-        <div class="active-list-label" id="fc-active-label">Danh sách: —</div>
-        <button class="list-shuffle-btn" id="fc-shuffle" title="Xáo trộn thứ tự thẻ">⇌</button>
-      </div>
-      <div class="flashcard-stage">
-        <button class="nav-arrow" id="fc-prev" data-no-click-sound>‹</button>
-        <div class="flashcard" id="fc-card">
-          <span class="card-status-pill" id="fc-card-status">Đang học</span>
-          <p class="card-text" id="fc-card-text">Chọn danh sách để bắt đầu</p>
-          <p class="card-hint">Nhấp hoặc nhấn Space để lật thẻ</p>
+
+      <!-- ===== Giao diện 1: LẬT THẺ ===== -->
+      <div class="fc-flip-view hidden" id="fc-flip-view">
+        <div class="flashcard-stage">
+          <button class="nav-arrow" id="fc-prev" data-no-click-sound>‹</button>
+          <div class="flashcard" id="fc-card">
+            <span class="card-status-pill" id="fc-card-status">Đang học</span>
+            <p class="card-text" id="fc-card-text">Chọn danh sách để bắt đầu</p>
+            <p class="card-hint">Nhấp hoặc nhấn Space để lật thẻ</p>
+          </div>
+          <button class="nav-arrow" id="fc-next" data-no-click-sound>›</button>
         </div>
-        <button class="nav-arrow" id="fc-next" data-no-click-sound>›</button>
-      </div>
-      <div class="flashcard-counter" id="fc-counter">0 / 0</div>
-      <div class="flashcard-controls">
-        <button class="status-btn status-difficult" id="fc-mark-difficult">Khó</button>
-        <button class="status-btn status-learning" id="fc-mark-learning">Đang học</button>
-        <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
-        <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
-        <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
-        <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊︎</button>
+        <div class="flashcard-counter" id="fc-counter">0 / 0</div>
+        <div class="flashcard-controls">
+          <button class="status-btn status-difficult" id="fc-mark-difficult">Khó</button>
+          <button class="status-btn status-learning" id="fc-mark-learning">Đang học</button>
+          <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
+          <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
+          <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
+          <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊︎</button>
+          <button class="fc-read-btn" id="fc-shuffle" title="Xáo trộn thứ tự thẻ">⇌</button>
+        </div>
       </div>
 
-      <input type="text" id="fc-search" class="text-input fc-inline-search" placeholder="Tìm thẻ ...">
+      <!-- ===== Giao diện 2: ĐỌC (hiện cả danh sách) ===== -->
+      <div class="fc-read-view" id="fc-read-view">
+        <div class="fc-read-toolbar">
+          <div class="fc-read-count" id="fc-read-count">0 mục</div>
+          <div class="fc-read-chips">
+            <button type="button" class="fc-chip active" data-rfilter="all">Tất cả</button>
+            <button type="button" class="fc-chip" data-rfilter="star">★ Đã đánh dấu <span id="fc-read-star-count">0</span></button>
+            <button type="button" class="fc-chip" id="fc-read-vi-toggle" title="Ẩn/hiện phần nghĩa tiếng Việt (bấm vào từng dòng để xem riêng)">Nghĩa: Hiện</button>
+          </div>
+        </div>
+        <div class="fc-read-list" id="fc-read-list"></div>
+      </div>
     </section>
 
     <!-- ---- Writing main ---- -->
@@ -811,9 +826,9 @@
     </div>
     <div class="qt-box qt-result-box translate-result" id="translate-result" data-placeholder="Bản dịch hiện ở đây ..."></div>
     <div class="translate-actions">
-      <button type="button" class="pill-btn-outline" id="translate-play" title="Phát âm tiếng Anh">🔊︎ Phát âm</button>
-      <button type="button" class="pill-btn-outline" id="translate-save" title="Lưu nhanh vào Từ điển">🔖 Lưu Từ điển</button>
-      <button type="button" class="pill-btn-outline" id="translate-copy" title="Sao chép bản dịch">📋 Sao chép</button>
+      <button type="button" class="pill-btn-outline" id="translate-play" title="Phát âm tiếng Anh">Phát âm</button>
+      <button type="button" class="pill-btn-outline" id="translate-save" title="Lưu nhanh vào Từ điển">Lưu Từ điển</button>
+      <button type="button" class="pill-btn-outline" id="translate-copy" title="Sao chép bản dịch">Sao chép</button>
     </div>
     <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="translate-google">Mở Google Translate ↗</a>
   </div>
@@ -845,20 +860,16 @@
           <button class="theme-dot theme-dot-2" data-level="2" title="Ngả vàng"></button>
           <button class="theme-dot theme-dot-3" data-level="3" title="Hồng"></button>
           <button class="theme-dot theme-dot-4" data-level="4" title="Đen"></button>
-          <button class="theme-dot theme-dot-5" data-level="5" title="Đêm ấm"></button>
-          <button class="theme-dot theme-dot-6" data-level="6" title="Đêm xanh rêu"></button>
           <button class="theme-dot theme-dot-7" data-level="7" title="Xanh biển"></button>
           <button class="theme-dot theme-dot-8" data-level="8" title="Bạc hà"></button>
           <button class="theme-dot theme-dot-9" data-level="9" title="Cam đào"></button>
-          <button class="theme-dot theme-dot-10" data-level="10" title="Tím than"></button>
-          <button class="theme-dot theme-dot-11" data-level="11" title="Đỏ rượu vang"></button>
           <button class="theme-dot theme-dot-12" data-level="12" title="Tử đằng"></button>
-          <button class="theme-dot theme-dot-13" data-level="13" title="Xám khói"></button>
-          <button class="theme-dot theme-dot-14" data-level="14" title="Chanh"></button>
-          <button class="theme-dot theme-dot-15" data-level="15" title="Ngọc lam"></button>
-          <button class="theme-dot theme-dot-16" data-level="16" title="Hồng đất"></button>
-          <button class="theme-dot theme-dot-17" data-level="17" title="Xanh lục rừng"></button>
           <button class="theme-dot theme-dot-18" data-level="18" title="Đất nung"></button>
+        </div>
+        <div class="theme-style-row" id="theme-style-row">
+          <button type="button" class="theme-style-btn theme-style-manga" data-level="19" data-feature="theme_manga" title="Phong cách tranh vẽ manga / anime">Manga</button>
+          <button type="button" class="theme-style-btn theme-style-vangogh" data-level="20" data-feature="theme_vangogh" title="Phong cách Đêm đầy sao của Van Gogh">Đêm sao</button>
+          <button type="button" class="theme-style-btn theme-style-terminal" data-level="21" data-feature="theme_terminal" title="Hacker Terminal / CRT cyberpunk">Terminal</button>
         </div>
       </div>
 

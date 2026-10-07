@@ -75,7 +75,7 @@ function loadState() {
       // migrate from old light/dark boolean theme if present
       parsed.themeLevel = parsed.theme === "dark" ? 4 : 1;
     }
-    if (parsed.themeLevel > 18) parsed.themeLevel = 18;
+    // (mức giao diện đã gỡ được ánh xạ lại trong normThemeLevel khi áp dụng)
     if (parsed.reminder.autoRead === undefined) parsed.reminder.autoRead = false;
     if (parsed.reminder.desktopNotify === undefined) parsed.reminder.desktopNotify = false;
     if (!parsed.reminder.mobileNotify) parsed.reminder.mobileNotify = { enabled: false };
@@ -670,8 +670,8 @@ function updateBrandMinutesQuickview() {
 /* ---- Chỉ đổi màu viền các khung theo dấu của hệ số (không đổi cả theme) ---- */
 function applyMomentumThemeSync() {
   if (!state.settings || !state.settings.momentumThemeSync) {
-    const level = Math.min(18, Math.max(1, Math.round(state.themeLevel || 1)));
-    const palette = THEME_PALETTES[level];
+    const level = normThemeLevel(state.themeLevel || 1);
+    const palette = THEME_PALETTES[themeLockedFor(level) ? THEME_FALLBACK[level] : level];
     document.body.style.setProperty("--border", palette.border);
     return;
   }
@@ -794,16 +794,6 @@ const THEME_PALETTES = {
     text: "#f2f2f5", textMuted: "#9a9aa6", accent: "#9d6bff", accentSoft: "#2c2140",
     learningSoft: "#3a2c12", knownSoft: "#0f2e22", difficultSoft: "#3a1616",
   },
-  5: { // Đêm ấm — tông nâu hổ phách, ít ánh sáng xanh, dịu mắt ban đêm
-    bg: "#1c1611", panel: "#241b14", border: "#4a3823", borderSoft: "#332818",
-    text: "#e8d9c0", textMuted: "#a68f6c", accent: "#e0a458", accentSoft: "#3a2c17",
-    learningSoft: "#3f2f14", knownSoft: "#1f2f1c", difficultSoft: "#3a1f18",
-  },
-  6: { // Đêm xanh rêu — tông xanh rêu trầm, dịu mắt ban đêm
-    bg: "#101815", panel: "#16211d", border: "#2e4038", borderSoft: "#1f2d28",
-    text: "#dce8e2", textMuted: "#84988f", accent: "#5fb894", accentSoft: "#1c2e27",
-    learningSoft: "#332a14", knownSoft: "#173328", difficultSoft: "#301c1c",
-  },
   7: { // Xanh biển
     bg: "#e7f2fb", panel: "#f6fbff", border: "#173247", borderSoft: "#cde3f3",
     text: "#0f2331", textMuted: "#587187", accent: "#2f7dd6", accentSoft: "#d7e9fb",
@@ -819,72 +809,138 @@ const THEME_PALETTES = {
     text: "#38200f", textMuted: "#8a6247", accent: "#e8763a", accentSoft: "#fbe0cc",
     learningSoft: "#fbe3ad", knownSoft: "#dcefd6", difficultSoft: "#f8cfc5",
   },
-  10: { // Tím than — dịu mắt ban đêm
-    bg: "#13111f", panel: "#1b1830", border: "#3a3460", borderSoft: "#26213f",
-    text: "#e6e2fa", textMuted: "#9089b8", accent: "#8b7bff", accentSoft: "#292350",
-    learningSoft: "#382a17", knownSoft: "#152f25", difficultSoft: "#33191f",
-  },
-  11: { // Đỏ rượu vang — dịu mắt ban đêm
-    bg: "#1a0f13", panel: "#241318", border: "#4a1f2a", borderSoft: "#33191f",
-    text: "#f2dfe3", textMuted: "#a67885", accent: "#d1517a", accentSoft: "#3a1c25",
-    learningSoft: "#332414", knownSoft: "#152a22", difficultSoft: "#3a161b",
-  },
   12: { // Tử đằng
     bg: "#f0e9fb", panel: "#f9f5ff", border: "#2e1f47", borderSoft: "#e0d0f5",
     text: "#241536", textMuted: "#6f5c8a", accent: "#8b47d9", accentSoft: "#ead9fb",
     learningSoft: "#fbe6b8", knownSoft: "#d9f0da", difficultSoft: "#fbd7dc",
-  },
-  13: { // Xám khói
-    bg: "#e8eaee", panel: "#f6f7f9", border: "#22262e", borderSoft: "#d2d6dd",
-    text: "#1a1d23", textMuted: "#666e7a", accent: "#5b6b8c", accentSoft: "#dde1e7",
-    learningSoft: "#fbeec4", knownSoft: "#d7f0dd", difficultSoft: "#fbd7d7",
-  },
-  14: { // Chanh
-    bg: "#fbf8dc", panel: "#fffce8", border: "#3a3712", borderSoft: "#eee7ad",
-    text: "#2c2a0d", textMuted: "#7c7640", accent: "#c9a227", accentSoft: "#f5edb0",
-    learningSoft: "#fbe0a0", knownSoft: "#dcefd0", difficultSoft: "#f8d0c5",
-  },
-  15: { // Ngọc lam — dịu mắt ban đêm
-    bg: "#0d1a1a", panel: "#122424", border: "#1f4545", borderSoft: "#193434",
-    text: "#d9f2f0", textMuted: "#7fa8a5", accent: "#2dd4bf", accentSoft: "#123333",
-    learningSoft: "#332b14", knownSoft: "#123322", difficultSoft: "#331a1a",
-  },
-  16: { // Hồng đất — dịu mắt ban đêm
-    bg: "#1c1210", panel: "#261a16", border: "#4a2e22", borderSoft: "#33221b",
-    text: "#f2e0d5", textMuted: "#a68475", accent: "#e07a5f", accentSoft: "#3a2620",
-    learningSoft: "#332715", knownSoft: "#1a2e20", difficultSoft: "#3a1a17",
-  },
-  17: { // Xanh lục rừng — dịu mắt ban đêm
-    bg: "#0e160f", panel: "#152016", border: "#294530", borderSoft: "#1e301f",
-    text: "#dcefdc", textMuted: "#82a086", accent: "#4ade80", accentSoft: "#173319",
-    learningSoft: "#332b14", knownSoft: "#173a24", difficultSoft: "#331a1a",
   },
   18: { // Đất nung — khớp màu trang Ngữ pháp (Eg_notes/grammar.html)
     bg: "#f3dcc7", panel: "#faf1e3", border: "#45566b", borderSoft: "#e3c4a6",
     text: "#45566b", textMuted: "#6b7c8f", accent: "#d4665a", accentSoft: "#ecc9b8",
     learningSoft: "#f5dcae", knownSoft: "#dcefd6", difficultSoft: "#fbd7d2",
   },
+  19: { // Manga — giấy báo + mực đen, điểm nhấn đỏ (phần còn lại do CSS body[data-theme-level="19"])
+    bg: "#f3efe4", panel: "#ffffff", border: "#111111", borderSoft: "#cfc8b8",
+    text: "#111111", textMuted: "#5b5750", accent: "#e63946", accentSoft: "#ffe1de", accentText: "#ffffff",
+    learningSoft: "#fff0a8", knownSoft: "#cdf3dc", difficultSoft: "#ffd0d0",
+  },
+  20: { // Đêm đầy sao (Van Gogh) — xanh cobalt đậm + vàng ánh trăng
+    bg: "#0b1a3f", panel: "#13295c", border: "#7da0e0", borderSoft: "#244391",
+    text: "#f7edc6", textMuted: "#a5bbe8", accent: "#f6c945", accentSoft: "#27458a", accentText: "#10204a",
+    learningSoft: "#4b3f15", knownSoft: "#14473b", difficultSoft: "#4d2232",
+  },
+  21: { // Hacker Terminal / CRT cyberpunk — theo bản mẫu
+    bg: "#0a0e0a", panel: "#0a0e0a", border: "#1a3a1a", borderSoft: "#0f240f",
+    text: "#b8ffb8", textMuted: "#4a7a4a", accent: "#00ff41", accentSoft: "rgba(0,255,65,0.10)", accentText: "#050805",
+    learningSoft: "rgba(255,176,0,0.12)", knownSoft: "rgba(0,255,65,0.10)", difficultSoft: "rgba(255,0,60,0.12)",
+  },
 };
 function cssVarName(key) {
   return "--" + key.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
+/* ---- Giao diện: các mức còn dùng + ánh xạ cho mức đã bị gỡ (dữ liệu cũ / đồng bộ từ máy khác) ---- */
+const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18, 19, 20, 21];
+const THEME_REMOVED_MAP = { 5: 4, 6: 4, 10: 4, 11: 4, 15: 4, 16: 4, 17: 4, 13: 1, 14: 1 };
+function normThemeLevel(level) {
+  level = Math.round(Number(level) || 1);
+  if (THEME_REMOVED_MAP[level]) return THEME_REMOVED_MAP[level];
+  return THEME_VALID_LEVELS.includes(level) ? level : 1;
+}
+/* 3 giao diện phong cách — admin khoá/mở theo cấp tài khoản (Admin > Chức năng) */
+const THEME_FEATURE = { 19: "theme_manga", 20: "theme_vangogh", 21: "theme_terminal" };
+const THEME_FALLBACK = { 19: 1, 20: 4, 21: 4 };
+function themeLockedFor(level) {
+  const key = THEME_FEATURE[level];
+  if (!key) return false;
+  try { return isFeatureLocked(key); } catch (e) { return false; } // chưa khởi tạo xong -> coi như chưa khoá
+}
+const THEME_FONT_URLS = {
+  19: "https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap",
+  20: "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,500..800;1,500..800&display=swap",
+  21: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+};
+function loadThemeFont(level) {
+  const url = THEME_FONT_URLS[level];
+  if (!url || document.getElementById("theme-font-" + level)) return;
+  const link = document.createElement("link");
+  link.id = "theme-font-" + level;
+  link.rel = "stylesheet";
+  link.href = url;
+  document.head.appendChild(link);
+}
+// Màn hình loading kiểu "hacking" cho giao diện Terminal (dòng ngẫu nhiên mỗi ~240ms, giữ 22 dòng gần nhất)
+function termBootFx() {
+  const host = document.getElementById("app-loading");
+  if (!host || host.classList.contains("hidden") || document.getElementById("term-boot-log")) return;
+  const pre = document.createElement("pre");
+  pre.id = "term-boot-log";
+  host.appendChild(pre);
+  const lines = [];
+  const hh = () => new Date().toTimeString().slice(0, 8);
+  const hex = (n) => Array.from({ length: n }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()).join(" ");
+  const gens = [
+    () => `[${hh()}] > ACCESSING NODE ${Math.floor(Math.random() * 999)}...`,
+    () => `[${hh()}]   0x${hex(8)}`,
+    () => { const p = Math.floor(Math.random() * 100); const f = Math.round(p / 100 * 16); return `[${hh()}] ${"█".repeat(f)}${"░".repeat(16 - f)} ${p}%`; },
+    () => `[${hh()}] !! BREACH INITIATED`,
+    () => `[${hh()}] #! ANOMALY :: ${hex(3)}`,
+    () => "",
+  ];
+  lines.push(`[${hh()}] > NOX :: BOOT SEQUENCE`);
+  const t = setInterval(() => {
+    if (host.classList.contains("hidden") || !document.body.contains(pre)) { clearInterval(t); pre.remove(); return; }
+    lines.push(gens[Math.floor(Math.random() * gens.length)]());
+    if (lines.length > 22) lines.shift();
+    pre.textContent = lines.join("\n");
+  }, 240);
+  pre.textContent = lines.join("\n");
+}
 function applyThemeLevel(level, persist = true) {
-  level = Math.min(18, Math.max(1, Math.round(level)));
-  const palette = THEME_PALETTES[level];
-  Object.keys(palette).forEach((key) => {
-    document.body.style.setProperty(cssVarName(key), palette[key]);
-  });
-  document.body.dataset.themeLevel = level;
-  document.querySelectorAll(".theme-dot").forEach((d) => d.classList.toggle("active", parseInt(d.dataset.level, 10) === level));
+  level = normThemeLevel(level);
   if (persist) {
+    if (themeLockedFor(level)) {
+      showToast("Giao diện này đã bị khoá với cấp tài khoản của bạn.");
+      return;
+    }
     state.themeLevel = level;
     saveState();
   }
+  // Hiển thị: nếu giao diện đã lưu đang bị khoá thì tạm dùng giao diện thay thế (không ghi đè lựa chọn đã lưu)
+  const shown = themeLockedFor(level) ? THEME_FALLBACK[level] : level;
+  const palette = THEME_PALETTES[shown];
+  // Xoá mọi biến màu do giao diện trước đặt (vd --accent-text của Terminal) trước khi đặt biến mới
+  const allKeys = new Set();
+  Object.values(THEME_PALETTES).forEach((p) => Object.keys(p).forEach((k) => allKeys.add(k)));
+  allKeys.forEach((key) => document.body.style.removeProperty(cssVarName(key)));
+  Object.keys(palette).forEach((key) => {
+    document.body.style.setProperty(cssVarName(key), palette[key]);
+  });
+  document.body.dataset.themeLevel = shown;
+  loadThemeFont(shown);
+  document.querySelectorAll(".theme-dot, .theme-style-btn").forEach((d) => d.classList.toggle("active", parseInt(d.dataset.level, 10) === shown));
+  applyThemeLocks();
 }
-document.querySelectorAll(".theme-dot").forEach((dot) => {
+// Đánh dấu nút giao diện bị khoá (gọi lại khi tải xong cấu hình / đổi tài khoản)
+function applyThemeLocks() {
+  document.querySelectorAll(".theme-style-btn").forEach((btn) => {
+    const lvl = parseInt(btn.dataset.level, 10);
+    const locked = themeLockedFor(lvl);
+    btn.classList.toggle("locked", locked);
+    btn.setAttribute("aria-disabled", locked ? "true" : "false");
+    btn.dataset.lockLabel = locked ? "khoá" : "";
+  });
+}
+function refreshThemeAfterLockChange() {
+  applyThemeLocks();
+  const saved = normThemeLevel(state.themeLevel || 1);
+  const shouldShow = themeLockedFor(saved) ? THEME_FALLBACK[saved] : saved;
+  if (parseInt(document.body.dataset.themeLevel, 10) !== shouldShow) applyThemeLevel(saved, false);
+}
+document.querySelectorAll(".theme-dot, .theme-style-btn").forEach((dot) => {
   dot.addEventListener("click", () => applyThemeLevel(parseInt(dot.dataset.level, 10)));
 });
-applyThemeLevel(Math.min(18, state.themeLevel || 1), false);
+applyThemeLevel(state.themeLevel || 1, false);
+if (document.body.dataset.themeLevel === "21") termBootFx();
 
 /* ============================================================
    LIST PICKER POPUP (used by Thẻ / Viết / Nghe "Chọn danh sách")
@@ -1119,7 +1175,9 @@ function showUndoToast(message, restoreFn, duration = 6000) {
    ============================================================ */
 const fc = {
   filter: "all",
-  search: "",
+  sourceCat: "flashcard", // "flashcard" (Thẻ) hoặc "dictionary" (Từ điển) — nguồn danh sách của tab Thẻ
+  view: "read",           // "read" (đọc cả danh sách) hoặc "flip" (lật thẻ). Mặc định: Thẻ→đọc, Từ điển→lật thẻ
+  readFilter: "all",      // "all" | "star" — lọc ở giao diện đọc
   queue: [],
   index: 0,
   direction: "e-v", // e-v = show English first, v-e = show Vietnamese first
@@ -1133,14 +1191,16 @@ function statusFromFilter(f) {
   return f; // "all", "known", "difficult"
 }
 
+// Khoá lưu danh sách đang chọn: Thẻ dùng state.selected.flashcard; Từ điển dùng
+// khoá riêng (state.selected.fcDictSource) để không đụng tới lựa chọn trong Kho.
+function fcSelKey() {
+  return fc.sourceCat === "dictionary" ? "fcDictSource" : "flashcard";
+}
 function fcCurrentItems() {
-  ensureSelected("flashcard");
-  let items = itemsFromLists("flashcard", state.selected.flashcard);
+  const key = fcSelKey();
+  ensureSelected(fc.sourceCat, key);
+  let items = itemsFromLists(fc.sourceCat, state.selected[key]);
   if (fc.filter !== "all") items = items.filter((i) => i.status === statusFromFilter(fc.filter));
-  if (fc.search.trim()) {
-    const q = fc.search.trim().toLowerCase();
-    items = items.filter((i) => i.en.toLowerCase().includes(q) || i.vi.toLowerCase().includes(q));
-  }
   return items;
 }
 
@@ -1152,28 +1212,158 @@ function rebuildFcQueue(keepIndex) {
 }
 
 function renderFlashcardTab() {
-  ensureSelected("flashcard");
-  const lists = getCategory("flashcard").filter((l) => state.selected.flashcard.includes(l.id));
-  document.getElementById("fc-active-label").textContent = "Danh sách: " + (lists.map((l) => l.name).join(", ") || "—");
-  renderListQuickSelect("flashcard", "fc-list-quickselect", renderFlashcardTab);
+  const key = fcSelKey();
+  ensureSelected(fc.sourceCat, key);
+  renderListQuickSelect(fc.sourceCat, "fc-list-quickselect", renderFlashcardTab, false, key);
 
-  const all = itemsFromLists("flashcard", state.selected.flashcard);
+  const all = itemsFromLists(fc.sourceCat, state.selected[key]);
   document.getElementById("fc-stat-total").textContent = all.length;
   document.getElementById("fc-stat-learning").textContent = all.filter((i) => i.status === "new").length;
   document.getElementById("fc-stat-known").textContent = all.filter((i) => i.status === "known").length;
   document.getElementById("fc-stat-difficult").textContent = all.filter((i) => i.status === "difficult").length;
 
-  rebuildFcQueue(true);
-  renderFcCard();
+  document.getElementById("fc-source-toggle").textContent = "Danh sách: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ") + " ⇄";
+  document.getElementById("fc-view-toggle").textContent = "Giao diện: " + (fc.view === "read" ? "Đọc" : "Lật thẻ") + " ⇄";
+  fcApplyView(true);
+}
+
+// Hiện đúng giao diện (đọc / lật thẻ) và vẽ lại nội dung của nó.
+function fcApplyView(keepIndex) {
+  const flip = fc.view === "flip";
+  document.getElementById("fc-flip-view").classList.toggle("hidden", !flip);
+  document.getElementById("fc-read-view").classList.toggle("hidden", flip);
+  if (flip) {
+    rebuildFcQueue(!!keepIndex);
+    renderFcCard();
+  } else {
+    // Rời giao diện lật thẻ: tắt auto play + đọc tự động để không chạy ngầm
+    if (fc.autoPlay) {
+      fc.autoPlay = false;
+      document.getElementById("fc-autoplay-toggle").classList.remove("active");
+    }
+    clearFcAutoPlayTimers();
+    try { speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    renderFcRead();
+  }
 }
 
 function fcItemById(id) {
-  for (const l of getCategory("flashcard")) {
+  for (const l of getCategory(fc.sourceCat)) {
     const found = l.items.find((i) => i.id === id);
     if (found) return found;
   }
   return null;
 }
+
+/* ============================================================
+   GIAO DIỆN ĐỌC — hiện cả danh sách như một trang tài liệu.
+   Đánh dấu ★ câu hay (item.star) rồi lọc "Đã đánh dấu" để xem lại nhanh.
+   ============================================================ */
+function fcReadItems() {
+  let items = fcCurrentItems();
+  if (fc.readFilter === "star") items = items.filter((i) => i.star);
+  return items;
+}
+function fcReadRowHtml(item, n) {
+  const st = item.status === "known" ? " st-known" : item.status === "difficult" ? " st-difficult" : "";
+  const meta = [item.ipa ? `<span class="fc-read-ipa">${escapeHtml(item.ipa)}</span>` : "", item.pos ? `<span class="fc-read-pos">${escapeHtml(item.pos)}</span>` : ""].filter(Boolean).join(" ");
+  const en = escapeHtml(String(item.en || "").split("|")[0].trim());
+  return `<div class="fc-read-row${st}${item.star ? " starred" : ""}" data-id="${escapeHtml(item.id)}">
+    <span class="fc-read-num">${n}</span>
+    <div class="fc-read-body">
+      <div class="fc-read-en">${en}${meta ? " " + meta : ""}</div>
+      <div class="fc-read-vi">${escapeHtml(item.vi || "")}</div>
+    </div>
+    <div class="fc-read-actions">
+      <button type="button" class="fc-read-act fc-read-speak" title="Đọc to" aria-label="Đọc to">🔊︎</button>
+      <button type="button" class="fc-read-act fc-read-star" title="Đánh dấu câu hay" aria-label="Đánh dấu">${item.star ? "★" : "☆"}</button>
+    </div>
+  </div>`;
+}
+function fcUpdateReadCounts() {
+  const base = fcCurrentItems();
+  const stars = base.filter((i) => i.star).length;
+  document.getElementById("fc-read-star-count").textContent = stars;
+  document.getElementById("fc-read-count").textContent =
+    (fc.readFilter === "star" ? stars : base.length) + " mục";
+}
+function renderFcRead() {
+  const box = document.getElementById("fc-read-list");
+  const hideVi = !!(state.settings && state.settings.fcReadHideVi);
+  box.classList.toggle("hide-vi", hideVi);
+  document.getElementById("fc-read-vi-toggle").textContent = "Nghĩa: " + (hideVi ? "Ẩn" : "Hiện");
+  document.getElementById("fc-read-vi-toggle").classList.toggle("active", hideVi);
+  document.querySelectorAll("[data-rfilter]").forEach((b) => b.classList.toggle("active", b.dataset.rfilter === fc.readFilter));
+
+  const items = fcReadItems();
+  fcUpdateReadCounts();
+  if (!items.length) {
+    const msg = fc.readFilter === "star"
+      ? "Chưa có mục nào được đánh dấu ★ — bấm ☆ ở bên phải mỗi dòng để lưu câu hay."
+      : "Không có mục nào. Hãy chọn danh sách khác hoặc thêm nội dung trong Kho.";
+    box.innerHTML = `<div class="wh-preview-empty">${msg}</div>`;
+    return;
+  }
+  box.innerHTML = items.map((it, i) => fcReadRowHtml(it, i + 1)).join("");
+}
+document.getElementById("fc-read-list").addEventListener("click", (e) => {
+  const row = e.target.closest(".fc-read-row");
+  if (!row) return;
+  const item = fcItemById(row.dataset.id);
+  if (!item) return;
+  if (e.target.closest(".fc-read-speak")) {
+    playAudio(String(item.en || "").split("|")[0].trim(), "en-US");
+    return;
+  }
+  if (e.target.closest(".fc-read-star")) {
+    const wasStar = !!item.star;
+    item.star = !wasStar;
+    if (!item.star) delete item.star;
+    saveState();
+    if (fc.readFilter === "star" && wasStar) {
+      row.remove();
+      fcUpdateReadCounts();
+      if (!document.querySelector("#fc-read-list .fc-read-row")) renderFcRead();
+      showUndoToast("Đã bỏ đánh dấu.", () => { item.star = true; saveState(); renderFcRead(); });
+    } else {
+      row.classList.toggle("starred", !!item.star);
+      row.querySelector(".fc-read-star").textContent = item.star ? "★" : "☆";
+      fcUpdateReadCounts();
+    }
+    return;
+  }
+  // Bấm vào dòng khi đang ẩn nghĩa: hiện nghĩa của riêng dòng đó
+  if (document.getElementById("fc-read-list").classList.contains("hide-vi") && !window.getSelection().toString()) {
+    row.classList.toggle("reveal");
+  }
+});
+document.querySelectorAll("[data-rfilter]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    fc.readFilter = btn.dataset.rfilter;
+    renderFcRead();
+  });
+});
+document.getElementById("fc-read-vi-toggle").addEventListener("click", () => {
+  state.settings.fcReadHideVi = !state.settings.fcReadHideVi;
+  saveState();
+  renderFcRead();
+});
+
+// Nút bên bảng điều khiển: đổi nguồn (Thẻ ⇄ Từ điển) và đổi giao diện (Đọc ⇄ Lật thẻ)
+document.getElementById("fc-source-toggle").addEventListener("click", () => {
+  fc.sourceCat = fc.sourceCat === "dictionary" ? "flashcard" : "dictionary";
+  // Mặc định: Từ điển → lật thẻ, Thẻ → đọc
+  fc.view = fc.sourceCat === "dictionary" ? "flip" : "read";
+  fc.index = 0;
+  fc.showingBack = false;
+  fc.readFilter = "all";
+  renderFlashcardTab();
+});
+document.getElementById("fc-view-toggle").addEventListener("click", () => {
+  fc.view = fc.view === "read" ? "flip" : "read";
+  fc.showingBack = false;
+  renderFlashcardTab();
+});
 
 function renderFcCard() {
   const total = fc.queue.length;
@@ -1199,7 +1389,9 @@ function renderFcCard() {
   else showEnglishSide = fc.showingBack;
 
   textEl.textContent = showEnglishSide ? item.en : item.vi;
-  hintEl.textContent = "";
+  hintEl.textContent = (showEnglishSide && fc.sourceCat === "dictionary")
+    ? [item.ipa, item.pos].filter(Boolean).join("  ·  ")
+    : "";
 
   statusPill.textContent = statusLabel("flashcard", item.status);
   statusPill.className = "card-status-pill" + (item.status === "known" ? " known" : item.status === "difficult" ? " difficult" : "");
@@ -1227,7 +1419,7 @@ function fcFlipDurationMs() {
 }
 function fcAutoPlayCycle() {
   clearFcAutoPlayTimers();
-  if (!fc.autoPlay || !fc.queue.length || !flashcardTabVisible()) return;
+  if (!fc.autoPlay || fc.view !== "flip" || !fc.queue.length || !flashcardTabVisible()) return;
   const item = fcItemById(fc.queue[fc.index]);
   if (!item) return;
 
@@ -1486,7 +1678,7 @@ function flashcardTabVisible() {
   return el && !el.classList.contains("hidden");
 }
 document.addEventListener("keydown", (e) => {
-  if (!flashcardTabVisible() || isTypingTarget() || anyOverlayOpen()) return;
+  if (!flashcardTabVisible() || fc.view !== "flip" || isTypingTarget() || anyOverlayOpen()) return;
   if (e.code === "Space") {
     e.preventDefault();
     flipFcCard();
@@ -1551,14 +1743,9 @@ document.querySelectorAll('[data-filter]').forEach((btn) => {
     document.querySelectorAll('[data-filter]').forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     fc.filter = btn.dataset.filter;
-    rebuildFcQueue(false);
-    renderFcCard();
+    fc.index = 0;
+    fcApplyView(false);
   });
-});
-document.getElementById("fc-search").addEventListener("input", (e) => {
-  fc.search = e.target.value;
-  rebuildFcQueue(false);
-  renderFcCard();
 });
 document.getElementById("fc-shuffle").addEventListener("click", () => {
   fc.queue = shuffleArr(fc.queue);
@@ -3111,7 +3298,7 @@ function tpGatherSources() {
   if (sel) out.push({ id: "sel", label: "Chữ đang bôi đen", text: sel });
   else if (tp.open && tp.selMemory) out.push({ id: "sel", label: "Chữ vừa bôi đen", text: tp.selMemory });
   const tab = tpCurrentTab();
-  if (tab === "flashcard") {
+  if (tab === "flashcard" && fc.view === "flip") {
     const item = fc.queue.length ? fcItemById(fc.queue[Math.min(fc.index, fc.queue.length - 1)]) : null;
     if (item) {
       const front = fc.direction === "e-v" ? item.en : item.vi;
@@ -7134,16 +7321,25 @@ document.querySelectorAll("#wh-sort-menu [data-sort]").forEach((btn) => {
 /* ============================================================
    CHỨC NĂNG — khoá/mở theo vai trò (Admin Panel > tab Chức năng)
    ============================================================ */
-const FEATURE_KEYS = ["grammar", "reminder"];
-const FEATURE_LABELS = { grammar: "Tài liệu ngữ pháp", reminder: "Nhắc từ" };
+const FEATURE_KEYS = ["grammar", "reminder", "theme_manga", "theme_vangogh", "theme_terminal"];
+const FEATURE_LABELS = {
+  grammar: "Tài liệu ngữ pháp", reminder: "Nhắc từ",
+  theme_manga: "Giao diện Manga", theme_vangogh: "Giao diện Đêm đầy sao (Van Gogh)", theme_terminal: "Giao diện Hacker Terminal",
+};
 const FEATURE_DESCS = {
   grammar: "Khoá/mở cùng lúc: tab Ngữ pháp và nút “Mở tài liệu ngữ pháp” (grammar.html) trong Cài đặt.",
   reminder: "Popup nhắc từ định kỳ (Cài đặt > Nhắc từ).",
+  theme_manga: "Giao diện phong cách tranh vẽ manga / anime (Cài đặt > Giao diện). Khoá cấp nào thì cấp đó tự quay về giao diện thường.",
+  theme_vangogh: "Giao diện tranh Đêm đầy sao của Vincent van Gogh (Cài đặt > Giao diện).",
+  theme_terminal: "Giao diện Hacker Terminal / CRT cyberpunk (Cài đặt > Giao diện).",
 };
 let featuresConfig = null; // { grammar: {guest,free,premium,admin}, reminder: {...} }
 function defaultFeaturesConfig() {
   const allOn = { guest: true, free: true, premium: true, admin: true };
-  return { grammar: { ...allOn }, reminder: { ...allOn } };
+  return {
+    grammar: { ...allOn }, reminder: { ...allOn },
+    theme_manga: { ...allOn }, theme_vangogh: { ...allOn }, theme_terminal: { ...allOn },
+  };
 }
 function isFeatureLocked(key) {
   if (accountRole === "admin") return false; // admin luôn full quyền
@@ -7154,6 +7350,7 @@ function loadFeaturesConfig() {
   initFirebaseApp();
   firebase.database().ref("config/features").on("value", (snap) => {
     featuresConfig = { ...defaultFeaturesConfig(), ...(snap.val() || {}) };
+    refreshThemeAfterLockChange();
     renderCurrentTab();
     if (!document.getElementById("admin-pane-features").classList.contains("hidden")) renderAdminFeaturesTab();
   });
@@ -7177,6 +7374,7 @@ function applyGrammarLock() {
 
 function refreshAccountUI() {
   applyGrammarLock();
+  refreshThemeAfterLockChange();
   const avatar = document.getElementById("account-avatar");
   const nameEl = document.getElementById("account-brand-name");
   const roleEl = document.getElementById("account-brand-role");
