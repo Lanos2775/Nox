@@ -7284,12 +7284,6 @@ function toggleGlobalReminder() {
 document.getElementById("settings-reminder-quick-toggle").addEventListener("change", toggleGlobalReminder);
 document.getElementById("settings-reminder-quick-toggle").checked = state.reminder.enabled;
 
-document.getElementById("grammar-open-btn").addEventListener("click", (e) => {
-  if (isFeatureLocked("grammar")) {
-    e.preventDefault();
-    showToast(`Tài liệu Ngữ pháp đã bị khoá với cấp tài khoản (${roleLabel(accountRole)}) của bạn.`);
-  }
-});
 
 /* ============================================================
    MOBILE — TỰ ẨN BẢNG ĐIỀU KHIỂN
