@@ -16,6 +16,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="theme-sonthuy.css">
+<link rel="stylesheet" href="theme-kiemkhi.css">
 
 <!-- Firebase (đồng bộ dữ liệu giữa các thiết bị) -->
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -184,10 +186,10 @@
           <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách">🗑</button>
         </div>
         <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
-        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">🖨️ Xuất Worksheet (in/PDF)</button>
+        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">Xuất Worksheet (in/PDF)</button>
         <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">⭱ Đăng lên Thư viện</button>
-        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">🔗 Chia sẻ riêng tư</button>
-        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">🔑 Nhập từ mã chia sẻ</button>
+        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">Chia sẻ riêng tư</button>
+        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">Nhập từ mã chia sẻ</button>
       </div>
       <div id="wh-library-sidebar-section" class="hidden">
         <div class="section-label">Loại nội dung</div>
@@ -323,7 +325,7 @@
         <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
         <button class="wh-cat-btn" data-wh-cat="library" id="wh-cat-library-btn">Thư viện</button>
         <button class="wh-cat-btn" data-wh-cat="stats" id="wh-cat-stats-btn">Thống kê</button>
-        <button class="wh-cat-btn" data-wh-cat="trash" id="wh-cat-trash-btn">🗑 Thùng rác</button>
+        <button class="wh-cat-btn" data-wh-cat="trash" id="wh-cat-trash-btn">Thùng rác</button>
         <button class="wh-cat-btn hidden" data-wh-cat="admin" id="wh-cat-admin-btn">Admin</button>
       </div>
 
@@ -331,9 +333,9 @@
       <div class="wh-tag-filter-row hidden" id="wh-tag-filter-row"></div>
       <div class="wh-bulk-bar hidden" id="wh-bulk-bar">
         <span id="wh-bulk-count">Đã chọn 0 mục</span>
-        <button class="pill-btn-outline" id="wh-bulk-tag">🏷️ Gắn thẻ</button>
+        <button class="pill-btn-outline" id="wh-bulk-tag">Gắn thẻ</button>
         <button class="pill-btn-outline" id="wh-bulk-move">⇄ Chuyển danh sách</button>
-        <button class="pill-btn-outline" id="wh-bulk-delete">🗑 Xoá</button>
+        <button class="pill-btn-outline" id="wh-bulk-delete">Xoá</button>
         <button class="pill-btn-outline" id="wh-bulk-cancel">Bỏ chọn</button>
       </div>
 
@@ -390,7 +392,7 @@
               <button type="button" class="auth-subtab-btn" data-admin-tab="log">Nhật ký</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
-              <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">🔒 Khoá</button>
+              <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">Khoá</button>
             </div>
             <input type="search" class="text-input" id="admin-users-search" placeholder="Tìm user theo tên hoặc email..." autocomplete="off" spellcheck="false">
             <div class="admin-pane" id="admin-pane-users"></div>
@@ -398,7 +400,7 @@
             <div class="admin-pane hidden" id="admin-pane-log"></div>
             <div class="admin-pane hidden" id="admin-pane-database">
               <div id="admin-db-info" class="wh-preview-empty"></div>
-              <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
+              <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">Đổi database (dán config Firebase)</button>
               <div class="account-info-row">
                 <span>Giới hạn số tài khoản đăng ký</span>
                 <input type="number" class="text-input" id="admin-reg-cap-input" style="max-width:100px;" min="0" placeholder="Không giới hạn">
@@ -460,8 +462,8 @@
         <div class="wh-toolbar" id="wh-toolbar">
           <div class="wh-toolbar-right">
             <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
-            <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
-            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊︎ Đọc tự động</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">Nhắc từ</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">Đọc tự động</button>
             <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
             <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
             <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
@@ -674,8 +676,8 @@
     <p class="wh-preview-empty" id="lib-detail-note" style="margin:8px 0;"></p>
     <div class="lib-detail-preview" id="lib-detail-preview"></div>
     <div class="lib-detail-actions-row">
-      <button class="pill-btn-outline lib-like-btn" id="lib-detail-like-btn">🤍 <span id="lib-detail-like-count">0</span></button>
-      <button class="pill-btn-outline" id="lib-detail-report-btn">🚩 Báo cáo</button>
+      <button class="pill-btn-outline lib-like-btn" id="lib-detail-like-btn">♥ <span id="lib-detail-like-count">0</span></button>
+      <button class="pill-btn-outline" id="lib-detail-report-btn">Báo cáo</button>
     </div>
     <button class="block-btn primary" id="lib-detail-download-btn" style="margin-top:12px;">Tải về Kho</button>
   </div>
@@ -849,11 +851,6 @@
       </div>
 
       <div class="settings-section">
-        <div class="section-label">Ngữ pháp</div>
-        <a class="pill-btn-outline" id="grammar-open-btn" href="./grammar.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center;">📖 Mở tài liệu ngữ pháp</a>
-      </div>
-
-      <div class="settings-section">
         <div class="section-label">Giao diện</div>
         <div class="theme-level-control" id="theme-level-control" title="Màu giao diện">
           <button class="theme-dot theme-dot-1" data-level="1" title="Trắng"></button>
@@ -866,10 +863,8 @@
           <button class="theme-dot theme-dot-12" data-level="12" title="Tử đằng"></button>
           <button class="theme-dot theme-dot-18" data-level="18" title="Đất nung"></button>
         </div>
-        <div class="theme-style-row" id="theme-style-row">
-          <button type="button" class="theme-style-btn theme-style-manga" data-level="19" data-feature="theme_manga" title="Phong cách tranh vẽ manga / anime">Manga</button>
-          <button type="button" class="theme-style-btn theme-style-vangogh" data-level="20" data-feature="theme_vangogh" title="Phong cách Đêm đầy sao của Van Gogh">Đêm sao</button>
-          <button type="button" class="theme-style-btn theme-style-terminal" data-level="21" data-feature="theme_terminal" title="Hacker Terminal / CRT cyberpunk">Terminal</button>
+        <div class="theme-special-btn-wrap" style="margin-top: 8px;">
+          <button type="button" class="pill-btn-outline" id="special-theme-open-btn" style="width:100%;">Thêm giao diện đặc biệt...</button>
         </div>
       </div>
 
@@ -1079,11 +1074,28 @@
         <div class="section-label">Sao lưu dữ liệu</div>
         <p class="wh-preview-empty" style="margin:0 0 8px;">Xuất toàn bộ danh sách/tiến độ học ra 1 file JSON để lưu dự phòng, hoặc nhập lại từ file đã xuất trước đó.</p>
         <div class="btn-row-2">
-          <button class="pill-btn-outline" id="settings-export-backup-btn">⬇️ Xuất dữ liệu</button>
-          <button class="pill-btn-outline" id="settings-import-backup-btn">⬆️ Nhập dữ liệu</button>
+          <button class="pill-btn-outline" id="settings-export-backup-btn">⭳ Xuất dữ liệu</button>
+          <button class="pill-btn-outline" id="settings-import-backup-btn">⭱ Nhập dữ liệu</button>
         </div>
         <input type="file" id="settings-import-backup-input" accept="application/json" class="hidden">
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ POPUP: Chọn theme đặc biệt ============ -->
+<div class="overlay hidden" id="special-theme-picker-overlay">
+  <div class="modal-panel" role="dialog" aria-label="Chọn giao diện đặc biệt">
+    <div class="popup-header">
+      <span style="font-weight:700;">Giao diện đặc biệt</span>
+      <button class="popup-close" id="special-theme-close">✕</button>
+    </div>
+    <div class="theme-style-row" id="theme-style-row" style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button type="button" class="theme-style-btn theme-style-manga" data-level="19" data-feature="theme_manga" title="Phong cách tranh vẽ manga / anime">Manga</button>
+      <button type="button" class="theme-style-btn theme-style-vangogh" data-level="20" data-feature="theme_vangogh" title="Phong cách Đêm đầy sao của Van Gogh">Đêm sao</button>
+      <button type="button" class="theme-style-btn theme-style-terminal" data-level="21" data-feature="theme_terminal" title="Hacker Terminal / CRT cyberpunk">Terminal</button>
+      <button type="button" class="theme-style-btn theme-style-sonthuy" data-level="22" data-feature="theme_sonthuy" title="Phong cách thủy mặc sơn thủy — tĩnh mịch">Sơn Thủy</button>
+      <button type="button" class="theme-style-btn theme-style-kiemkhi" data-level="23" data-feature="theme_kiemkhi" title="Phong cách tu tiên — kiếm khí, linh khí">Kiếm Khí</button>
     </div>
   </div>
 </div>
@@ -1139,7 +1151,7 @@
 
 <!-- ============ BANNER: Có bản cập nhật mới ============ -->
 <div class="sw-update-banner hidden" id="sw-update-banner">
-  <span>🔄 Đã có bản cập nhật mới cho Nox.</span>
+  <span>Đã có bản cập nhật mới cho Nox.</span>
   <button class="pill-btn primary" id="sw-update-reload-btn">Tải lại để cập nhật</button>
 </div>
 

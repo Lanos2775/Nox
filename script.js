@@ -834,21 +834,31 @@ const THEME_PALETTES = {
     text: "#b8ffb8", textMuted: "#4a7a4a", accent: "#00ff41", accentSoft: "rgba(0,255,65,0.10)", accentText: "#050805",
     learningSoft: "rgba(255,176,0,0.12)", knownSoft: "rgba(0,255,65,0.10)", difficultSoft: "rgba(255,0,60,0.12)",
   },
+  22: { // Sơn Thủy — Mực tàu, giấy xuyến, rêu phong
+    bg: "#e9e5d9", panel: "#f2f0e6", border: "#2d4a4a", borderSoft: "#b8b2a1",
+    text: "#202221", textMuted: "#5e6963", accent: "#b8860b", accentSoft: "#d9d0b8", accentText: "#ffffff",
+    learningSoft: "#d9d0b8", knownSoft: "#c2d1c6", difficultSoft: "#d4a9a2",
+  },
+  23: { // Kiếm Khí — Ngọc bích, lam sẫm, kim loại
+    bg: "#0a1820", panel: "#0f232e", border: "#4ec9d9", borderSoft: "#1d4454",
+    text: "#e0f2f7", textMuted: "#88b4c4", accent: "#4ec9d9", accentSoft: "#16323e", accentText: "#051117",
+    learningSoft: "#4d4121", knownSoft: "#1c4044", difficultSoft: "#542028",
+  },
 };
 function cssVarName(key) {
   return "--" + key.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
 /* ---- Giao diện: các mức còn dùng + ánh xạ cho mức đã bị gỡ (dữ liệu cũ / đồng bộ từ máy khác) ---- */
-const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18, 19, 20, 21];
+const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18, 19, 20, 21, 22, 23];
 const THEME_REMOVED_MAP = { 5: 4, 6: 4, 10: 4, 11: 4, 15: 4, 16: 4, 17: 4, 13: 1, 14: 1 };
 function normThemeLevel(level) {
   level = Math.round(Number(level) || 1);
   if (THEME_REMOVED_MAP[level]) return THEME_REMOVED_MAP[level];
   return THEME_VALID_LEVELS.includes(level) ? level : 1;
 }
-/* 3 giao diện phong cách — admin khoá/mở theo cấp tài khoản (Admin > Chức năng) */
-const THEME_FEATURE = { 19: "theme_manga", 20: "theme_vangogh", 21: "theme_terminal" };
-const THEME_FALLBACK = { 19: 1, 20: 4, 21: 4 };
+/* Các giao diện phong cách — admin khoá/mở theo cấp tài khoản (Admin > Chức năng) */
+const THEME_FEATURE = { 19: "theme_manga", 20: "theme_vangogh", 21: "theme_terminal", 22: "theme_sonthuy", 23: "theme_kiemkhi" };
+const THEME_FALLBACK = { 19: 1, 20: 4, 21: 4, 22: 1, 23: 4 };
 function themeLockedFor(level) {
   const key = THEME_FEATURE[level];
   if (!key) return false;
@@ -858,6 +868,8 @@ const THEME_FONT_URLS = {
   19: "https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap",
   20: "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,500..800;1,500..800&display=swap",
   21: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
+  22: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500..800;1,500..800&family=Noto+Serif:ital,wght@0,400..700;1,400..700&display=swap",
+  23: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Noto+Serif:ital,wght@0,400..700;1,400..700&display=swap",
 };
 function loadThemeFont(level) {
   const url = THEME_FONT_URLS[level];
@@ -6180,6 +6192,23 @@ document.getElementById("settings-import-backup-input").addEventListener("change
 });
 
 /* ============================================================
+   POPUP CHỌN GIAO DIỆN ĐẶC BIỆT
+   ============================================================ */
+document.getElementById("special-theme-open-btn").addEventListener("click", () => {
+  document.getElementById("special-theme-picker-overlay").classList.remove("hidden");
+});
+function closeSpecialThemeOverlay() {
+  document.getElementById("special-theme-picker-overlay").classList.add("hidden");
+}
+document.getElementById("special-theme-close").addEventListener("click", closeSpecialThemeOverlay);
+document.getElementById("special-theme-picker-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "special-theme-picker-overlay") closeSpecialThemeOverlay();
+});
+document.querySelectorAll("#special-theme-picker-overlay .theme-style-btn").forEach((btn) => {
+  btn.addEventListener("click", closeSpecialThemeOverlay);
+});
+
+/* ============================================================
    ĐỔI DATABASE (chuyển sang project Firebase khác — ví dụ chuyển acc)
    ============================================================ */
 function updateDbConfigUI() {
@@ -7321,17 +7350,20 @@ document.querySelectorAll("#wh-sort-menu [data-sort]").forEach((btn) => {
 /* ============================================================
    CHỨC NĂNG — khoá/mở theo vai trò (Admin Panel > tab Chức năng)
    ============================================================ */
-const FEATURE_KEYS = ["grammar", "reminder", "theme_manga", "theme_vangogh", "theme_terminal"];
+const FEATURE_KEYS = ["grammar", "reminder", "theme_manga", "theme_vangogh", "theme_terminal", "theme_sonthuy", "theme_kiemkhi"];
 const FEATURE_LABELS = {
   grammar: "Tài liệu ngữ pháp", reminder: "Nhắc từ",
-  theme_manga: "Giao diện Manga", theme_vangogh: "Giao diện Đêm đầy sao (Van Gogh)", theme_terminal: "Giao diện Hacker Terminal",
+  theme_manga: "Giao diện Manga", theme_vangogh: "Giao diện Đêm sao", theme_terminal: "Giao diện Hacker",
+  theme_sonthuy: "Giao diện Sơn Thủy", theme_kiemkhi: "Giao diện Kiếm Khí",
 };
 const FEATURE_DESCS = {
   grammar: "Khoá/mở cùng lúc: tab Ngữ pháp và nút “Mở tài liệu ngữ pháp” (grammar.html) trong Cài đặt.",
   reminder: "Popup nhắc từ định kỳ (Cài đặt > Nhắc từ).",
-  theme_manga: "Giao diện phong cách tranh vẽ manga / anime (Cài đặt > Giao diện). Khoá cấp nào thì cấp đó tự quay về giao diện thường.",
+  theme_manga: "Giao diện phong cách tranh vẽ manga / anime (Cài đặt > Giao diện).",
   theme_vangogh: "Giao diện tranh Đêm đầy sao của Vincent van Gogh (Cài đặt > Giao diện).",
   theme_terminal: "Giao diện Hacker Terminal / CRT cyberpunk (Cài đặt > Giao diện).",
+  theme_sonthuy: "Giao diện thủy mặc sơn thủy tĩnh mịch (Cài đặt > Giao diện).",
+  theme_kiemkhi: "Giao diện tu tiên kiếm khí linh khí (Cài đặt > Giao diện).",
 };
 let featuresConfig = null; // { grammar: {guest,free,premium,admin}, reminder: {...} }
 function defaultFeaturesConfig() {
@@ -7339,6 +7371,7 @@ function defaultFeaturesConfig() {
   return {
     grammar: { ...allOn }, reminder: { ...allOn },
     theme_manga: { ...allOn }, theme_vangogh: { ...allOn }, theme_terminal: { ...allOn },
+    theme_sonthuy: { ...allOn }, theme_kiemkhi: { ...allOn },
   };
 }
 function isFeatureLocked(key) {
