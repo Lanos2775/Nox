@@ -1836,8 +1836,6 @@ button{touch-action:manipulation;}
 .theme-style-manga{background:#f3efe4 radial-gradient(circle at 1px 1px,rgba(17,17,17,.38) 1px,transparent 1.3px) 0 0/5px 5px;color:#111;border-color:#111;}
 .theme-style-vangogh{background:linear-gradient(120deg,#0b1a3f 20%,#27458a 62%,#f6c945 150%);color:#f7edc6;border-color:#7da0e0;}
 .theme-style-terminal{background:#050805;color:#00ff41;border-color:#1a3a1a;font-family:"JetBrains Mono","Consolas","Courier New",monospace;}
-.theme-style-sonthuy{background:#ede8d8;color:#2d4a4a;border-color:#b8860b;background-image:radial-gradient(circle at 0% 100%,#3d5a5a 0%,transparent 40%);}
-.theme-style-kiemkhi{background:linear-gradient(120deg,#0a1820 40%,#16323e 100%);color:#4ec9d9;border-color:#4ec9d9;box-shadow:inset 0 0 12px rgba(78,201,217,.15);}
 
 /* =====================================================================
    PHONG CÁCH 1 — MANGA / ANIME  (data-theme-level="19")
@@ -2210,13 +2208,4 @@ body[data-theme-level="21"] .app-loading-text{
   body[data-theme-level="21"] :is(.sidebar,.main-content)::after,
   body[data-theme-level="21"] .account-brand-name::after,
   body[data-theme-level="21"] .card-hint::after{animation:none;}
-}
-
-/* Đảm bảo popup dịch không bị làm mờ nền ở các giao diện đặc biệt */
-body[data-theme-level="19"] .overlay.translate-overlay,
-body[data-theme-level="20"] .overlay.translate-overlay,
-body[data-theme-level="21"] .overlay.translate-overlay,
-body[data-theme-level="22"] .overlay.translate-overlay,
-body[data-theme-level="23"] .overlay.translate-overlay {
-  background:none; pointer-events:none;
 }

@@ -1,10 +1,8 @@
-const CACHE_NAME = "nox-cache-v67";
+const CACHE_NAME = "nox-cache-v66";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./style.css",
-  "./theme-sonthuy.css",
-  "./theme-kiemkhi.css",
   "./script.js",
   "./grammar-data.json",
   "./manifest.json",
