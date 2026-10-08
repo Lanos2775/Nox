@@ -2,6 +2,30 @@
    NOX — Ứng dụng học từ vựng (Thẻ / Viết / Nghe / Kho)
    ============================================================ */
 
+const ICON_PATHS = {
+  gear: `<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>`,
+  trash: `<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>`,
+  mic: `<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>`,
+  volume: `<path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>`,
+  copy: `<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>`,
+  globe: `<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>`,
+  bulb: `<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>`,
+  bell: `<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>`,
+  lock: `<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`,
+  heart: `<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>`,
+  heartf: `<path class="f" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>`,
+  user: `<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>`,
+  download: `<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>`,
+  play: `<path class="f" d="M7 4.5v15l12-7.5Z"/>`,
+  stop: `<rect class="f" x="6" y="6" width="12" height="12" rx="1.5"/>`,
+  skip: `<path class="f" d="M5 5v14l10-7Z"/><path d="M19 5v14"/>`,
+  sparkle: `<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M19 15v4"/><path d="M17 17h4"/><path d="M5 17v3"/><path d="M3.5 18.5h3"/>`
+};
+/* Icon nét đen dạng SVG (đi theo màu chữ của nút) — thay cho emoji nhiều màu */
+function icon(name) {
+  return `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[name] || ""}</svg>`;
+}
+
 const STORAGE_KEY = "nox_app_data_v1";
 
 function uid() {
@@ -834,31 +858,59 @@ const THEME_PALETTES = {
     text: "#b8ffb8", textMuted: "#4a7a4a", accent: "#00ff41", accentSoft: "rgba(0,255,65,0.10)", accentText: "#050805",
     learningSoft: "rgba(255,176,0,0.12)", knownSoft: "rgba(0,255,65,0.10)", difficultSoft: "rgba(255,0,60,0.12)",
   },
+  22: { // Tu tiên — ngọc bích + vàng kim (phần còn lại do CSS body[data-theme-level="22"])
+    bg: "#06231f", panel: "#0c3a35", border: "#38a88c", borderSoft: "#14574b",
+    text: "#e8f6ee", textMuted: "#8fc4b3", accent: "#e6c15a", accentSoft: "rgba(230,193,90,0.16)", accentText: "#06251f",
+    learningSoft: "#3d3512", knownSoft: "#0f4a3a", difficultSoft: "#4a1f2a",
+  },
+  23: { // Tết cổ truyền — đỏ son, giấy điều, vàng kim
+    bg: "#9b0d1c", panel: "#fff4d6", border: "#7a0c12", borderSoft: "#e8cf95",
+    text: "#4a0d12", textMuted: "#8a5440", accent: "#c8102e", accentSoft: "#ffe2a1", accentText: "#fff4d6",
+    learningSoft: "#ffe39a", knownSoft: "#d4ecc5", difficultSoft: "#ffc7c7",
+  },
 };
 function cssVarName(key) {
   return "--" + key.replace(/([A-Z])/g, "-$1").toLowerCase();
 }
 /* ---- Giao diện: các mức còn dùng + ánh xạ cho mức đã bị gỡ (dữ liệu cũ / đồng bộ từ máy khác) ---- */
-const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18, 19, 20, 21];
+/* ---- Giao diện ĐẶC BIỆT ----
+   Muốn thêm giao diện mới: (1) thêm 1 mục vào SPECIAL_THEMES, (2) thêm bảng màu vào THEME_PALETTES,
+   (3) viết khối CSS body[data-theme-level="N"] + hình xem trước .tsw[data-tsw="N"] trong style.css.
+   Popup chọn giao diện đặc biệt, khoá/mở theo cấp tài khoản của Admin, tải font... đều tự có. */
+const SPECIAL_THEMES = [
+  { level: 19, feature: "theme_manga", name: "Manga", desc: "Tranh vẽ manga / anime: giấy báo, chấm screentone, khung truyện", fallback: 1,
+    featureLabel: "Giao diện Manga", featureDesc: "Giao diện phong cách tranh vẽ manga / anime (Cài đặt > Giao diện > Giao diện đặc biệt). Khoá cấp nào thì cấp đó tự quay về giao diện thường.",
+    font: "https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap" },
+  { level: 20, feature: "theme_vangogh", name: "Đêm sao", desc: "Đêm đầy sao của Van Gogh: trời xoáy cọ, trăng khuyết, khung tranh", fallback: 4,
+    featureLabel: "Giao diện Đêm đầy sao (Van Gogh)", featureDesc: "Giao diện tranh Đêm đầy sao của Vincent van Gogh (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,500..800;1,500..800&display=swap" },
+  { level: 21, feature: "theme_terminal", name: "Terminal", desc: "Hacker Terminal / CRT cyberpunk: xanh phosphor, scanline", fallback: 4,
+    featureLabel: "Giao diện Hacker Terminal", featureDesc: "Giao diện Hacker Terminal / CRT cyberpunk (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" },
+  { level: 22, feature: "theme_tutien", name: "Tu tiên", desc: "Kiếm tiên: ngọc bích & vàng kim, trận pháp, phi kiếm, đảo bay", fallback: 4,
+    featureLabel: "Giao diện Tu tiên (Kiếm tiên)", featureDesc: "Giao diện tu tiên / kiếm tiên, màu ngọc bích và vàng kim (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500..700;1,500..700&display=swap" },
+  { level: 23, feature: "theme_tet", name: "Tết Việt", desc: "Tết cổ truyền: hoa đào, hoa mai, bao lì xì, đèn lồng, trống đồng", fallback: 1,
+    featureLabel: "Giao diện Tết cổ truyền", featureDesc: "Giao diện Tết cổ truyền Việt Nam (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500..700&display=swap" },
+];
+const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18].concat(SPECIAL_THEMES.map((t) => t.level));
 const THEME_REMOVED_MAP = { 5: 4, 6: 4, 10: 4, 11: 4, 15: 4, 16: 4, 17: 4, 13: 1, 14: 1 };
 function normThemeLevel(level) {
   level = Math.round(Number(level) || 1);
   if (THEME_REMOVED_MAP[level]) return THEME_REMOVED_MAP[level];
   return THEME_VALID_LEVELS.includes(level) ? level : 1;
 }
-/* 3 giao diện phong cách — admin khoá/mở theo cấp tài khoản (Admin > Chức năng) */
-const THEME_FEATURE = { 19: "theme_manga", 20: "theme_vangogh", 21: "theme_terminal" };
-const THEME_FALLBACK = { 19: 1, 20: 4, 21: 4 };
+/* Giao diện đặc biệt — admin khoá/mở theo cấp tài khoản (Admin > Chức năng); suy ra từ SPECIAL_THEMES */
+const THEME_FEATURE = {};
+const THEME_FALLBACK = {};
+const THEME_FONT_URLS = {};
+SPECIAL_THEMES.forEach((t) => { THEME_FEATURE[t.level] = t.feature; THEME_FALLBACK[t.level] = t.fallback; THEME_FONT_URLS[t.level] = t.font; });
 function themeLockedFor(level) {
   const key = THEME_FEATURE[level];
   if (!key) return false;
   try { return isFeatureLocked(key); } catch (e) { return false; } // chưa khởi tạo xong -> coi như chưa khoá
 }
-const THEME_FONT_URLS = {
-  19: "https://fonts.googleapis.com/css2?family=Bangers&family=Patrick+Hand&display=swap",
-  20: "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,500..800;1,500..800&display=swap",
-  21: "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap",
-};
 function loadThemeFont(level) {
   const url = THEME_FONT_URLS[level];
   if (!url || document.getElementById("theme-font-" + level)) return;
@@ -917,28 +969,92 @@ function applyThemeLevel(level, persist = true) {
   });
   document.body.dataset.themeLevel = shown;
   loadThemeFont(shown);
-  document.querySelectorAll(".theme-dot, .theme-style-btn").forEach((d) => d.classList.toggle("active", parseInt(d.dataset.level, 10) === shown));
+  document.querySelectorAll(".theme-dot").forEach((d) => d.classList.toggle("active", parseInt(d.dataset.level, 10) === shown));
   applyThemeLocks();
+  updateSpecialThemeUI(shown);
 }
-// Đánh dấu nút giao diện bị khoá (gọi lại khi tải xong cấu hình / đổi tài khoản)
+// Đánh dấu thẻ giao diện đặc biệt bị khoá (gọi lại khi tải xong cấu hình / đổi tài khoản)
 function applyThemeLocks() {
-  document.querySelectorAll(".theme-style-btn").forEach((btn) => {
-    const lvl = parseInt(btn.dataset.level, 10);
+  document.querySelectorAll(".theme-pick-card").forEach((card) => {
+    const lvl = parseInt(card.dataset.level, 10);
     const locked = themeLockedFor(lvl);
-    btn.classList.toggle("locked", locked);
-    btn.setAttribute("aria-disabled", locked ? "true" : "false");
-    btn.dataset.lockLabel = locked ? "khoá" : "";
+    card.classList.toggle("locked", locked);
+    card.setAttribute("aria-disabled", locked ? "true" : "false");
+    const tag = card.querySelector(".theme-pick-tag");
+    if (tag) tag.textContent = locked ? "Khoá" : "Đang dùng";
   });
 }
+// Nút "Giao diện đặc biệt" trong Cài đặt: hiện hình + tên giao diện đặc biệt đang dùng (hoặc gợi ý nếu chưa chọn)
+function updateSpecialThemeUI(shown) {
+  const btn = document.getElementById("theme-special-btn");
+  if (!btn) return;
+  const t = SPECIAL_THEMES.find((x) => x.level === shown);
+  const sw = document.getElementById("theme-special-swatch");
+  const sub = document.getElementById("theme-special-sub");
+  btn.classList.toggle("has-special", !!t);
+  if (t) {
+    sw.dataset.tsw = String(t.level);
+    sw.innerHTML = "";
+    sub.textContent = t.name;
+    btn.title = "Đang dùng: " + t.name + " — bấm để đổi giao diện đặc biệt";
+  } else {
+    sw.dataset.tsw = "0";
+    sw.innerHTML = icon("sparkle");
+    sub.textContent = "Chưa chọn — bấm để xem";
+    btn.title = "Chọn giao diện đặc biệt";
+  }
+  document.querySelectorAll(".theme-pick-card").forEach((card) => {
+    card.classList.toggle("active", parseInt(card.dataset.level, 10) === shown);
+  });
+}
+function buildThemePicker() {
+  const grid = document.getElementById("theme-picker-grid");
+  if (!grid) return;
+  grid.innerHTML = "";
+  SPECIAL_THEMES.forEach((t) => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "theme-pick-card";
+    card.dataset.level = String(t.level);
+    card.innerHTML = `<span class="tsw tsw-lg" data-tsw="${t.level}"></span>
+      <span class="theme-pick-name">${escapeHtml(t.name)}</span>
+      <span class="theme-pick-desc">${escapeHtml(t.desc)}</span>
+      <span class="theme-pick-tag"></span>`;
+    card.addEventListener("click", () => {
+      if (themeLockedFor(t.level)) {
+        showToast("Giao diện này đã bị khoá với cấp tài khoản của bạn.");
+        return;
+      }
+      applyThemeLevel(t.level);
+      closeThemePicker();
+    });
+    grid.appendChild(card);
+  });
+}
+function openThemePicker() { document.getElementById("theme-picker-overlay").classList.remove("hidden"); }
+function closeThemePicker() { document.getElementById("theme-picker-overlay").classList.add("hidden"); }
 function refreshThemeAfterLockChange() {
   applyThemeLocks();
   const saved = normThemeLevel(state.themeLevel || 1);
   const shouldShow = themeLockedFor(saved) ? THEME_FALLBACK[saved] : saved;
   if (parseInt(document.body.dataset.themeLevel, 10) !== shouldShow) applyThemeLevel(saved, false);
 }
-document.querySelectorAll(".theme-dot, .theme-style-btn").forEach((dot) => {
+document.querySelectorAll(".theme-dot").forEach((dot) => {
   dot.addEventListener("click", () => applyThemeLevel(parseInt(dot.dataset.level, 10)));
 });
+buildThemePicker();
+document.getElementById("theme-special-btn").addEventListener("click", openThemePicker);
+document.getElementById("theme-picker-close").addEventListener("click", closeThemePicker);
+document.getElementById("theme-picker-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "theme-picker-overlay") closeThemePicker();
+});
+// Esc đóng popup chọn giao diện trước (capture) để không kéo theo các phím tắt Esc khác
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("theme-picker-overlay").classList.contains("hidden")) {
+    e.stopPropagation();
+    closeThemePicker();
+  }
+}, true);
 applyThemeLevel(state.themeLevel || 1, false);
 if (document.body.dataset.themeLevel === "21") termBootFx();
 
@@ -1222,8 +1338,8 @@ function renderFlashcardTab() {
   document.getElementById("fc-stat-known").textContent = all.filter((i) => i.status === "known").length;
   document.getElementById("fc-stat-difficult").textContent = all.filter((i) => i.status === "difficult").length;
 
-  document.getElementById("fc-source-toggle").textContent = "Danh sách: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ") + " ⇄";
-  document.getElementById("fc-view-toggle").textContent = "Giao diện: " + (fc.view === "read" ? "Đọc" : "Lật thẻ") + " ⇄";
+  document.getElementById("fc-source-toggle").textContent = "Danh sách: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ");
+  document.getElementById("fc-view-toggle").textContent = "Giao diện: " + (fc.view === "read" ? "Đọc" : "Lật thẻ");
   fcApplyView(true);
 }
 
@@ -1275,7 +1391,7 @@ function fcReadRowHtml(item, n) {
       <div class="fc-read-vi">${escapeHtml(item.vi || "")}</div>
     </div>
     <div class="fc-read-actions">
-      <button type="button" class="fc-read-act fc-read-speak" title="Đọc to" aria-label="Đọc to">🔊︎</button>
+      <button type="button" class="fc-read-act fc-read-speak" title="Đọc to" aria-label="Đọc to">${icon("volume")}</button>
       <button type="button" class="fc-read-act fc-read-star" title="Đánh dấu câu hay" aria-label="Đánh dấu">${item.star ? "★" : "☆"}</button>
     </div>
   </div>`;
@@ -1964,7 +2080,7 @@ function rebuildWrQueue(keep) {
 function updateWrSourceToggleBtn() {
   const btn = document.getElementById("wr-source-toggle");
   if (!btn) return;
-  btn.textContent = "Danh sách: " + (wr.sourceCat === "flashcard" ? "Thẻ" : "Viết") + " ⇄";
+  btn.textContent = "Danh sách: " + (wr.sourceCat === "flashcard" ? "Thẻ" : "Viết");
 }
 document.getElementById("wr-source-toggle").addEventListener("click", () => {
   wr.sourceCat = wr.sourceCat === "flashcard" ? "writing" : "flashcard";
@@ -2190,7 +2306,7 @@ function renderWrChat() {
   if (allDone && wr.queue.length) {
     const done = document.createElement("div");
     done.className = "nghe-bubble-row nghe-system-msg";
-    done.textContent = "🎉 Đã làm hết các câu trong danh sách này!";
+    done.textContent = "Đã làm hết các câu trong danh sách này!";
     scroll.appendChild(done);
   }
 
@@ -2236,7 +2352,8 @@ function wrBuildAnswerBubble(attempt, clickable) {
   row.className = "nghe-bubble-row right";
   const pctSpan = document.createElement("span");
   pctSpan.className = "nghe-pct";
-  pctSpan.textContent = attempt.isHint ? "💡" : (attempt.correct ? "✓" : attempt.pct + "%");
+  if (attempt.isHint) pctSpan.innerHTML = icon("bulb");
+  else pctSpan.textContent = attempt.correct ? "✓" : attempt.pct + "%";
   const bubble = document.createElement("div");
   const isClickable = clickable && !attempt.correct;
   bubble.className = "nghe-bubble nghe-bubble-right " + (attempt.isHint ? "hint" : (attempt.correct ? "correct" : "wrong")) + (isClickable ? " clickable" : "");
@@ -2553,7 +2670,7 @@ const WR_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Tr
 const WR_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
 function updateWrDifficultyBtn() {
   const btn = document.getElementById("wr-difficulty-toggle");
-  btn.textContent = WR_DIFFICULTY_LABELS[wr.difficulty] + (wr.difficultyLocked ? " 🔒" : "");
+  btn.textContent = WR_DIFFICULTY_LABELS[wr.difficulty] + (wr.difficultyLocked ? " · khoá" : "");
   btn.classList.remove("difficulty-easy", "difficulty-medium", "difficulty-hard");
   btn.classList.add("difficulty-" + wr.difficulty);
   btn.classList.toggle("locked", wr.difficultyLocked);
@@ -2915,7 +3032,7 @@ function ngheStopFullPlay() {
   ngheFullPlayToken = null;
   speechSynthesis.cancel();
   const btn = document.getElementById("nghe-play-all-btn");
-  if (btn) { btn.textContent = "▶"; btn.classList.remove("playing"); }
+  if (btn) { btn.innerHTML = icon("play"); btn.classList.remove("playing"); }
 }
 function ngheToggleFullPlay() {
   const item = ngheCurrentItem();
@@ -2927,12 +3044,12 @@ function ngheToggleFullPlay() {
   }
   const token = {};
   ngheFullPlayToken = token;
-  btn.textContent = "⏹";
+  btn.innerHTML = icon("stop");
   btn.classList.add("playing");
   ngheSpeakLinesSequentially(item.lines, 0, token, () => {
     if (ngheFullPlayToken === token) {
       ngheFullPlayToken = null;
-      btn.textContent = "▶";
+      btn.innerHTML = icon("play");
       btn.classList.remove("playing");
     }
   });
@@ -3346,7 +3463,7 @@ function tpRenderSources(sources) {
   const paste = document.createElement("button");
   paste.type = "button";
   paste.className = "tp-source-chip tp-paste";
-  paste.textContent = "📋 Dán";
+  paste.textContent = "Dán";
   paste.title = "Dán chữ từ clipboard";
   paste.addEventListener("click", async () => {
     try {
@@ -3783,7 +3900,7 @@ function renderNgheChat() {
   if (allDone) {
     const done = document.createElement("div");
     done.className = "nghe-bubble-row nghe-system-msg";
-    done.textContent = "🎉 Hoàn thành bài này! Chọn bài khác ở thanh bên trái để luyện tiếp.";
+    done.textContent = "Hoàn thành bài này! Chọn bài khác ở thanh bên trái để luyện tiếp.";
     scroll.appendChild(done);
   }
 
@@ -3795,7 +3912,8 @@ function ngheBuildLeftBubble(line, lineState, lineIdx, isActive, item) {
   row.className = "nghe-bubble-row left";
   const avatar = document.createElement("div");
   avatar.className = "nghe-avatar";
-  avatar.textContent = line.speaker ? line.speaker[0].toUpperCase() : "🔊︎";
+  if (line.speaker) avatar.textContent = line.speaker[0].toUpperCase();
+  else avatar.innerHTML = icon("volume");
   const wrap = document.createElement("div");
   wrap.className = "nghe-left-wrap";
   const bubble = document.createElement("button");
@@ -3805,12 +3923,12 @@ function ngheBuildLeftBubble(line, lineState, lineIdx, isActive, item) {
   if (revealed) {
     bubble.textContent = line.text;
   } else {
-    bubble.innerHTML = `<span class="nghe-play-icon">▶</span><span class="nghe-wave"></span>`;
+    bubble.innerHTML = `<span class="nghe-play-icon">${icon("play")}</span><span class="nghe-wave"></span>`;
     if (lineState.skipped) {
       const skipBadge = document.createElement("span");
       skipBadge.className = "nghe-skip-badge";
       skipBadge.title = "Câu đã bỏ qua — bấm để quay lại làm";
-      skipBadge.textContent = "⏭";
+      skipBadge.innerHTML = icon("skip");
       bubble.appendChild(skipBadge);
     }
     if (isActive) {
@@ -3840,7 +3958,7 @@ function ngheBuildLeftBubble(line, lineState, lineIdx, isActive, item) {
     tBtn.type = "button";
     tBtn.className = "nghe-translate-btn";
     tBtn.title = "Dịch câu này sang Tiếng Việt";
-    tBtn.textContent = "🌐";
+    tBtn.innerHTML = icon("globe");
     tBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       ngheToggleTranslate(cacheKey, line.text, tSpan);
@@ -4120,7 +4238,7 @@ document.getElementById("nghe-reset-progress-btn").addEventListener("click", asy
 
 function updateNgheDifficultyBtn() {
   const btn = document.getElementById("nghe-difficulty-toggle");
-  btn.textContent = NGHE_DIFFICULTY_LABELS[nghe.difficulty] + (nghe.difficultyLocked ? " 🔒" : "");
+  btn.textContent = NGHE_DIFFICULTY_LABELS[nghe.difficulty] + (nghe.difficultyLocked ? " · khoá" : "");
   btn.classList.remove("difficulty-easy", "difficulty-medium", "difficulty-hard");
   btn.classList.add("difficulty-" + nghe.difficulty);
   btn.classList.toggle("locked", nghe.difficultyLocked);
@@ -4765,7 +4883,7 @@ function renderWarehouseTab() {
     if (canRemind) {
       const dot = document.createElement("span");
       dot.className = "wh-list-reminder-dot" + (list.reminderEnabled ? " on" : "");
-      dot.textContent = "🔔";
+      dot.innerHTML = icon("bell");
       dot.title = list.reminderEnabled ? "Đang bật nhắc từ cho danh sách này — nhấn để tắt" : "Bật nhắc từ cho danh sách này";
       dot.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -5086,7 +5204,7 @@ function renderWhTable() {
       const clearChip = document.createElement("button");
       clearChip.type = "button";
       clearChip.className = "wh-tag-chip wh-tag-chip-clear";
-      clearChip.textContent = "Xoá lọc ✕";
+      clearChip.textContent = "Xoá lọc";
       clearChip.addEventListener("click", () => { wh.tagFilter = []; renderWhTable(); });
       tagRow.appendChild(clearChip);
     }
@@ -5116,11 +5234,11 @@ function renderWhTable() {
       <span class="wh-row-vi">${escapeHtml(item.vi)}</span>
       <span class="wh-row-dot ${dotClass}" title="${escapeHtml(statusLabel(wh.cat === "dictionary" ? "flashcard" : wh.cat, item.status))}"></span>
       <span class="wh-row-actions">
-        <button data-act="play" title="Phát âm">🔊︎</button>
-        <button data-act="copy" title="Sao chép">📋</button>
+        <button data-act="play" title="Phát âm">${icon("volume")}</button>
+        <button data-act="copy" title="Sao chép">${icon("copy")}</button>
         <button data-act="edit" title="Sửa">✎</button>
         <button data-act="move" title="Chuyển sang danh sách khác">⇄</button>
-        <button data-act="del" title="Xoá">🗑</button>
+        <button data-act="del" title="Xoá">${icon("trash")}</button>
       </span>`;
     
     row.querySelector(".wh-row-select input").addEventListener("change", (e) => {
@@ -5481,7 +5599,7 @@ function renderWhPreview() {
   const dupCount = whPreviewItems.filter((it) => existingKeys.has((it.en || "").toLowerCase().trim())).length;
   document.getElementById("wh-preview-hint").textContent =
     `Xem trước ${whPreviewItems.length} mục — có thể chỉnh sửa từng ô, xoá mục không cần, rồi nhấn OK để thêm vào danh sách.`
-    + (dupCount ? ` ⚠️ ${dupCount} mục trùng với từ đã có trong danh sách này (đánh dấu vàng).` : "");
+    + (dupCount ? ` Lưu ý: ${dupCount} mục trùng với từ đã có trong danh sách này (đánh dấu vàng).` : "");
   if (!whPreviewItems.length) {
     box.innerHTML = `<div class="wh-preview-empty">Không có mục nào để xem trước.</div>`;
     return;
@@ -5508,10 +5626,10 @@ function renderWhPreview() {
          <input class="wh-preview-ipa" value="${escapeHtml(it.ipa)}" placeholder="Phiên âm">
          <input class="wh-preview-pos" value="${escapeHtml(it.pos)}" placeholder="Loại từ">
          <textarea class="wh-preview-vi" placeholder="Nghĩa tiếng Việt">${escapeHtml(it.vi)}</textarea>
-         <button class="wh-preview-remove" title="Bỏ mục này">🗑</button>`
+         <button class="wh-preview-remove" title="Bỏ mục này">${icon("trash")}</button>`
       : `<input class="wh-preview-en" value="${escapeHtml(it.en)}" placeholder="Tiếng Anh">
          <textarea class="wh-preview-vi" placeholder="Tiếng Việt">${escapeHtml(it.vi)}</textarea>
-         <button class="wh-preview-remove" title="Bỏ mục này">🗑</button>`;
+         <button class="wh-preview-remove" title="Bỏ mục này">${icon("trash")}</button>`;
     row.querySelector(".wh-preview-remove").addEventListener("click", () => {
       whPreviewItems.splice(idx, 1);
       renderWhPreview();
@@ -5584,7 +5702,7 @@ function renderWhListeningPreview() {
     row.className = "wh-preview-row nghe-preview-row";
     row.innerHTML = `<input class="wh-preview-speaker" value="${escapeHtml(ln.speaker)}" placeholder="Tên (bỏ trống nếu không có)">
        <textarea class="wh-preview-en">${escapeHtml(ln.text)}</textarea>
-       <button class="wh-preview-remove" title="Bỏ dòng này">🗑</button>`;
+       <button class="wh-preview-remove" title="Bỏ dòng này">${icon("trash")}</button>`;
     row.querySelector(".wh-preview-remove").addEventListener("click", () => {
       whListeningPreviewLines.splice(idx, 1);
       renderWhListeningPreview();
@@ -5698,7 +5816,7 @@ function renderWhListeningView() {
         <span class="nghe-wh-card-title">${escapeHtml(title)} — ${item.lines.length} câu</span>
       </div>
       <div class="nghe-wh-card-actions">
-        <button class="nghe-wh-card-delete" title="Xoá">🗑</button>
+        <button class="nghe-wh-card-delete" title="Xoá">${icon("trash")}</button>
       </div>`;
     card.addEventListener("click", () => openWhListeningEdit(item.id));
     card.querySelector(".nghe-wh-card-delete").addEventListener("click", (e) => {
@@ -6756,6 +6874,17 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.39",
+    changes: [
+      "Cài đặt: bỏ nút “Mở tài liệu ngữ pháp” (tab Ngữ pháp trong app vẫn dùng bình thường)",
+      "Bỏ icon chèn thêm trong các nút có chữ; icon nhiều màu (⚙, 🗑, 🎙, 🔊, ❤...) đổi sang icon nét đen đi theo màu chữ",
+      "Popup Dịch nhanh không còn lớp làm mờ nền ở các giao diện đặc biệt (kể cả giao diện thêm sau này)",
+      "Giao diện đặc biệt gom vào 1 nút trong Cài đặt > Giao diện: bấm để mở popup chọn, nút hiện hình giao diện đang dùng",
+      "Thêm 2 giao diện đặc biệt: Tu tiên (ngọc bích & vàng kim, trận pháp, phi kiếm) và Tết cổ truyền (hoa đào, hoa mai, lì xì, đèn lồng)",
+      "Admin > Chức năng: có công tắc khoá/mở riêng cho từng giao diện đặc biệt mới",
+    ],
+  },
+  {
     version: "2.38",
     changes: [
       "Dịch nhanh: thay các thanh dịch bằng 1 popup nổi dùng chung toàn app — KHÔNG đóng khi bấm ra ngoài; mở/đóng bằng phím tắt (mặc định F2, đổi trong Cài đặt > Phím tắt (Chung)), nút Dịch ở đầu thanh bên, Esc để đóng; kéo được sang chỗ khác",
@@ -7255,12 +7384,6 @@ function toggleGlobalReminder() {
 document.getElementById("settings-reminder-quick-toggle").addEventListener("change", toggleGlobalReminder);
 document.getElementById("settings-reminder-quick-toggle").checked = state.reminder.enabled;
 
-document.getElementById("grammar-open-btn").addEventListener("click", (e) => {
-  if (isFeatureLocked("grammar")) {
-    e.preventDefault();
-    showToast(`Tài liệu Ngữ pháp đã bị khoá với cấp tài khoản (${roleLabel(accountRole)}) của bạn.`);
-  }
-});
 
 /* ============================================================
    MOBILE — TỰ ẨN BẢNG ĐIỀU KHIỂN
@@ -7281,7 +7404,7 @@ function updateMobilePanelVisibility() {
   document.querySelectorAll(".sidebar-panel").forEach((p) => {
     p.classList.toggle("mobile-collapsed", p.dataset.panel === activeTab && !mobilePanelExpanded);
   });
-  toggle.textContent = mobilePanelExpanded ? "▴ Ẩn tuỳ chọn" : "▾ Hiện tuỳ chọn";
+  toggle.textContent = mobilePanelExpanded ? "Ẩn tuỳ chọn" : "Hiện tuỳ chọn";
 }
 document.getElementById("mobile-panel-toggle").addEventListener("click", () => {
   mobilePanelExpanded = !mobilePanelExpanded;
@@ -7321,25 +7444,19 @@ document.querySelectorAll("#wh-sort-menu [data-sort]").forEach((btn) => {
 /* ============================================================
    CHỨC NĂNG — khoá/mở theo vai trò (Admin Panel > tab Chức năng)
    ============================================================ */
-const FEATURE_KEYS = ["grammar", "reminder", "theme_manga", "theme_vangogh", "theme_terminal"];
-const FEATURE_LABELS = {
-  grammar: "Tài liệu ngữ pháp", reminder: "Nhắc từ",
-  theme_manga: "Giao diện Manga", theme_vangogh: "Giao diện Đêm đầy sao (Van Gogh)", theme_terminal: "Giao diện Hacker Terminal",
-};
+const FEATURE_KEYS = ["grammar", "reminder"].concat(SPECIAL_THEMES.map((t) => t.feature));
+const FEATURE_LABELS = { grammar: "Tab Ngữ pháp", reminder: "Nhắc từ" };
 const FEATURE_DESCS = {
-  grammar: "Khoá/mở cùng lúc: tab Ngữ pháp và nút “Mở tài liệu ngữ pháp” (grammar.html) trong Cài đặt.",
+  grammar: "Khoá/mở tab Ngữ pháp (khoá cấp nào thì cấp đó không dùng được tab này).",
   reminder: "Popup nhắc từ định kỳ (Cài đặt > Nhắc từ).",
-  theme_manga: "Giao diện phong cách tranh vẽ manga / anime (Cài đặt > Giao diện). Khoá cấp nào thì cấp đó tự quay về giao diện thường.",
-  theme_vangogh: "Giao diện tranh Đêm đầy sao của Vincent van Gogh (Cài đặt > Giao diện).",
-  theme_terminal: "Giao diện Hacker Terminal / CRT cyberpunk (Cài đặt > Giao diện).",
 };
+SPECIAL_THEMES.forEach((t) => { FEATURE_LABELS[t.feature] = t.featureLabel; FEATURE_DESCS[t.feature] = t.featureDesc; });
 let featuresConfig = null; // { grammar: {guest,free,premium,admin}, reminder: {...} }
 function defaultFeaturesConfig() {
   const allOn = { guest: true, free: true, premium: true, admin: true };
-  return {
-    grammar: { ...allOn }, reminder: { ...allOn },
-    theme_manga: { ...allOn }, theme_vangogh: { ...allOn }, theme_terminal: { ...allOn },
-  };
+  const cfg = { grammar: { ...allOn }, reminder: { ...allOn } };
+  SPECIAL_THEMES.forEach((t) => { cfg[t.feature] = { ...allOn }; });
+  return cfg;
 }
 function isFeatureLocked(key) {
   if (accountRole === "admin") return false; // admin luôn full quyền
@@ -7360,8 +7477,7 @@ function loadFeaturesConfig() {
    GIAO DIỆN TÀI KHOẢN (avatar header, popup đăng nhập/đăng ký,
    popup thông tin acc, quyền hạn hiển thị theo vai trò)
    ============================================================ */
-// Tab Ngữ pháp dùng chung công tắc "grammar" với nút Mở tài liệu ngữ pháp (grammar.html):
-// khoá cấp nào thì cả hai cùng bị khoá với cấp đó. Gọi lại mỗi khi đổi vai trò hoặc config thay đổi.
+// Công tắc "grammar" khoá/mở tab Ngữ pháp theo cấp tài khoản. Gọi lại mỗi khi đổi vai trò hoặc config thay đổi.
 function applyGrammarLock() {
   const btn = document.querySelector('.main-tab-btn[data-tab="grammar"]');
   if (!btn) return;
@@ -7508,7 +7624,7 @@ function permsDescriptionForRole(role) {
   }
   FEATURE_KEYS.forEach((k) => {
     if (featuresConfig && featuresConfig[k] && featuresConfig[k][role] === false) {
-      lines.push("❌ " + FEATURE_LABELS[k] + " đang bị khoá với cấp này.");
+      lines.push("• " + FEATURE_LABELS[k] + " đang bị khoá với cấp này.");
     }
   });
   return lines.join("\n");
@@ -7870,7 +7986,7 @@ async function renderAdminLibraryTab() {
     if (reports.length) {
       const toggle = document.createElement("button");
       toggle.className = "admin-report-toggle";
-      toggle.textContent = `🚩 ${reports.length} báo cáo — xem lý do`;
+      toggle.textContent = `${reports.length} báo cáo — xem lý do`;
       const list = document.createElement("div");
       list.className = "admin-report-list hidden";
       list.innerHTML = reports.map((r) => `• ${escapeHtml(r.reason || "(không có lý do)")} <span class="admin-log-time">${r.at ? new Date(r.at).toLocaleString("vi-VN") : ""}</span>`).join("<br>");
@@ -7944,7 +8060,7 @@ function renderAdminFeaturesTab() {
 
   const hint = document.createElement("p");
   hint.className = "admin-feature-hint";
-  hint.textContent = "Bấm vào từng cấp để khoá / mở chức năng. Nút sáng ✓ = được dùng, nút mờ 🔒 = bị khoá. Admin luôn có đủ quyền.";
+  hint.textContent = "Bấm vào từng cấp để khoá / mở chức năng. Nút sáng = được dùng, nút mờ = bị khoá. Admin luôn có đủ quyền.";
   pane.appendChild(hint);
 
   const list = document.createElement("div");
@@ -7976,7 +8092,7 @@ function renderAdminFeaturesTab() {
       const paint = (on) => {
         chip.classList.toggle("on", on);
         chip.setAttribute("aria-pressed", on ? "true" : "false");
-        chip.textContent = (on ? "✓ " : "🔒 ") + roleLabel(role);
+        chip.textContent = roleLabel(role);
         chip.title = on ? `${roleLabel(role)}: đang được dùng — bấm để khoá` : `${roleLabel(role)}: đang bị khoá — bấm để mở`;
       };
       paint(cfg[key] ? cfg[key][role] !== false : true);
@@ -8075,10 +8191,10 @@ async function renderLibraryTab() {
     card.className = "wh-library-card";
     card.innerHTML = `
       <div class="wh-library-card-title">${escapeHtml(p.title || "?")}</div>
-      <div class="wh-library-card-meta"><span>👤 ${escapeHtml(p.anon ? "Ẩn danh" : (p.authorName || "?"))}</span><span>⬇ ${p.downloads || 0}</span></div>
+      <div class="wh-library-card-meta"><span>${icon("user")} ${escapeHtml(p.anon ? "Ẩn danh" : (p.authorName || "?"))}</span><span>${icon("download")} ${p.downloads || 0}</span></div>
       ${p.note ? `<div class="wh-library-card-note">"${escapeHtml(p.note)}"</div>` : ""}
       <div class="wh-library-card-footer">
-        <button class="wh-library-card-like-btn${liked ? " liked" : ""}" title="Yêu thích">${liked ? "❤️" : "🤍"} <span>${p._likeCount}</span></button>
+        <button class="wh-library-card-like-btn${liked ? " liked" : ""}" title="Yêu thích">${liked ? icon("heartf") : icon("heart")} <span>${p._likeCount}</span></button>
         <button class="pill-btn primary wh-library-card-dl" ${canDownload ? "" : "disabled"}>Tải về Kho</button>
       </div>
     `;
@@ -8133,7 +8249,7 @@ function openLibraryDetail(p) {
     const liked = !!(currentUser && pkg.likes && pkg.likes[currentUser.uid]);
     const count = pkg.likes ? Object.keys(pkg.likes).length : 0;
     likeBtn.classList.toggle("liked", liked);
-    likeBtn.innerHTML = `${liked ? "❤️" : "🤍"} <span id="lib-detail-like-count">${count}</span>`;
+    likeBtn.innerHTML = `${liked ? icon("heartf") : icon("heart")} <span id="lib-detail-like-count">${count}</span>`;
   }
   refreshLikeBtn(p);
   likeBtn.onclick = async () => {

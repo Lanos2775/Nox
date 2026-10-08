@@ -87,7 +87,7 @@
             <path d="m7.5 4.3 9 5.1"/>
           </svg>
         </button>
-        <button class="settings-gear-btn" id="settings-open" title="Cài đặt">⚙️</button>
+        <button class="settings-gear-btn" id="settings-open" title="Cài đặt"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       </div>
     </div>
 
@@ -98,7 +98,7 @@
       <button class="main-tab-btn" data-tab="grammar">Ngữ pháp</button>
     </nav>
 
-    <button class="mobile-panel-toggle hidden" id="mobile-panel-toggle">▾ Hiện tuỳ chọn</button>
+    <button class="mobile-panel-toggle hidden" id="mobile-panel-toggle">Hiện tuỳ chọn</button>
 
     <!-- ---- Sidebar: Flashcard controls ---- -->
     <div class="sidebar-panel" data-panel="flashcard">
@@ -111,8 +111,8 @@
 
       <div class="panel-section">
         <div class="fc-switch-row">
-          <button type="button" class="section-label-btn" id="fc-source-toggle" title="Đổi nguồn: danh sách Thẻ hoặc danh sách Từ điển">Danh sách: Thẻ ⇄</button>
-          <button type="button" class="section-label-btn" id="fc-view-toggle" title="Đổi giao diện: Đọc (cả danh sách) hoặc Lật thẻ">Giao diện: Đọc ⇄</button>
+          <button type="button" class="section-label-btn" id="fc-source-toggle" title="Đổi nguồn: danh sách Thẻ hoặc danh sách Từ điển">Danh sách: Thẻ</button>
+          <button type="button" class="section-label-btn" id="fc-view-toggle" title="Đổi giao diện: Đọc (cả danh sách) hoặc Lật thẻ">Giao diện: Đọc</button>
         </div>
         <div class="nghe-item-list list-quickselect-scroll" id="fc-list-quickselect"></div>
       </div>
@@ -128,7 +128,7 @@
       </div>
 
       <div class="panel-section">
-        <button type="button" class="section-label-btn" id="wr-source-toggle" title="Bấm để đổi nguồn danh sách giữa Viết và Thẻ">Danh sách: Viết ⇄</button>
+        <button type="button" class="section-label-btn" id="wr-source-toggle" title="Bấm để đổi nguồn danh sách giữa Viết và Thẻ">Danh sách: Viết</button>
         <div class="nghe-item-list list-quickselect-scroll" id="wr-list-quickselect"></div>
       </div>
     </div>
@@ -181,13 +181,13 @@
           <button class="icon-btn-sq" id="wh-add-list" title="Thêm danh sách">＋</button>
           <button class="icon-btn-sq" id="wh-rename-list" title="Chỉnh sửa danh sách">✎</button>
           <button class="icon-btn-sq" id="wh-duplicate-list" title="Nhân bản danh sách">⧉</button>
-          <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách">🗑</button>
+          <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
         </div>
-        <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">⭳ Xuất / Nhập File</button>
-        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">🖨️ Xuất Worksheet (in/PDF)</button>
-        <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">⭱ Đăng lên Thư viện</button>
-        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">🔗 Chia sẻ riêng tư</button>
-        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">🔑 Nhập từ mã chia sẻ</button>
+        <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">Xuất / Nhập File</button>
+        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">Xuất Worksheet (in/PDF)</button>
+        <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">Đăng lên Thư viện</button>
+        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">Chia sẻ riêng tư</button>
+        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">Nhập từ mã chia sẻ</button>
       </div>
       <div id="wh-library-sidebar-section" class="hidden">
         <div class="section-label">Loại nội dung</div>
@@ -218,8 +218,8 @@
       <div class="nghe-chat-header">
         <span class="status-dot" id="nghe-current-dot"></span>
         <span class="nghe-current-title" id="nghe-current-title">Chọn 1 bài ở thanh bên trái</span>
-        <button class="nghe-reset-btn" id="nghe-play-all-btn" title="Đọc toàn bộ đoạn hội thoại">▶</button>
-        <button class="nghe-reset-btn" id="nghe-voice-settings-btn" title="Chọn giọng đọc">🎙</button>
+        <button class="nghe-reset-btn" id="nghe-play-all-btn" title="Đọc toàn bộ đoạn hội thoại"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="f" d="M7 4.5v15l12-7.5Z"/></svg></button>
+        <button class="nghe-reset-btn" id="nghe-voice-settings-btn" title="Chọn giọng đọc"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button>
         <button class="pill-btn-outline" id="nghe-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
         <button class="nghe-reset-btn" id="nghe-reset-progress-btn" title="Xoá lịch sử làm bài này, làm lại từ đầu">⟲</button>
       </div>
@@ -254,7 +254,7 @@
           <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
           <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
           <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
-          <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)">🔊︎</button>
+          <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
           <button class="fc-read-btn" id="fc-shuffle" title="Xáo trộn thứ tự thẻ">⇌</button>
         </div>
       </div>
@@ -265,7 +265,7 @@
           <div class="fc-read-count" id="fc-read-count">0 mục</div>
           <div class="fc-read-chips">
             <button type="button" class="fc-chip active" data-rfilter="all">Tất cả</button>
-            <button type="button" class="fc-chip" data-rfilter="star">★ Đã đánh dấu <span id="fc-read-star-count">0</span></button>
+            <button type="button" class="fc-chip" data-rfilter="star">Đã đánh dấu <span id="fc-read-star-count">0</span></button>
             <button type="button" class="fc-chip" id="fc-read-vi-toggle" title="Ẩn/hiện phần nghĩa tiếng Việt (bấm vào từng dòng để xem riêng)">Nghĩa: Hiện</button>
           </div>
         </div>
@@ -279,7 +279,7 @@
         <span class="status-dot" id="wr-current-dot"></span>
         <span class="nghe-current-title" id="wr-current-title">Chọn danh sách để bắt đầu</span>
         <button class="nghe-reset-btn" id="wr-shuffle" title="Xáo trộn thứ tự câu">⟲</button>
-        <button class="nghe-reset-btn" id="wr-voice-settings-btn" title="Chọn giọng đọc">🎙</button>
+        <button class="nghe-reset-btn" id="wr-voice-settings-btn" title="Chọn giọng đọc"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/></svg></button>
         <button class="pill-btn-outline" id="wr-difficulty-toggle" title="Bấm để đổi độ khó: Dễ → Trung bình → Khó">Độ khó: Trung bình</button>
       </div>
 
@@ -323,7 +323,7 @@
         <button class="wh-cat-btn" data-wh-cat="dictionary">Từ điển</button>
         <button class="wh-cat-btn" data-wh-cat="library" id="wh-cat-library-btn">Thư viện</button>
         <button class="wh-cat-btn" data-wh-cat="stats" id="wh-cat-stats-btn">Thống kê</button>
-        <button class="wh-cat-btn" data-wh-cat="trash" id="wh-cat-trash-btn">🗑 Thùng rác</button>
+        <button class="wh-cat-btn" data-wh-cat="trash" id="wh-cat-trash-btn">Thùng rác</button>
         <button class="wh-cat-btn hidden" data-wh-cat="admin" id="wh-cat-admin-btn">Admin</button>
       </div>
 
@@ -331,9 +331,9 @@
       <div class="wh-tag-filter-row hidden" id="wh-tag-filter-row"></div>
       <div class="wh-bulk-bar hidden" id="wh-bulk-bar">
         <span id="wh-bulk-count">Đã chọn 0 mục</span>
-        <button class="pill-btn-outline" id="wh-bulk-tag">🏷️ Gắn thẻ</button>
-        <button class="pill-btn-outline" id="wh-bulk-move">⇄ Chuyển danh sách</button>
-        <button class="pill-btn-outline" id="wh-bulk-delete">🗑 Xoá</button>
+        <button class="pill-btn-outline" id="wh-bulk-tag">Gắn thẻ</button>
+        <button class="pill-btn-outline" id="wh-bulk-move">Chuyển danh sách</button>
+        <button class="pill-btn-outline" id="wh-bulk-delete">Xoá</button>
         <button class="pill-btn-outline" id="wh-bulk-cancel">Bỏ chọn</button>
       </div>
 
@@ -373,7 +373,7 @@
 
         <div class="wh-admin-view hidden" id="wh-admin-view">
           <div class="admin-lock" id="admin-lock">
-            <div class="admin-lock-icon" aria-hidden="true">🔒</div>
+            <div class="admin-lock-icon" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
             <div class="admin-lock-title">Admin Panel đang khoá</div>
             <p class="wh-preview-empty">Nhập mật khẩu đăng nhập của tài khoản Admin để mở khoá.</p>
             <div class="admin-lock-form">
@@ -390,7 +390,7 @@
               <button type="button" class="auth-subtab-btn" data-admin-tab="log">Nhật ký</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="database">Database</button>
               <button type="button" class="auth-subtab-btn" data-admin-tab="features">Chức năng</button>
-              <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">🔒 Khoá</button>
+              <button type="button" class="auth-subtab-btn admin-relock-btn" id="admin-relock-btn" title="Khoá lại Admin Panel">Khoá</button>
             </div>
             <input type="search" class="text-input" id="admin-users-search" placeholder="Tìm user theo tên hoặc email..." autocomplete="off" spellcheck="false">
             <div class="admin-pane" id="admin-pane-users"></div>
@@ -398,7 +398,7 @@
             <div class="admin-pane hidden" id="admin-pane-log"></div>
             <div class="admin-pane hidden" id="admin-pane-database">
               <div id="admin-db-info" class="wh-preview-empty"></div>
-              <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">🗄️ Đổi database (dán config Firebase)</button>
+              <button class="pill-btn-outline db-config-open-btn" id="db-config-open-btn" style="width:100%;">Đổi database (dán config Firebase)</button>
               <div class="account-info-row">
                 <span>Giới hạn số tài khoản đăng ký</span>
                 <input type="number" class="text-input" id="admin-reg-cap-input" style="max-width:100px;" min="0" placeholder="Không giới hạn">
@@ -460,8 +460,8 @@
         <div class="wh-toolbar" id="wh-toolbar">
           <div class="wh-toolbar-right">
             <button class="pill-btn-outline" id="wh-clear-all">Xóa hết</button>
-            <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">🔔 Nhắc từ</button>
-            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">🔊︎ Đọc tự động</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-toggle" title="Bật/tắt thông báo nhắc từ ngẫu nhiên">Nhắc từ</button>
+            <button class="pill-btn-outline hidden" id="wh-reminder-read-toggle" title="Tự động đọc từ khi popup nhắc hiện lên">Đọc tự động</button>
             <span class="wh-progress" id="wh-progress">Tiến độ: 0%</span>
             <button class="pill-btn-outline" id="wh-reset-status">Đặt lại trạng thái</button>
             <button class="pill-btn primary" id="wh-add-items">Thêm vào</button>
@@ -511,7 +511,7 @@
       <div class="wh-preview-list" id="wh-preview-list"></div>
       <div class="btn-row-2">
         <button class="pill-btn primary flex-1" id="wh-add-ok">OK — Thêm vào danh sách</button>
-        <button class="pill-btn-outline flex-1" id="wh-add-back">← Quay lại</button>
+        <button class="pill-btn-outline flex-1" id="wh-add-back">Quay lại</button>
       </div>
     </div>
   </div>
@@ -540,7 +540,7 @@
     <div id="wh-listening-add-preview-view" class="hidden">
       <div class="wh-preview-list" id="wh-listening-preview-list"></div>
       <div class="btn-row-2">
-        <button class="pill-btn-outline flex-1" id="wh-listening-add-back">← Quay lại</button>
+        <button class="pill-btn-outline flex-1" id="wh-listening-add-back">Quay lại</button>
         <button class="pill-btn primary flex-1" id="wh-listening-add-ok">OK</button>
       </div>
     </div>
@@ -632,7 +632,7 @@
       <p class="wh-preview-empty" style="margin:0 0 10px;">Nhập email đã đăng ký, Firebase sẽ gửi link đặt lại mật khẩu.</p>
       <input type="email" class="text-input" id="auth-forgot-email" placeholder="Email">
       <button class="block-btn primary" id="auth-forgot-submit" style="margin-top:12px;">Gửi email đặt lại</button>
-      <button type="button" class="link-btn" id="auth-forgot-back" style="margin-top:10px;">← Quay lại đăng nhập</button>
+      <button type="button" class="link-btn" id="auth-forgot-back" style="margin-top:10px;">Quay lại đăng nhập</button>
       <p class="auth-error hidden" id="auth-forgot-error"></p>
     </div>
   </div>
@@ -674,8 +674,8 @@
     <p class="wh-preview-empty" id="lib-detail-note" style="margin:8px 0;"></p>
     <div class="lib-detail-preview" id="lib-detail-preview"></div>
     <div class="lib-detail-actions-row">
-      <button class="pill-btn-outline lib-like-btn" id="lib-detail-like-btn">🤍 <span id="lib-detail-like-count">0</span></button>
-      <button class="pill-btn-outline" id="lib-detail-report-btn">🚩 Báo cáo</button>
+      <button class="pill-btn-outline lib-like-btn" id="lib-detail-like-btn"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg> <span id="lib-detail-like-count">0</span></button>
+      <button class="pill-btn-outline" id="lib-detail-report-btn">Báo cáo</button>
     </div>
     <button class="block-btn primary" id="lib-detail-download-btn" style="margin-top:12px;">Tải về Kho</button>
   </div>
@@ -830,7 +830,7 @@
       <button type="button" class="pill-btn-outline" id="translate-save" title="Lưu nhanh vào Từ điển">Lưu Từ điển</button>
       <button type="button" class="pill-btn-outline" id="translate-copy" title="Sao chép bản dịch">Sao chép</button>
     </div>
-    <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="translate-google">Mở Google Translate ↗</a>
+    <a href="#" target="_blank" rel="noopener" id="translate-open-google" class="translate-google">Mở Google Translate</a>
   </div>
 </div>
 
@@ -848,10 +848,6 @@
         <p class="wh-preview-empty" id="settings-account-status-note">Chưa đăng nhập — dữ liệu chỉ lưu trên máy này. Bấm vào avatar ở góc trên bên trái để đăng nhập/đăng ký.</p>
       </div>
 
-      <div class="settings-section">
-        <div class="section-label">Ngữ pháp</div>
-        <a class="pill-btn-outline" id="grammar-open-btn" href="./grammar.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;text-align:center;">📖 Mở tài liệu ngữ pháp</a>
-      </div>
 
       <div class="settings-section">
         <div class="section-label">Giao diện</div>
@@ -866,11 +862,14 @@
           <button class="theme-dot theme-dot-12" data-level="12" title="Tử đằng"></button>
           <button class="theme-dot theme-dot-18" data-level="18" title="Đất nung"></button>
         </div>
-        <div class="theme-style-row" id="theme-style-row">
-          <button type="button" class="theme-style-btn theme-style-manga" data-level="19" data-feature="theme_manga" title="Phong cách tranh vẽ manga / anime">Manga</button>
-          <button type="button" class="theme-style-btn theme-style-vangogh" data-level="20" data-feature="theme_vangogh" title="Phong cách Đêm đầy sao của Van Gogh">Đêm sao</button>
-          <button type="button" class="theme-style-btn theme-style-terminal" data-level="21" data-feature="theme_terminal" title="Hacker Terminal / CRT cyberpunk">Terminal</button>
-        </div>
+        <button type="button" class="theme-special-btn" id="theme-special-btn" title="Chọn giao diện đặc biệt">
+          <span class="tsw tsw-sm" id="theme-special-swatch" data-tsw="0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"/><path d="M19 15v4"/><path d="M17 17h4"/><path d="M5 17v3"/><path d="M3.5 18.5h3"/></svg></span>
+          <span class="theme-special-text">
+            <span class="theme-special-title">Giao diện đặc biệt</span>
+            <span class="theme-special-sub" id="theme-special-sub">Chưa chọn — bấm để xem</span>
+          </span>
+          <span class="theme-special-chev" aria-hidden="true">›</span>
+        </button>
       </div>
 
       <div class="settings-section">
@@ -1079,12 +1078,24 @@
         <div class="section-label">Sao lưu dữ liệu</div>
         <p class="wh-preview-empty" style="margin:0 0 8px;">Xuất toàn bộ danh sách/tiến độ học ra 1 file JSON để lưu dự phòng, hoặc nhập lại từ file đã xuất trước đó.</p>
         <div class="btn-row-2">
-          <button class="pill-btn-outline" id="settings-export-backup-btn">⬇️ Xuất dữ liệu</button>
-          <button class="pill-btn-outline" id="settings-import-backup-btn">⬆️ Nhập dữ liệu</button>
+          <button class="pill-btn-outline" id="settings-export-backup-btn">Xuất dữ liệu</button>
+          <button class="pill-btn-outline" id="settings-import-backup-btn">Nhập dữ liệu</button>
         </div>
         <input type="file" id="settings-import-backup-input" accept="application/json" class="hidden">
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ============ POPUP: Chọn giao diện đặc biệt ============ -->
+<div class="overlay hidden" id="theme-picker-overlay">
+  <div class="modal-panel theme-picker-modal">
+    <div class="popup-header">
+      <span>Giao diện đặc biệt</span>
+      <button class="popup-close" id="theme-picker-close">✕</button>
+    </div>
+    <div class="theme-picker-grid" id="theme-picker-grid"></div>
+    <p class="theme-picker-note">Sẽ có thêm nhiều giao diện đặc biệt nữa. Chọn giao diện thường ở các chấm màu bên ngoài.</p>
   </div>
 </div>
 
@@ -1139,7 +1150,7 @@
 
 <!-- ============ BANNER: Có bản cập nhật mới ============ -->
 <div class="sw-update-banner hidden" id="sw-update-banner">
-  <span>🔄 Đã có bản cập nhật mới cho Nox.</span>
+  <span>Đã có bản cập nhật mới cho Nox.</span>
   <button class="pill-btn primary" id="sw-update-reload-btn">Tải lại để cập nhật</button>
 </div>
 
