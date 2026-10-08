@@ -1,0 +1,368 @@
+/* ============================================================
+   THEME 25 - HOÀNG TRIỀU (VIỆT PHỤC / HERITAGE)
+   Bản sắc hoàng triều, trống đồng Đông Sơn, rồng phượng
+   ============================================================ */
+
+body[data-theme-level="25"] {
+  font-family: 'Lora', serif;
+  background-color: #5c0f0f;
+  color: #f5ede0;
+}
+
+@keyframes royal-bg-drift {
+  0% { transform: scale(1.0); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1.0); }
+}
+
+body[data-theme-level="25"]::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background-image: url('royal-dragon-phoenix-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: -2;
+  filter: blur(1.5px) brightness(0.85);
+  pointer-events: none;
+  animation: royal-bg-drift 40s ease-in-out infinite;
+}
+
+body[data-theme-level="25"] h1, 
+body[data-theme-level="25"] h2, 
+body[data-theme-level="25"] h3, 
+body[data-theme-level="25"] .grammar-unit-title,
+body[data-theme-level="25"] .account-brand-name,
+body[data-theme-level="25"] .wh-term {
+  font-family: 'Playfair Display', serif;
+  letter-spacing: 1px;
+  color: #d4a843; /* Gold */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 2. Background Trống Đồng Đông Sơn (Xoay chầm chậm) */
+@keyframes spin-drum {
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@media (min-width: 901px) {
+  body[data-theme-level="25"]::after {
+    content: '';
+    position: fixed;
+    top: 50%; left: 80%;
+    width: 90vw; height: 90vw;
+    max-width: 1000px; max-height: 1000px;
+    z-index: -1;
+    pointer-events: none;
+    background-image: url('dongson-drum.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.35;
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: spin-drum 200s linear infinite;
+  }
+}
+
+/* 3. Panel - Glassmorphism đỏ thẫm */
+body[data-theme-level="25"] .panel,
+body[data-theme-level="25"] .modal-content,
+body[data-theme-level="25"] .popup-panel,
+body[data-theme-level="25"] .card,
+body[data-theme-level="25"] .grammar-unit-card,
+body[data-theme-level="25"] .app-header {
+  background: rgba(92, 15, 15, 0.65); /* Crimson deep with transparency */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(197, 151, 44, 0.3); /* Gold border */
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(197, 151, 44, 0.05);
+}
+
+/* 4. Flashcard */
+body[data-theme-level="25"] .card { 
+  position: relative; overflow: hidden; 
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+}
+
+body[data-theme-level="25"] .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.8), 0 0 25px rgba(212,168,67,0.4);
+  border-color: #d4a843;
+}
+
+/* Dấu cho thẻ Khó */
+body[data-theme-level="25"] .card.difficulty-hard::after {
+  content: "TINH HOA";
+  position: absolute;
+  right: 15px; bottom: 15px;
+  font-family: 'Playfair Display', serif;
+  font-size: 13px;
+  font-weight: bold;
+  color: #d4a843;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px rgba(212, 168, 67, 0.5);
+}
+
+/* Hiệu ứng lật thẻ (Mặt trống đồng hoàng kim hiện ra xoay) */
+@keyframes royal-flip-drum {
+  0% { transform: scale(0.5) rotate(0deg); opacity: 0; filter: brightness(1) drop-shadow(0 0 0 rgba(212,168,67,0)); }
+  30% { opacity: 0.9; filter: brightness(2.5) drop-shadow(0 0 20px rgba(212,168,67,1)); }
+  100% { transform: scale(1.8) rotate(270deg); opacity: 0; filter: brightness(1) drop-shadow(0 0 0 rgba(212,168,67,0)); }
+}
+
+body[data-theme-level="25"] .card-flip-effect {
+  animation: none !important;
+}
+
+body[data-theme-level="25"] .card-flip-effect::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 150px; height: 150px;
+  margin: -75px 0 0 -75px;
+  background-image: url('dongson-drum.svg');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 0;
+  animation: royal-flip-drum 800ms ease-out forwards;
+}
+
+/* Kiểu dáng chữ bên trong Flashcard */
+body[data-theme-level="25"] .card-text {
+  font-family: 'Playfair Display', serif;
+  color: #ffdf00; /* Vàng sáng rực rỡ */
+  text-shadow: 0 2px 5px rgba(0,0,0,0.8), 0 0 15px rgba(255, 223, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+body[data-theme-level="25"] .card-hint {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  color: #e6c27a; /* Vàng nhẹ, trang nhã */
+}
+
+body[data-theme-level="25"] .card-status-pill {
+  font-family: 'Playfair Display', serif;
+  background: rgba(212, 168, 67, 0.15);
+  color: #d4a843;
+  border: 1px solid rgba(212, 168, 67, 0.5);
+  box-shadow: 0 0 10px rgba(212, 168, 67, 0.2);
+}
+
+body[data-theme-level="25"] .wh-term,
+body[data-theme-level="25"] .wh-def {
+  position: relative;
+  z-index: 1;
+}
+
+/* 5. Nút bấm - Vàng kim */
+body[data-theme-level="25"] .pill-btn,
+body[data-theme-level="25"] .pill-btn-outline,
+body[data-theme-level="25"] .block-btn {
+  background: transparent;
+  border: 1px solid rgba(197, 151, 44, 0.5);
+  color: #d4a843;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.2s ease;
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+}
+
+body[data-theme-level="25"] .pill-btn.primary,
+body[data-theme-level="25"] .block-btn.primary {
+  background: rgba(197, 151, 44, 0.15);
+}
+
+body[data-theme-level="25"] :is(.pill-btn, .pill-btn-outline, .block-btn):hover {
+  background: rgba(197, 151, 44, 0.3);
+  color: #fffdf8;
+  box-shadow: 0 0 10px rgba(197, 151, 44, 0.4);
+  border-color: #d4a843;
+}
+
+/* 6. Icon thành Họa Tiết Hoàng Gia */
+body[data-theme-level="25"] .fc-read-speak,
+body[data-theme-level="25"] #fc-play-btn,
+body[data-theme-level="25"] .settings-gear-btn,
+body[data-theme-level="25"] .fc-read-star {
+  font-size: 0 !important;
+}
+body[data-theme-level="25"] .fc-read-speak::before,
+body[data-theme-level="25"] #fc-play-btn::before {
+  content: "☙"; font-size: 18px; color: #d4a843; font-weight: normal; line-height: 1; text-shadow: 0 0 3px rgba(212,168,67,0.5);
+}
+body[data-theme-level="25"] .fc-read-star::before {
+  content: "❀"; font-size: 18px; color: rgba(245, 237, 224, 0.3); font-weight: normal; line-height: 1;
+}
+body[data-theme-level="25"] .fc-read-row.starred .fc-read-star::before {
+  content: "✿"; color: #d4a843; text-shadow: 0 0 5px rgba(212,168,67,0.8);
+}
+body[data-theme-level="25"] .settings-gear-btn::before {
+  content: "❂"; font-size: 18px; color: #d4a843; line-height: 1;
+}
+
+/* 7. Loading Screen - Vàng kim lấp lánh */
+body[data-theme-level="25"] .app-loading {
+  background: #5c0f0f;
+  position: fixed;
+  overflow: hidden;
+  z-index: 10000;
+}
+
+body[data-theme-level="25"] .app-loading::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: -10px; right: -10px; bottom: -10px;
+  background-image: url('royal-dragon-phoenix-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  filter: blur(5px) brightness(0.6);
+  z-index: -1;
+}
+body[data-theme-level="25"] .app-loading-icon { display: none !important; }
+
+body[data-theme-level="25"] #royal-loading-svg {
+  display: flex !important;
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 90vw !important;
+  height: 90vw !important;
+  max-width: 1000px !important;
+  max-height: 1000px !important;
+  transform: translate(-50%, -50%);
+  margin: 0 !important;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+@media (min-width: 901px) {
+  body[data-theme-level="25"] #royal-loading-svg {
+    left: 80%;
+  }
+}
+
+@keyframes spin-drum-only {
+  100% { transform: rotate(360deg); }
+}
+
+body[data-theme-level="25"] #royal-loading-svg svg {
+  animation: spin-drum-only 200s linear infinite;
+}
+
+body[data-theme-level="25"] #royal-loading-svg svg path,
+body[data-theme-level="25"] #royal-loading-svg svg circle,
+body[data-theme-level="25"] #royal-loading-svg svg line {
+  stroke-dasharray: 2500;
+  stroke-dashoffset: 2500;
+  animation: royal-draw 3s ease-out forwards;
+}
+
+body[data-theme-level="25"] #royal-loading-svg svg [fill="#D4AF37"] {
+  fill: transparent !important;
+  animation: royal-draw 3s ease-out forwards, royal-fill 1.5s ease-in 2s forwards;
+}
+
+@keyframes royal-draw {
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes royal-fill {
+  100% { fill: #d4a843 !important; }
+}
+
+@keyframes royal-load-fade {
+  0% { opacity: 0; filter: blur(5px); margin-top: 20px; }
+  100% { opacity: 1; filter: blur(0px); margin-top: 0; }
+}
+
+body[data-theme-level="25"] .app-loading-text {
+  position: absolute;
+  left: 15vw;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(5rem, 12vw, 11.25rem);
+  color: #d4a843;
+  text-shadow: 0 5px 20px rgba(0,0,0,0.8);
+  margin: 0;
+  animation: royal-load-fade 1.5s ease-out forwards;
+  z-index: 10;
+}
+
+/* 8. Progress Ring (Thống kê) */
+body[data-theme-level="25"] .ring-track {
+  stroke: rgba(197, 151, 44, 0.2);
+}
+body[data-theme-level="25"] .ring-progress {
+  stroke: #d4a843;
+  filter: drop-shadow(0 0 3px rgba(212,168,67,0.5));
+}
+
+/* 9. Toast */
+body[data-theme-level="25"] .toast {
+  background: rgba(92, 15, 15, 0.95);
+  border: 1px solid #c5972c;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  color: #f5ede0;
+}
+
+/* 10. Hiệu ứng Đúng/Sai */
+body[data-theme-level="25"] .correct-effect,
+body[data-theme-level="25"] .wrong-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+@keyframes royal-correct {
+  0% { box-shadow: inset 0 0 0 0 rgba(212, 168, 67, 0); background: rgba(212, 168, 67, 0); }
+  20% { box-shadow: inset 0 0 80px rgba(212, 168, 67, 0.6); background: rgba(212, 168, 67, 0.15); }
+  100% { box-shadow: inset 0 0 0 0 rgba(212, 168, 67, 0); background: transparent; }
+}
+
+body[data-theme-level="25"] .correct-effect {
+  animation: royal-correct 600ms ease-out forwards;
+}
+
+@keyframes royal-wrong {
+  0%, 100% { transform: translateX(0); border-color: rgba(197, 151, 44, 0.3); }
+  20%, 60% { transform: translateX(-5px); border-color: #ff4d4d; background: rgba(255, 77, 77, 0.1); }
+  40%, 80% { transform: translateX(5px); border-color: #ff4d4d; background: rgba(255, 77, 77, 0.1); }
+}
+
+body[data-theme-level="25"] .wrong-effect {
+  animation: royal-wrong 400ms ease-in-out;
+}
+
+/* 11. CSS Particles (Hoa rơi) */
+body[data-theme-level="25"] .app-shell::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 4px; height: 4px;
+  background: transparent;
+  z-index: 100;
+  border-radius: 50%;
+  box-shadow: 3.8vw -16.0vh rgba(212, 168, 67, 0.6), 68.1vw -49.0vh rgba(212, 168, 67, 0.5), 49.4vw -47.6vh rgba(212, 168, 67, 0.9), 31.8vw -53.4vh rgba(212, 168, 67, 0.8), 66.4vw -67.1vh rgba(212, 168, 67, 0.4), 2.1vw -15.6vh rgba(212, 168, 67, 0.2), 23.8vw -5.6vh rgba(212, 168, 67, 0.3), 95.9vw -26.1vh rgba(212, 168, 67, 0.9), 85.7vw -91.0vh rgba(212, 168, 67, 0.8), 66.2vw -52.4vh rgba(212, 168, 67, 0.2), 46.7vw -35.8vh rgba(212, 168, 67, 0.9), 52.2vw -29.4vh rgba(212, 168, 67, 0.4), 83.9vw -16.9vh rgba(212, 168, 67, 0.6), 78.9vw -53.7vh rgba(212, 168, 67, 0.2), 5.8vw -34.7vh rgba(212, 168, 67, 0.5), 70.5vw -48.6vh rgba(212, 168, 67, 0.6), 90.3vw -49.6vh rgba(212, 168, 67, 0.9), 16.6vw -49.2vh rgba(212, 168, 67, 0.7), 84.5vw -14.0vh rgba(212, 168, 67, 0.5), 28.9vw -9.8vh rgba(212, 168, 67, 0.2), 12.8vw -10.0vh rgba(212, 168, 67, 0.3), 50.1vw -48.0vh rgba(212, 168, 67, 0.8), 53.3vw -56.8vh rgba(212, 168, 67, 0.5), 9.4vw -24.9vh rgba(212, 168, 67, 0.7), 36.7vw -1.1vh rgba(212, 168, 67, 0.3), 57.8vw -74.4vh rgba(212, 168, 67, 0.5), 45.8vw -57.0vh rgba(212, 168, 67, 0.3), 7.8vw -33.5vh rgba(212, 168, 67, 0.6), 54.5vw -46.8vh rgba(212, 168, 67, 0.5), 94.6vw -23.7vh rgba(212, 168, 67, 0.7), 10.0vw -69.4vh rgba(212, 168, 67, 0.3), 19.7vw -71.1vh rgba(212, 168, 67, 0.5), 2.1vw -38.9vh rgba(212, 168, 67, 0.2), 24.2vw -26.9vh rgba(212, 168, 67, 0.8), 86.7vw -14.4vh rgba(212, 168, 67, 0.4), 92.2vw -96.6vh rgba(212, 168, 67, 0.6), 78.4vw -60.8vh rgba(212, 168, 67, 0.2), 58.1vw -32.0vh rgba(212, 168, 67, 0.7), 11.3vw -28.2vh rgba(212, 168, 67, 0.6), 66.8vw -21.3vh rgba(212, 168, 67, 0.7), 55.6vw -32.9vh rgba(212, 168, 67, 0.2), 74.2vw -15.4vh rgba(212, 168, 67, 0.8), 5.9vw -33.8vh rgba(212, 168, 67, 0.6), 35.5vw -41.4vh rgba(212, 168, 67, 0.4), 88.8vw -68.8vh rgba(212, 168, 67, 0.4), 59.0vw -15.7vh rgba(212, 168, 67, 0.9), 4.3vw -85.3vh rgba(212, 168, 67, 0.4), 80.8vw -9.7vh rgba(212, 168, 67, 0.2), 82.8vw -15.6vh rgba(212, 168, 67, 0.3), 77.2vw -64.3vh rgba(212, 168, 67, 0.8);
+  animation: royal-fall 18s linear infinite;
+  pointer-events: none;
+}
+body[data-theme-level="25"] .app-shell::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; width: 6px; height: 6px;
+  background: transparent;
+  z-index: 100;
+  border-radius: 50%;
+  box-shadow: 20.2vw -8.4vh rgba(212, 168, 67, 0.8), 44.5vw -33.1vh rgba(212, 168, 67, 0.4), 12.1vw -66.2vh rgba(212, 168, 67, 0.9), 88.4vw -20.5vh rgba(212, 168, 67, 0.6), 9.2vw -55.8vh rgba(212, 168, 67, 0.2), 52.8vw -44.2vh rgba(212, 168, 67, 0.7), 33.1vw -11.9vh rgba(212, 168, 67, 0.5), 75.6vw -88.3vh rgba(212, 168, 67, 0.8), 61.2vw -99.1vh rgba(212, 168, 67, 0.3), 85.9vw -10.4vh rgba(212, 168, 67, 0.9), 50.1vw -72.6vh rgba(212, 168, 67, 0.6), 18.5vw -48.2vh rgba(212, 168, 67, 0.4), 95.2vw -35.7vh rgba(212, 168, 67, 0.2), 68.3vw -5.8vh rgba(212, 168, 67, 0.7), 2.9vw -22.1vh rgba(212, 168, 67, 0.5), 41.6vw -81.5vh rgba(212, 168, 67, 0.8);
+  animation: royal-fall 12s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes royal-fall {
+  0% { transform: translateY(-20vh) rotate(0deg); }
+  100% { transform: translateY(120vh) rotate(360deg); }
+}

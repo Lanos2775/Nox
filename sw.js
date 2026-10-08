@@ -1,8 +1,11 @@
-const CACHE_NAME = "nox-cache-v67";
+const CACHE_NAME = "nox-cache-v69";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./style.css",
+  "./theme-hoangtrieu.css",
+  "./royal-dragon-phoenix-bg.jpg",
+  "./dongson-drum.svg",
   "./script.js",
   "./grammar-data.json",
   "./manifest.json",

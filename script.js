@@ -863,10 +863,20 @@ const THEME_PALETTES = {
     text: "#e8f6ee", textMuted: "#8fc4b3", accent: "#e6c15a", accentSoft: "rgba(230,193,90,0.16)", accentText: "#06251f",
     learningSoft: "#3d3512", knownSoft: "#0f4a3a", difficultSoft: "#4a1f2a",
   },
+  24: { // Genshin — giấy kem, xanh than, viền vàng
+    bg: "#9cc4e8", panel: "#ece5d8", border: "#c9b27c", borderSoft: "#ddd3bd",
+    text: "#3b4255", textMuted: "#6b7183", accent: "#4a5266", accentSoft: "#f6ecd0", accentText: "#ece5d8",
+    learningSoft: "#f6e7bd", knownSoft: "#d8ecd4", difficultSoft: "#f6d5cf",
+  },
   23: { // Tết cổ truyền — đỏ son, giấy điều, vàng kim
     bg: "#9b0d1c", panel: "#fff4d6", border: "#7a0c12", borderSoft: "#e8cf95",
     text: "#4a0d12", textMuted: "#8a5440", accent: "#c8102e", accentSoft: "#ffe2a1", accentText: "#fff4d6",
     learningSoft: "#ffe39a", knownSoft: "#d4ecc5", difficultSoft: "#ffc7c7",
+  },
+  25: { // Hoàng Triều — màu đỏ thẫm (crimson), vàng kim, mặt trống đồng
+    bg: "#5c0f0f", panel: "rgba(139,26,26,0.65)", border: "#c5972c", borderSoft: "rgba(197,151,44,0.4)",
+    text: "#f5ede0", textMuted: "#c9bba8", accent: "#d4a843", accentSoft: "rgba(197,151,44,0.15)", accentText: "#5c0f0f",
+    learningSoft: "#8b6914", knownSoft: "#2d6b4f", difficultSoft: "#3d1c1c",
   },
 };
 function cssVarName(key) {
@@ -893,6 +903,12 @@ const SPECIAL_THEMES = [
   { level: 23, feature: "theme_tet", name: "Tết Việt", desc: "Tết cổ truyền: hoa đào, hoa mai, bao lì xì, đèn lồng, trống đồng", fallback: 1,
     featureLabel: "Giao diện Tết cổ truyền", featureDesc: "Giao diện Tết cổ truyền Việt Nam (Cài đặt > Giao diện > Giao diện đặc biệt).",
     font: "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500..700&display=swap" },
+  { level: 24, feature: "theme_genshin", name: "Genshin", desc: "Phong cách game phiêu lưu fantasy: trời xanh, mây, đảo bay, giấy kem viền vàng", fallback: 1,
+    featureLabel: "Giao diện Genshin", featureDesc: "Giao diện lấy cảm hứng từ game phiêu lưu fantasy Genshin (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Lora:wght@500..700&display=swap" },
+  { level: 25, feature: "theme_hoangtrieu", name: "Hoàng Triều", desc: "Bản sắc hoàng triều, trống đồng Đông Sơn, rồng phượng", fallback: 4,
+    featureLabel: "Giao diện Hoàng Triều", featureDesc: "Giao diện Hoàng Triều (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Lora:wght@400;500&display=swap" },
 ];
 const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18].concat(SPECIAL_THEMES.map((t) => t.level));
 const THEME_REMOVED_MAP = { 5: 4, 6: 4, 10: 4, 11: 4, 15: 4, 16: 4, 17: 4, 13: 1, 14: 1 };
@@ -2592,6 +2608,13 @@ function wrSubmitAnswer() {
   const grade = wrGradeAnswer(typed, item);
   logStudyAction("writing", grade.correct, WR_DIFFICULTY_GAIN[wr.difficulty], WR_DIFFICULTY_PENALTY[wr.difficulty]);
 
+  const cardEl = document.getElementById("wr-chat-scroll");
+  if (cardEl) {
+    cardEl.classList.remove("correct-effect", "wrong-effect");
+    void cardEl.offsetWidth;
+    cardEl.classList.add(grade.correct ? "correct-effect" : "wrong-effect");
+  }
+
   if (grade.correct) {
     item.status = "known";
     prog.done = true;
@@ -4155,6 +4178,14 @@ function ngheSubmitAnswer() {
   }
   const target = item.lines[progress.cursor].text;
   const { pct, correct } = ngheGradeLine(typed, target);
+
+  const cardEl = document.getElementById("nghe-chat-scroll");
+  if (cardEl) {
+    cardEl.classList.remove("correct-effect", "wrong-effect");
+    void cardEl.offsetWidth;
+    cardEl.classList.add(correct ? "correct-effect" : "wrong-effect");
+  }
+
   if (correct) {
     lineState.attempts.push({ text: typed, pct: 100, correct: true });
     ngheResolveLine("correct");
@@ -6880,7 +6911,7 @@ const NOX_CHANGELOG = [
       "Bỏ icon chèn thêm trong các nút có chữ; icon nhiều màu (⚙, 🗑, 🎙, 🔊, ❤...) đổi sang icon nét đen đi theo màu chữ",
       "Popup Dịch nhanh không còn lớp làm mờ nền ở các giao diện đặc biệt (kể cả giao diện thêm sau này)",
       "Giao diện đặc biệt gom vào 1 nút trong Cài đặt > Giao diện: bấm để mở popup chọn, nút hiện hình giao diện đang dùng",
-      "Thêm 2 giao diện đặc biệt: Tu tiên (ngọc bích & vàng kim, trận pháp, phi kiếm) và Tết cổ truyền (hoa đào, hoa mai, lì xì, đèn lồng)",
+      "Thêm 3 giao diện đặc biệt: Tu tiên (ngọc bích & vàng kim), Tết cổ truyền (hoa đào, hoa mai, lì xì, đèn lồng) và Genshin (trời xanh, mây, đảo bay, giấy kem viền vàng)",
       "Admin > Chức năng: có công tắc khoá/mở riêng cho từng giao diện đặc biệt mới",
     ],
   },
