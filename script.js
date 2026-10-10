@@ -868,15 +868,15 @@ const THEME_PALETTES = {
     text: "#3b4255", textMuted: "#6b7183", accent: "#4a5266", accentSoft: "#f6ecd0", accentText: "#ece5d8",
     learningSoft: "#f6e7bd", knownSoft: "#d8ecd4", difficultSoft: "#f6d5cf",
   },
-  23: { // Tết cổ truyền — đỏ son, giấy điều, vàng kim
-    bg: "#9b0d1c", panel: "#fff4d6", border: "#7a0c12", borderSoft: "#e8cf95",
-    text: "#4a0d12", textMuted: "#8a5440", accent: "#c8102e", accentSoft: "#ffe2a1", accentText: "#fff4d6",
-    learningSoft: "#ffe39a", knownSoft: "#d4ecc5", difficultSoft: "#ffc7c7",
-  },
   25: { // Ma pháp — tím đêm, rune sáng
     bg: "#0a0820", panel: "#15123a", border: "#6c55d6", borderSoft: "#2a2468",
     text: "#ece8ff", textMuted: "#a69fd6", accent: "#a98bff", accentSoft: "rgba(169,139,255,0.18)", accentText: "#07051a",
     learningSoft: "#3a3270", knownSoft: "#10404a", difficultSoft: "#4a1b3a",
+  },
+  23: { // Hoàng triều — đỏ thẫm, vàng kim
+    bg: "#4a0b0b", panel: "#5c1212", border: "#c5972c", borderSoft: "#7a2a22",
+    text: "#f5ede0", textMuted: "#d9c3a0", accent: "#d4a843", accentSoft: "rgba(212,168,67,0.16)", accentText: "#3a0808",
+    learningSoft: "#6b3a12", knownSoft: "#1f4a2e", difficultSoft: "#7a1f1f",
   },
 };
 function cssVarName(key) {
@@ -900,15 +900,15 @@ const SPECIAL_THEMES = [
   { level: 22, feature: "theme_tutien", name: "Tu tiên", desc: "Kiếm tiên: ngọc bích & vàng kim, trận pháp, phi kiếm, đảo bay", fallback: 4,
     featureLabel: "Giao diện Tu tiên (Kiếm tiên)", featureDesc: "Giao diện tu tiên / kiếm tiên, màu ngọc bích và vàng kim (Cài đặt > Giao diện > Giao diện đặc biệt).",
     font: "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500..700;1,500..700&display=swap" },
-  { level: 23, feature: "theme_tet", name: "Tết Việt", desc: "Tết cổ truyền: hoa đào, hoa mai, bao lì xì, đèn lồng, trống đồng", fallback: 1,
-    featureLabel: "Giao diện Tết cổ truyền", featureDesc: "Giao diện Tết cổ truyền Việt Nam (Cài đặt > Giao diện > Giao diện đặc biệt).",
-    font: "https://fonts.googleapis.com/css2?family=Dancing+Script:wght@500..700&display=swap" },
   { level: 24, feature: "theme_genshin", name: "Genshin", desc: "Phong cách game phiêu lưu fantasy: trời xanh, mây, đảo bay, giấy kem viền vàng", fallback: 1,
     featureLabel: "Giao diện Genshin", featureDesc: "Giao diện lấy cảm hứng từ game phiêu lưu fantasy Genshin (Cài đặt > Giao diện > Giao diện đặc biệt).",
     font: "https://fonts.googleapis.com/css2?family=Lora:wght@500..700&display=swap" },
   { level: 25, feature: "theme_mapphap", name: "Ma pháp", desc: "Vòng tròn ma pháp: rune phát sáng, trận đồ xoay chậm, triệu hồi và vỡ", fallback: 4,
     featureLabel: "Giao diện Ma pháp", featureDesc: "Giao diện vòng tròn ma pháp (Cài đặt > Giao diện > Giao diện đặc biệt).",
     font: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500..700&family=Cormorant+Garamond:ital,wght@0,500..700;1,500..700&display=swap" },
+  { level: 23, feature: "theme_hoangtrieu", name: "Hoàng triều", desc: "Việt phục hoàng triều: gấm đỏ rồng phượng, trống đồng Đông Sơn, hoa mai rơi", fallback: 1,
+    featureLabel: "Giao diện Hoàng triều", featureDesc: "Giao diện hoàng triều Việt (Cài đặt > Giao diện > Giao diện đặc biệt).",
+    font: "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500..800&family=Lora:wght@400..700&display=swap" },
 ];
 const THEME_VALID_LEVELS = [1, 2, 3, 4, 7, 8, 9, 12, 18].concat(SPECIAL_THEMES.map((t) => t.level));
 const THEME_REMOVED_MAP = { 5: 4, 6: 4, 10: 4, 11: 4, 15: 4, 16: 4, 17: 4, 13: 1, 14: 1 };
@@ -989,6 +989,7 @@ function applyThemeLevel(level, persist = true) {
   applyThemeLocks();
   updateSpecialThemeUI(shown);
   magicBgSync();
+  hoangSync();
 }
 // Đánh dấu thẻ giao diện đặc biệt bị khoá (gọi lại khi tải xong cấu hình / đổi tài khoản)
 function applyThemeLocks() {
@@ -1117,6 +1118,119 @@ function magicBgSync() {
   document.body.appendChild(fg);
 }
 
+/* ---- Hoàng triều: trống đồng, nền gấm, hạt hoa mai ---- */
+const HD_DRUM_SVG = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-200 -200 400 400\" fill=\"none\" stroke=\"#D4AF37\"><circle r=\"197\" stroke-width=\"2\"/><circle r=\"189\" stroke-width=\"0.8\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(0)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(4)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(8)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(12)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(16)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(20)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(24)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(28)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(32)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(36)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(40)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(44)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(48)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(52)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(56)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(60)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(64)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(68)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(72)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(76)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(80)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(84)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(88)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(92)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(96)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(100)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(104)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(108)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(112)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(116)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(120)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(124)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(128)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(132)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(136)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(140)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(144)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(148)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(152)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(156)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(160)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(164)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(168)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(172)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(176)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(180)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(184)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(188)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(192)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(196)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(200)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(204)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(208)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(212)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(216)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(220)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(224)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(228)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(232)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(236)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(240)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(244)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(248)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(252)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(256)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(260)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(264)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(268)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(272)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(276)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(280)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(284)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(288)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(292)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(296)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(300)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(304)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(308)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(312)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(316)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(320)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(324)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(328)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(332)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(336)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(340)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(344)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(348)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(352)\"/><line x1=\"0\" y1=\"-189\" x2=\"0\" y2=\"-180\" stroke-width=\"0.7\" transform=\"rotate(356)\"/><circle r=\"180\" stroke-width=\"0.8\"/><g transform=\"rotate(0) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(45) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(90) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(135) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(180) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(225) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(270) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><g transform=\"rotate(315) translate(0 -152)\"><path d=\"M-26 6 C-14 -4 -2 -7 7 -4 L26 -18 L15 -2 C22 2 25 7 20 9 C9 7 -6 10 -26 6Z\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.18\"/><path d=\"M-8 4 L-14 16 M2 4 L-2 15\" stroke-width=\"0.8\"/><circle cx=\"12\" cy=\"-2.5\" r=\"1.4\" fill=\"#D4AF37\" stroke=\"none\"/></g><circle r=\"124\" stroke-width=\"0.8\"/><circle cx=\"0.00\" cy=\"-117.00\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"12.23\" cy=\"-116.36\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"24.33\" cy=\"-114.44\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"36.15\" cy=\"-111.27\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"47.59\" cy=\"-106.88\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"58.50\" cy=\"-101.32\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"68.77\" cy=\"-94.65\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"78.29\" cy=\"-86.95\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"86.95\" cy=\"-78.29\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"94.65\" cy=\"-68.77\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"101.32\" cy=\"-58.50\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"106.88\" cy=\"-47.59\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"111.27\" cy=\"-36.15\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"114.44\" cy=\"-24.33\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"116.36\" cy=\"-12.23\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"117.00\" cy=\"0.00\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"116.36\" cy=\"12.23\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"114.44\" cy=\"24.33\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"111.27\" cy=\"36.15\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"106.88\" cy=\"47.59\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"101.32\" cy=\"58.50\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"94.65\" cy=\"68.77\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"86.95\" cy=\"78.29\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"78.29\" cy=\"86.95\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"68.77\" cy=\"94.65\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"58.50\" cy=\"101.32\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"47.59\" cy=\"106.88\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"36.15\" cy=\"111.27\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"24.33\" cy=\"114.44\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"12.23\" cy=\"116.36\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"0.00\" cy=\"117.00\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-12.23\" cy=\"116.36\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-24.33\" cy=\"114.44\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-36.15\" cy=\"111.27\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-47.59\" cy=\"106.88\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-58.50\" cy=\"101.32\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-68.77\" cy=\"94.65\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-78.29\" cy=\"86.95\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-86.95\" cy=\"78.29\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-94.65\" cy=\"68.77\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-101.32\" cy=\"58.50\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-106.88\" cy=\"47.59\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-111.27\" cy=\"36.15\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-114.44\" cy=\"24.33\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-116.36\" cy=\"12.23\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-117.00\" cy=\"0.00\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-116.36\" cy=\"-12.23\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-114.44\" cy=\"-24.33\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-111.27\" cy=\"-36.15\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-106.88\" cy=\"-47.59\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-101.32\" cy=\"-58.50\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-94.65\" cy=\"-68.77\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-86.95\" cy=\"-78.29\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-78.29\" cy=\"-86.95\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-68.77\" cy=\"-94.65\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-58.50\" cy=\"-101.32\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-47.59\" cy=\"-106.88\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-36.15\" cy=\"-111.27\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-24.33\" cy=\"-114.44\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle cx=\"-12.23\" cy=\"-116.36\" r=\"1.6\" fill=\"#D4AF37\" stroke=\"none\"/><circle r=\"110\" stroke-width=\"0.8\"/><path d=\"M0.00,-93.00 L9.15,-104.60 L16.15,-91.59 L27.18,-101.42 L31.81,-87.39 L44.37,-95.16 L46.50,-80.54 L60.23,-86.01 L59.78,-71.24 L74.25,-74.25 L71.24,-59.78 L86.01,-60.23 L80.54,-46.50 L95.16,-44.37 L87.39,-31.81 L101.42,-27.18 L91.59,-16.15 L104.60,-9.15 L93.00,0.00 L104.60,9.15 L91.59,16.15 L101.42,27.18 L87.39,31.81 L95.16,44.37 L80.54,46.50 L86.01,60.23 L71.24,59.78 L74.25,74.25 L59.78,71.24 L60.23,86.01 L46.50,80.54 L44.37,95.16 L31.81,87.39 L27.18,101.42 L16.15,91.59 L9.15,104.60 L0.00,93.00 L-9.15,104.60 L-16.15,91.59 L-27.18,101.42 L-31.81,87.39 L-44.37,95.16 L-46.50,80.54 L-60.23,86.01 L-59.78,71.24 L-74.25,74.25 L-71.24,59.78 L-86.01,60.23 L-80.54,46.50 L-95.16,44.37 L-87.39,31.81 L-101.42,27.18 L-91.59,16.15 L-104.60,9.15 L-93.00,0.00 L-104.60,-9.15 L-91.59,-16.15 L-101.42,-27.18 L-87.39,-31.81 L-95.16,-44.37 L-80.54,-46.50 L-86.01,-60.23 L-71.24,-59.78 L-74.25,-74.25 L-59.78,-71.24 L-60.23,-86.01 L-46.50,-80.54 L-44.37,-95.16 L-31.81,-87.39 L-27.18,-101.42 L-16.15,-91.59 L-9.15,-104.60 L-0.00,-93.00Z\" stroke-width=\"0.8\"/><circle r=\"88\" stroke-width=\"0.8\"/><g transform=\"rotate(0) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(15) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(30) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(45) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(60) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(75) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(90) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(105) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(120) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(135) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(150) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(165) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(180) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(195) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(210) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(225) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(240) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(255) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(270) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(285) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(300) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(315) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(330) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><g transform=\"rotate(345) translate(0 -76)\"><circle r=\"7\" stroke-width=\"0.8\"/><circle r=\"2.5\" stroke-width=\"0.6\"/></g><circle r=\"64\" stroke-width=\"0.8\"/><path d=\"M0.00,-58.00 L3.78,-16.57 L25.17,-52.26 L10.60,-13.29 L45.35,-36.16 L15.32,-7.38 L56.55,-12.91 L17.00,0.00 L56.55,12.91 L15.32,7.38 L45.35,36.16 L10.60,13.29 L25.17,52.26 L3.78,16.57 L0.00,58.00 L-3.78,16.57 L-25.17,52.26 L-10.60,13.29 L-45.35,36.16 L-15.32,7.38 L-56.55,12.91 L-17.00,0.00 L-56.55,-12.91 L-15.32,-7.38 L-45.35,-36.16 L-10.60,-13.29 L-25.17,-52.26 L-3.78,-16.57Z\" fill=\"#D4AF37\" fill-opacity=\"0.28\" stroke-width=\"1\"/><circle r=\"13\" stroke-width=\"1\" fill=\"#D4AF37\" fill-opacity=\"0.4\"/></svg>";
+function hoangIsOn() {
+  return document.body.dataset.themeLevel === "23" && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+}
+function bootHoldMs() {
+  const lv = document.body.dataset.themeLevel;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return 1300;
+  return lv === "25" ? 3700 : lv === "23" ? 4300 : 1300;
+}
+function hoangBootBuild() {
+  const host = document.querySelector(".hd-boot-drum");
+  if (!host || host.firstChild) return;
+  let i = 0;
+  host.innerHTML = HD_DRUM_SVG.replace(/<(circle|line|path)\b([^>]*?)\/?>/g, (m0, tag, attrs) => {
+    attrs = attrs.replace(/\s+$/, "");
+    const filled = /fill="#D4AF37"/.test(attrs);
+    const noStroke = /stroke="none"/.test(attrs);
+    const fo = (attrs.match(/fill-opacity="([\d.]+)"/) || [])[1] || "1";
+    const d = Math.min(i * 0.011, 2.6).toFixed(3);
+    i++;
+    const cls = ((noStroke ? "" : "d") + (filled ? " f" : "")).trim();
+    return "<" + tag + attrs + (noStroke ? "" : ' pathLength="1"') + ' class="' + cls + '" style="--d:' + d + "s;--fo:" + fo + '"/>';
+  });
+}
+function hoangBgBuild() {
+  if (document.getElementById("hd-bg")) return;
+  const bg = document.createElement("div");
+  bg.id = "hd-bg"; bg.className = "hd-bg"; bg.setAttribute("aria-hidden", "true");
+  bg.innerHTML = '<div class="hd-img"></div><div class="hd-vig"></div><div class="hd-drum a"></div><div class="hd-drum b"></div>';
+  const pt = document.createElement("div");
+  pt.className = "hd-pt"; pt.setAttribute("aria-hidden", "true");
+  const fg = document.createElement("div");
+  fg.className = "hd-pt hd-fg"; fg.setAttribute("aria-hidden", "true");
+  const k = window.innerWidth < 700 ? 0.5 : 1;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const petalCols = ["#f4c542", "#f4c542", "#ffe08a", "#f2a93b", "#e8563a"];
+  const dustCols = ["#f5d77a", "#d4a843", "#fff1c1"];
+  let petal = '<svg viewBox="0 0 40 40">';
+  for (let a = 0; a < 5; a++) petal += '<ellipse cx="20" cy="9.5" rx="6.5" ry="9" transform="rotate(' + a * 72 + ' 20 20)"/>';
+  petal += '<circle class="ct" cx="20" cy="20" r="3"/></svg>';
+  const add = (host, type, n, o) => {
+    for (let i = 0; i < Math.round(n * k); i++) {
+      const p = document.createElement("span");
+      p.className = "hd-p " + type;
+      const du = type === "spark" ? rnd(3, 7) : type === "dust" ? rnd(18, 36) : rnd(16, 30);
+      const sz = type === "petal" ? rnd(o.a, o.b) : type === "dust" ? rnd(3, 7) : rnd(7, 15);
+      p.style.cssText = "--x:" + rnd(1, 99).toFixed(1) + "%;--y:" + rnd(4, 96).toFixed(1) + "%;--c:" + pick(type === "petal" ? petalCols : dustCols)
+        + ";--sz:" + sz.toFixed(1) + "px;--du:" + du.toFixed(1) + "s;--dl:-" + rnd(0, du).toFixed(1) + "s;--dx:" + rnd(-90, 90).toFixed(0) + "px;--o:" + rnd(o.lo, o.hi).toFixed(2) + ";--fl:" + rnd(3.5, 7).toFixed(1) + "s";
+      if (type === "petal") p.innerHTML = petal;
+      host.appendChild(p);
+    }
+  };
+  add(pt, "petal", 18, { a: 11, b: 22, lo: 0.6, hi: 0.95 });
+  add(pt, "dust", 20, { lo: 0.45, hi: 0.85 });
+  add(pt, "spark", 12, { lo: 0.5, hi: 0.95 });
+  add(fg, "petal", 6, { a: 10, b: 18, lo: 0.5, hi: 0.85 });
+  document.body.appendChild(bg);
+  document.body.appendChild(pt);
+  document.body.appendChild(fg);
+}
+function hoangSync() {
+  if (document.body.dataset.themeLevel !== "23") return;
+  if (!document.body.style.getPropertyValue("--hd-drum")) {
+    document.body.style.setProperty("--hd-drum", 'url("data:image/svg+xml;utf8,' + encodeURIComponent(HD_DRUM_SVG) + '")');
+  }
+  hoangBootBuild();
+  hoangBgBuild();
+}
+function hoangFlipFx(cardEl) {
+  if (!hoangIsOn() || !cardEl) return;
+  let c = cardEl.querySelector(".hd-flip-drum");
+  if (!c) {
+    c = document.createElement("span");
+    c.className = "hd-flip-drum";
+    c.setAttribute("aria-hidden", "true");
+    cardEl.insertBefore(c, cardEl.firstChild);
+  }
+  c.classList.remove("go");
+  void c.offsetWidth;
+  c.classList.add("go");
+}
+function hoangAnswerFx(ok, anchorEl) {
+  if (!hoangIsOn()) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  let cx = vw / 2, cy = vh / 2, size = Math.min(vw, vh, 320);
+  if (anchorEl) {
+    const r = anchorEl.getBoundingClientRect();
+    if (r.width && r.height) {
+      const top = Math.max(r.top, 0), bottom = Math.min(r.bottom, vh);
+      cx = r.left + r.width / 2;
+      cy = (top + bottom) / 2;
+      size = Math.min(r.width, bottom - top, 340) * 0.92;
+    }
+  }
+  size = Math.max(150, size);
+  const host = document.createElement("div");
+  host.className = "mc-fx hd-fx " + (ok ? "hd-fx-ok" : "hd-fx-bad");
+  host.style.cssText = "width:" + size + "px;height:" + size + "px;left:" + (cx - size / 2) + "px;top:" + (cy - size / 2) + "px";
+  let inner = '<div class="hd-fx-drum"></div>';
+  if (!ok) {
+    let cr = "";
+    MC_CRACKS.forEach((d, i) => {
+      cr += '<path class="mc-crack" pathLength="1" d="' + d + '" style="animation-delay:' + (0.2 + i * 0.05).toFixed(2) + 's,1s"/>';
+    });
+    inner += '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">' + cr + "</svg>";
+  }
+  host.innerHTML = inner;
+  document.body.appendChild(host);
+  setTimeout(() => host.remove(), 2000);
+}
+
 applyThemeLevel(state.themeLevel || 1, false);
 if (document.body.dataset.themeLevel === "21") termBootFx();
 
@@ -1135,6 +1249,7 @@ function magicIsOn() {
   return document.body.dataset.themeLevel === "25" && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 }
 function magicFlipFx(cardEl) {
+  if (document.body.dataset.themeLevel === "23") { hoangFlipFx(cardEl); return; }
   if (!magicIsOn() || !cardEl) return;
   let c = cardEl.querySelector(".mc-flip-circle");
   if (!c) {
@@ -1172,6 +1287,7 @@ function magicBadSvg() {
   return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><g class="mc-ring">' + shards + '</g>' + cracks + '</svg>';
 }
 function magicAnswerFx(ok, anchorEl) {
+  if (document.body.dataset.themeLevel === "23") { hoangAnswerFx(ok, anchorEl); return; }
   if (!magicIsOn()) return;
   const vw = window.innerWidth, vh = window.innerHeight;
   let cx = vw / 2, cy = vh / 2, size = Math.min(vw, vh, 320);
@@ -7013,6 +7129,13 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.41",
+    changes: [
+      "Thêm giao diện đặc biệt Hoàng triều, thay thế giao diện Tết Việt (ai đang dùng Tết Việt sẽ chuyển sang Hoàng triều nếu đã được mở khoá): nền gấm đỏ rồng phượng, trống đồng Đông Sơn xoay chậm, thẻ lật hiện trống đồng dưới chữ rồi tan, loading trống đồng tự vẽ rồi hiện Nox, vòng mục tiêu viền hoa văn trống đồng, trả lời đúng trống sáng vàng / sai trống rung nứt đỏ, toast huy hiệu trống đồng, hoa mai rơi và bụi vàng",
+      "Admin > Chức năng: công tắc giao diện Tết Việt được thay bằng công tắc giao diện Hoàng triều",
+    ],
+  },
+  {
     version: "2.40",
     changes: [
       "Thêm giao diện đặc biệt Ma pháp: nền có 12 trận đồ nhiều cỡ quay liên tục (một số tự vẽ, một số tự xoá) cùng hạt rune, đốm sáng, tia sao; màn chính, bảng điều khiển và popup trong suốt nhìn xuyên được nền; thẻ lật hiện vòng ma pháp dưới chữ rồi tan, loading tự vẽ trận đồ rồi hiện Nox, vòng mục tiêu có rune quanh vành, trả lời đúng vòng sáng lên / sai vòng nứt vỡ, toast có vòng rune nhỏ",
@@ -8732,4 +8855,4 @@ try {
 setTimeout(() => {
   const loadingEl = document.getElementById("app-loading");
   if (loadingEl) loadingEl.classList.add("hidden");
-}, document.body.dataset.themeLevel === "25" && !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) ? 3700 : 1300);
+}, bootHoldMs());
