@@ -545,20 +545,30 @@
 
 <!-- ============ MODAL: Sửa một mục (Kho) ============ -->
 <div class="overlay hidden" id="wh-edit-overlay">
-  <div class="modal-panel small">
+  <div class="modal-panel wh-edit-modal">
     <div class="popup-header">
       <span>Sửa mục</span>
       <button class="popup-close" id="wh-edit-close">✕</button>
     </div>
-    <input type="text" class="text-input" id="wh-edit-en" placeholder="Câu Tiếng Anh (dùng &quot;/&quot; giữa từ đồng nghĩa, vd: I love/like her)">
-    <input type="text" class="text-input" id="wh-edit-vi" placeholder="Câu Tiếng Việt" style="margin-top:10px;">
+    <label class="wh-edit-field-label" for="wh-edit-en">Câu Tiếng Anh</label>
+    <textarea class="text-input wh-edit-textarea" id="wh-edit-en" rows="3" placeholder="Câu Tiếng Anh (dùng &quot;/&quot; giữa từ đồng nghĩa, vd: I love/like her)"></textarea>
+
+    <label class="wh-edit-field-label" for="wh-edit-vi">Câu Tiếng Việt</label>
+    <textarea class="text-input wh-edit-textarea" id="wh-edit-vi" rows="3" placeholder="Câu Tiếng Việt"></textarea>
+
     <div id="wh-edit-alts-section" class="hidden">
       <div class="wh-edit-alts-label">Đáp án khác (cấu trúc câu khác) — cũng dùng được "/"</div>
       <div id="wh-edit-alts-list"></div>
       <button type="button" class="pill-btn-outline" id="wh-edit-alts-add" style="margin-top:8px;width:100%;">+ Thêm đáp án khác</button>
     </div>
-    <input type="text" class="text-input" id="wh-edit-tags" placeholder="Thẻ (tags), cách nhau bởi dấu phẩy — vd: unit21, khó" style="margin-top:10px;">
-    <button class="block-btn primary" id="wh-edit-save" style="margin-top:14px;">Lưu</button>
+
+    <label class="wh-edit-field-label" for="wh-edit-tags">Thẻ (tags)</label>
+    <input type="text" class="text-input" id="wh-edit-tags" placeholder="Cách nhau bởi dấu phẩy — vd: unit21, khó">
+
+    <div class="btn-row-2" style="margin-top:16px;">
+      <button type="button" class="pill-btn-outline flex-1" id="wh-edit-cancel">Hủy</button>
+      <button class="pill-btn primary flex-1" id="wh-edit-save">Lưu</button>
+    </div>
   </div>
 </div>
 

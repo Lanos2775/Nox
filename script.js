@@ -2922,17 +2922,136 @@ function parseDictionaryBlob(raw) {
   return results.filter((r) => r.en && r.vi);
 }
 
+const VI_DIACRITIC_REGEX = /[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
+
+const VI_COMMON_WORDS = new Set([
+  "và", "là", "của", "có", "những", "các", "trong", "một", "người", "này", "để", "được", "không", "cho",
+  "với", "từ", "khi", "mà", "như", "đã", "sẽ", "đang", "rất", "nhiều", "ít", "tôi", "bạn", "anh", "em",
+  "cô", "chú", "bác", "chúng", "ta", "họ", "làm", "gì", "ở", "đâu", "sao", "nào", "tại", "vì", "nếu",
+  "nhưng", "hoặc", "hay", "nên", "phải", "cần", "muốn", "biết", "thấy", "nói", "đi", "đến", "về", "ra",
+  "vào", "lại", "nghĩ", "chiếc", "cái", "con", "bài", "việc", "sách", "nhà", "xe", "ngày", "tháng", "năm"
+]);
+
+const EN_COMMON_WORDS = new Set([
+  "the", "be", "to", "of", "and", "a", "in", "that", "have", "i", "it", "for", "not", "on", "with", "he",
+  "as", "you", "do", "at", "this", "but", "his", "by", "from", "they", "we", "say", "her", "she", "or",
+  "an", "will", "my", "one", "all", "would", "there", "their", "what", "so", "up", "out", "if", "about",
+  "who", "get", "which", "go", "me", "when", "make", "can", "like", "time", "no", "just", "him", "know",
+  "take", "people", "into", "year", "your", "good", "some", "could", "them", "see", "other", "than",
+  "then", "now", "look", "only", "come", "its", "over", "think", "also", "back", "after", "use", "two",
+  "how", "our", "work", "first", "well", "way", "even", "new", "want", "because", "any", "these", "give",
+  "day", "most", "us", "is", "are", "was", "were", "am", "been", "being", "has", "had", "did", "does"
+]);
+
+function detectIsVietnamese(text) {
+  if (!text) return false;
+  if (VI_DIACRITIC_REGEX.test(text)) return true;
+  const words = (text.toLowerCase().match(/[a-zàáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]+/g) || []);
+  let viCount = 0;
+  let enCount = 0;
+  for (const w of words) {
+    if (VI_COMMON_WORDS.has(w)) viCount++;
+    if (EN_COMMON_WORDS.has(w)) enCount++;
+  }
+  return viCount > enCount;
+}
+
+/* ============================================================
+   NHẬN DIỆN VÀ PHÂN TÁCH THÔNG MINH CÂU TIẾNG ANH & TIẾNG VIỆT
+   - Không bị cắt nhầm dấu "-" trong từ ghép tiếng Anh (state-of-the-art, well-known, part-time...)
+   - Xác định chính xác ranh giới chuyển ngữ giữa Tiếng Anh và Tiếng Việt dựa trên dấu tiếng Việt
+   - Tự nhận diện và gán đúng cột kể cả khi người dùng nhập Tiếng Việt trước, Tiếng Anh sau
+   ============================================================ */
+function splitEnViLine(line) {
+  if (!line) return null;
+  let cleaned = line.trim();
+  cleaned = cleaned.replace(/^[\s*•\-–—]+\s*/, "").trim();
+  if (!cleaned) return null;
+
+  // 1. Phân tách rõ ràng với --> , -> , \t
+  for (const delim of ["-->", "->", "\t"]) {
+    const idx = cleaned.indexOf(delim);
+    if (idx !== -1) {
+      const p1 = cleaned.slice(0, idx).trim();
+      const p2 = cleaned.slice(idx + delim.length).trim();
+      if (p1 && p2) {
+        if (detectIsVietnamese(p1) && !detectIsVietnamese(p2)) return { en: p2, vi: p1 };
+        return { en: p1, vi: p2 };
+      }
+    }
+  }
+
+  // 2. Tìm tất cả mốc phân tách (- , – , — , :)
+  const matches = [];
+  const regex = /(?:\s+[-–—:]\s+|\s*[-–—:]\s+)/g;
+  let m;
+  while ((m = regex.exec(cleaned)) !== null) {
+    matches.push({ start: m.index, end: m.index + m[0].length, str: m[0] });
+  }
+
+  if (!matches.length) {
+    const fallbackRegex = /[-–—:]/g;
+    while ((m = fallbackRegex.exec(cleaned)) !== null) {
+      matches.push({ start: m.index, end: m.index + m[0].length, str: m[0] });
+    }
+  }
+
+  if (!matches.length) return null;
+
+  // 3. Vị trí ký tự có dấu tiếng Việt đầu tiên và cuối cùng
+  let firstViIdx = -1;
+  let lastViIdx = -1;
+  for (let i = 0; i < cleaned.length; i++) {
+    if (VI_DIACRITIC_REGEX.test(cleaned[i])) {
+      if (firstViIdx === -1) firstViIdx = i;
+      lastViIdx = i;
+    }
+  }
+
+  if (firstViIdx !== -1) {
+    // TH1: Tiếng Anh bên trái, Tiếng Việt bên phải (thông dụng nhất)
+    // Mốc phân tách nằm TRƯỚC chữ tiếng Việt đầu tiên -> Lấy mốc cuối cùng trước tiếng Việt
+    const leftCands = matches.filter((cand) => cand.end <= firstViIdx + 1);
+    const leftPadded = leftCands.filter((cand) => /\s/.test(cand.str));
+    const chosenLeft = leftPadded.length ? leftPadded[leftPadded.length - 1] : (leftCands.length ? leftCands[leftCands.length - 1] : null);
+
+    if (chosenLeft) {
+      const en = cleaned.slice(0, chosenLeft.start).trim();
+      const vi = cleaned.slice(chosenLeft.end).trim();
+      if (en && vi) return { en, vi };
+    }
+
+    // TH2: Tiếng Việt bên trái, Tiếng Anh bên phải (người dùng nhập ngược)
+    // Mốc phân tách nằm SAU chữ tiếng Việt cuối cùng -> Lấy mốc đầu tiên sau tiếng Việt
+    const rightCands = matches.filter((cand) => cand.start >= lastViIdx - 1);
+    const rightPadded = rightCands.filter((cand) => /\s/.test(cand.str));
+    const chosenRight = rightPadded.length ? rightPadded[0] : (rightCands.length ? rightCands[0] : null);
+
+    if (chosenRight) {
+      const vi = cleaned.slice(0, chosenRight.start).trim();
+      const en = cleaned.slice(chosenRight.end).trim();
+      if (en && vi) return { en, vi };
+    }
+  }
+
+  // TH3: Cả hai bên không có dấu tiếng Việt (tiếng Việt không dấu)
+  // Ưu tiên mốc có khoảng trắng ' - ' thay vì dấu gạch dính liền giữa từ ghép tiếng Anh
+  const padded = matches.filter((cand) => /\s/.test(cand.str));
+  const chosen = padded.length ? padded[0] : matches[0];
+  const p1 = cleaned.slice(0, chosen.start).trim();
+  const p2 = cleaned.slice(chosen.end).trim();
+  if (!p1 || !p2) return null;
+  if (detectIsVietnamese(p1) && !detectIsVietnamese(p2)) return { en: p2, vi: p1 };
+  return { en: p1, vi: p2 };
+}
+
 function parseSimpleLines(raw) {
   const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
   const results = [];
   lines.forEach((line) => {
-    const sep = line.includes("-->") ? "-->" : line.includes("\t") ? "\t" : "-";
-    const idx = line.indexOf(sep);
-    if (idx === -1) return;
-    const en = line.slice(0, idx).trim();
-    const vi = line.slice(idx + sep.length).trim();
-    if (!en || !vi) return;
-    results.push({ en, ipa: "", pos: "", vi });
+    const pair = splitEnViLine(line);
+    if (!pair) return;
+    results.push({ en: pair.en, ipa: "", pos: "", vi: pair.vi });
   });
   return results;
 }
@@ -3129,11 +3248,6 @@ document.getElementById("nghe-voice-select").addEventListener("change", (e) => {
   state.settings.ngheSingleVoiceURI = e.target.value;
   saveState();
 });
-
-const VI_DIACRITIC_REGEX = /[àáạảãăằắặẳẵâầấậẩẫđèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i;
-function detectIsVietnamese(text) {
-  return VI_DIACRITIC_REGEX.test(text || "");
-}
 
 /* ============================================================
    DỊCH NHANH — popup NỔI dùng chung toàn app
@@ -5875,7 +5989,8 @@ function openWhEdit(itemId) {
   whEditOverlay.classList.remove("hidden");
 }
 document.getElementById("wh-edit-close").addEventListener("click", () => whEditOverlay.classList.add("hidden"));
-whEditOverlay.addEventListener("click", (e) => { if (e.target === whEditOverlay) whEditOverlay.classList.add("hidden"); });
+const whEditCancel = document.getElementById("wh-edit-cancel");
+if (whEditCancel) whEditCancel.addEventListener("click", () => whEditOverlay.classList.add("hidden"));
 document.getElementById("wh-edit-save").addEventListener("click", () => {
   const list = whActiveList();
   const item = list.items.find((i) => i.id === whEditItemId);
@@ -5986,11 +6101,10 @@ function parseTxtIntoLists(text) {
       current = { name: null, items: [] };
       blocks.push(current);
     }
-    const sep = line.includes("-->") ? "-->" : line.includes("\t") ? "\t" : "-";
-    const idx = line.indexOf(sep);
-    if (idx === -1) return;
-    const enRaw = line.slice(0, idx).trim();
-    const vi = line.slice(idx + sep.length).trim();
+    const pair = splitEnViLine(line);
+    if (!pair) return;
+    const enRaw = pair.en;
+    const vi = pair.vi;
     if (!enRaw || !vi) return;
     // "|" tách nhiều đáp án hẳn khác nhau (đáp án chính + các đáp án phụ),
     // giống hệt cách xử lý khi thêm tay 1 mục trong Kho.
