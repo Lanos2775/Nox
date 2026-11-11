@@ -1,0 +1,12 @@
+# Backups & Archives
+backup/
+*.zip
+*.tar.gz
+
+# Cache & Temporary
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db
+version/

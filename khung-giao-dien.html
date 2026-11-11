@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Tiêu đề trang</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<script>window.MathJax={tex:{inlineMath:[['$','$']],displayMath:[['$$','$$']]},chtml:{scale:.96}}</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js"></script>
+<style>
+:root{--bg:#f6f8ff;--card:#fff;--ink:#1d2350;--mut:#58608a;--c1:#2f6fed;--c2:#12b886;--c3:#f59f00;--c4:#e64980;--c5:#7048e8;--g:#c9cfe8;--tint:#eaf0ff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10142e;--card:#1a2046;--ink:#eef0ff;--mut:#a4abd6;--c1:#6ea0ff;--c2:#38d9a9;--c3:#ffd43b;--c4:#ff8fb8;--c5:#a78bfa;--g:#3b4380;--tint:#222b5e}}
+html{scroll-behavior:smooth;scroll-padding-top:70px}*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17.5px/1.9 "Be Vietnam Pro",system-ui,sans-serif;letter-spacing:.01em}
+main{max-width:860px;margin:0 auto;padding:28px 20px 90px}header{padding:38px 0 8px}
+h1{font-size:clamp(30px,6.5vw,46px);line-height:1.2;margin:10px 0 14px;font-weight:800;letter-spacing:-1px;color:var(--c5)}
+h2{font-size:24px;line-height:1.4;margin:0 0 14px;font-weight:800}h3{font-size:19.5px;margin:30px 0 10px;color:var(--c5);font-weight:800}
+section{background:var(--card);border-radius:22px;padding:30px 28px;margin:28px 0;border-left:8px solid var(--c1);box-shadow:0 4px 20px rgba(0,0,0,.04);scroll-margin-top:70px}
+section:nth-of-type(5n+2){border-color:var(--c2)}section:nth-of-type(5n+3){border-color:var(--c3)}section:nth-of-type(5n+4){border-color:var(--c4)}section:nth-of-type(5n+5){border-color:var(--c5)}
+p{margin:14px 0}.mut{color:var(--mut)}ul,ol{padding-left:24px}li{margin:10px 0}a{color:var(--c1);font-weight:600}
+.box{background:var(--tint);border-radius:14px;padding:16px 20px;margin:18px 0;border-left:5px solid var(--c3)}.box p{margin:6px 0}.warn{border-color:var(--c4)}.analogy{border-color:var(--c2)}
+.bridge,.next{border-radius:12px;padding:12px 18px;margin:0 0 18px;background:var(--tint);border-left:5px solid var(--c5);font-size:16px;line-height:1.8}.next{border-color:var(--c2);margin:24px 0 0}
+.f{background:var(--tint);border-radius:14px;padding:16px 18px;margin:18px 0;font-size:19px;overflow-x:auto;text-align:center;line-height:2}
+.f small{font:14.5px/1.7 "Be Vietnam Pro",sans-serif;color:var(--mut);display:block;margin-top:6px}
+.key{border:2px solid var(--c4);background:var(--card);position:relative;padding-top:30px;box-shadow:0 4px 16px rgba(230,73,128,.14)}
+.key::before{content:"★ PHẢI NHỚ";position:absolute;top:-2px;left:16px;background:var(--c4);color:#fff;font:800 12px/1 "Be Vietnam Pro",sans-serif;padding:6px 10px;border-radius:0 0 8px 8px}
+svg{width:100%;height:auto;display:block;background:var(--tint);border-radius:14px;border:1px solid var(--g)}svg text{font-family:"Be Vietnam Pro",sans-serif}.ax{stroke:var(--g);stroke-width:1.5}
+.k{display:inline-block;padding:3px 11px;border-radius:8px;color:#fff;font-weight:600;font-size:14px;background:var(--c4)}.b5{background:var(--c5)}
+.tw{overflow-x:auto;margin:16px 0}table{border-collapse:collapse;width:100%;font-size:15.5px;min-width:480px;line-height:1.7}td,th{padding:11px 12px;border-bottom:1px solid var(--g);text-align:left}th{color:var(--c5);background:var(--tint)}
+code{background:var(--tint);padding:1px 7px;border-radius:7px}
+#mb{position:fixed;top:calc(env(safe-area-inset-top,0px) + 12px);left:14px;z-index:30;width:46px;height:46px;border:0;border-radius:14px;background:var(--c5);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#mb span{width:22px;height:3px;border-radius:2px;background:#fff}
+#mn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 66px);left:14px;z-index:30;width:min(360px,calc(100vw - 28px));max-height:calc(100vh - 90px);overflow-y:auto;background:var(--card);border-radius:16px;padding:14px;box-shadow:0 10px 34px rgba(0,0,0,.3);border:1px solid var(--g)}#mn[hidden]{display:none}
+.vs{display:flex;gap:4px;padding:4px;background:var(--tint);border:1.5px solid var(--g);border-radius:12px;margin-bottom:10px}.vs b{font-size:11px;color:var(--mut);padding:0 6px;align-self:center;text-transform:uppercase}
+.vb{flex:1;border:0;border-radius:9px;padding:7px;background:0;color:var(--ink);font:700 12.5px "Be Vietnam Pro",sans-serif;cursor:pointer}.vb[aria-pressed=true]{background:var(--c5);color:#fff}
+#toc a{display:block;padding:7px 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14.5px;line-height:1.4;font-weight:600}#toc a.sub{padding-left:24px;font-size:13.5px;color:var(--mut);font-weight:400}#toc a.on{background:var(--tint);color:var(--c5)}
+html[data-view=desktop] body{font-size:18px}html[data-view=desktop] main{max-width:none;padding:26px clamp(18px,2.6vw,60px) 90px}html[data-view=desktop] section{display:flow-root;padding:34px clamp(24px,2.8vw,58px)}html[data-view=desktop] p,html[data-view=desktop] li{max-width:165ch}html[data-view=desktop] table{min-width:0}
+@media(min-width:1200px){html[data-view=desktop] section>figure{float:right;clear:right;width:min(50%,820px);margin:6px 0 18px 34px!important}html[data-view=desktop] section>h2,html[data-view=desktop] section>h3{clear:both}}
+figcaption{font-size:14.5px;color:var(--mut);margin-top:8px;line-height:1.7;padding:0 8px}.t{fill:var(--ink);font-size:12px}.tm{fill:var(--mut);font-size:11.5px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0}.steps>li{counter-increment:s;position:relative;padding:11px 14px 11px 54px;margin:10px 0;background:var(--card);border:1px solid var(--g);border-radius:12px;line-height:1.85}.steps>li::before{content:counter(s);position:absolute;left:13px;top:11px;width:29px;height:29px;border-radius:50%;background:var(--c5);color:#fff;font:800 14px/29px "Be Vietnam Pro",sans-serif;text-align:center}.steps.nn>li{padding-left:16px}.steps.nn>li::before{display:none}
+.ans{background:var(--card);border:2px solid var(--c2);border-radius:12px;padding:10px 16px;margin:12px 0 2px}.steps .f,.box .f{font-size:17px}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute;margin:0;border:0;background:none"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" style="fill:var(--mut)"/></marker><marker id="ar5" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0L8,4L0,8z" style="fill:var(--c5)"/></marker></defs></svg>
+<button id="mb" type="button" aria-label="Mở menu và mục lục" aria-expanded="false" aria-controls="mn"><span></span><span></span><span></span></button>
+<nav id="mn" hidden aria-label="Mục lục"><div class="vs" role="group" aria-label="Chế độ xem"><b>Chế độ xem</b><button type="button" id="vm" class="vb" aria-pressed="true">Điện thoại</button><button type="button" id="vd" class="vb" aria-pressed="false">Máy tính</button></div><div id="toc"></div></nav>
+<main>
+<header><span class="k b5">Nhãn chủ đề</span><h1>Tiêu đề chính của trang</h1>
+<p class="mut">Đoạn mô tả ngắn dưới tiêu đề. Có thể in <b style="color:var(--c4)">nhấn mạnh</b> bằng màu chủ đạo.</p></header>
+
+<section id="p1"><h2>Mục 1. Tiêu đề mục</h2>
+<div class="bridge"><b>Nối từ phần trước.</b> Ô dẫn dắt nằm đầu mỗi mục.</div>
+<p>Đoạn văn thường. Công thức nội dòng: $e^{j\omega t}$.</p>
+<h3>Tiêu đề phụ</h3>
+<figure style="margin:16px 0;text-align:center"><svg viewBox="0 0 760 150" role="img"><rect x="20" y="30" width="180" height="80" rx="10" style="fill:var(--card);stroke:var(--c1);stroke-width:2"/><text x="110" y="76" text-anchor="middle" style="fill:var(--c1);font-size:14px;font-weight:700">Bước A</text><line x1="204" y1="70" x2="266" y2="70" style="stroke:var(--mut);stroke-width:2" marker-end="url(#ar)"/><rect x="270" y="30" width="180" height="80" rx="10" style="fill:var(--card);stroke:var(--c5);stroke-width:2"/><text x="360" y="76" text-anchor="middle" style="fill:var(--c5);font-size:14px;font-weight:700">Bước B</text><line x1="454" y1="70" x2="516" y2="70" style="stroke:var(--mut);stroke-width:2" marker-end="url(#ar)"/><rect x="520" y="30" width="180" height="80" rx="10" style="fill:var(--card);stroke:var(--c2);stroke-width:2"/><text x="610" y="76" text-anchor="middle" style="fill:var(--c2);font-size:14px;font-weight:700">Bước C</text></svg><figcaption>Chú thích cho hình SVG mẫu.</figcaption></figure>
+<div class="box analogy"><b>Ví dụ / ẩn dụ.</b> Ô màu xanh lá.</div>
+<div class="box warn"><b>Lưu ý.</b> Ô màu hồng.</div>
+<div class="box"><b>Ghi chú.</b> Ô màu vàng.</div>
+<div class="next"><b>Phần sau.</b> Ô chuyển tiếp sang <a href="#p2">mục 2</a>.</div></section>
+
+<section id="p2"><h2>Mục 2. Công thức và danh sách</h2>
+<div class="f key">$$y(t)=x(t)*h(t)$$<small>Công thức gắn nhãn PHẢI NHỚ.</small></div>
+<div class="f">$$X(\omega)=\int_{-\infty}^{\infty}x(t)e^{-j\omega t}dt$$<small>Công thức thường.</small></div>
+<ol class="steps"><li>Bước đánh số thứ nhất.</li><li>Bước đánh số thứ hai.</li><li>Bước đánh số thứ ba.</li></ol>
+<div class="ans"><b>Đáp án:</b> ô kết quả.</div></section>
+
+<section id="p3"><h2>Mục 3. Bảng</h2>
+<div class="tw"><table><tr><th>Cột 1</th><th>Cột 2</th><th>Cột 3</th></tr><tr><td>Ô <code>code</code></td><td>Dữ liệu</td><td>Dữ liệu</td></tr><tr><td>Dữ liệu</td><td>Dữ liệu</td><td>Dữ liệu</td></tr></table></div></section>
+</main><script>
+const $=i=>document.getElementById(i),R=document.documentElement,mb=$('mb'),mn=$('mn');
+const op=o=>{mn.hidden=!o;mb.setAttribute('aria-expanded',o)};
+mb.onclick=()=>op(mn.hidden);mn.onclick=e=>{if(e.target.closest('a'))op(false)};
+document.addEventListener('click',e=>{if(!mn.hidden&&!mn.contains(e.target)&&!mb.contains(e.target))op(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')op(false)});
+let h='';document.querySelectorAll('main h2,main h3').forEach((e,i)=>{const s=e.tagName=='H2',t=s?e.closest('section'):e;t.id=t.id||'s'+i;h+=`<a href="#${t.id}" class="${s?'':'sub'}">${e.textContent.replace(/\$[^$]*\$/g,'…')}</a>`});$('toc').innerHTML=h;
+const st=(k,v)=>{try{return v?localStorage.setItem(k,v):localStorage.getItem(k)}catch(e){return null}};
+const ap=v=>{R.dataset.view=v;$('vm').setAttribute('aria-pressed',v=='mobile');$('vd').setAttribute('aria-pressed',v=='desktop');st('khung-view',v)};
+$('vm').onclick=()=>ap('mobile');$('vd').onclick=()=>ap('desktop');ap(st('khung-view')=='desktop'?'desktop':'mobile');
+addEventListener('scroll',()=>{let c=null;document.querySelectorAll('#toc a').forEach(a=>{const t=$(a.getAttribute('href').slice(1));if(t&&t.getBoundingClientRect().top<=120)c=a;a.classList.remove('on')});if(c)c.classList.add('on')},{passive:true});
+</script></body></html>
