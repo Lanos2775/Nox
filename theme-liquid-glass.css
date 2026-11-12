@@ -7,10 +7,10 @@
 .tsw[data-tsw="27"]{background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 84' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2314183f'/%3E%3Cstop offset='1' stop-color='%232a1650'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.6'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='.14'/%3E%3C/linearGradient%3E%3Cfilter id='b' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur stdDeviation='9'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='120' height='84' fill='url(%23g)'/%3E%3Cg filter='url(%23b)'%3E%3Ccircle cx='14' cy='8' r='30' fill='%233f6bff'/%3E%3Ccircle cx='110' cy='12' r='26' fill='%23b043ff'/%3E%3Ccircle cx='58' cy='90' r='30' fill='%23ff4f9a'/%3E%3Ccircle cx='108' cy='80' r='18' fill='%2312d6c0'/%3E%3C/g%3E%3Crect x='7' y='8' width='30' height='68' rx='10' fill='url(%23c)' stroke='%23fff' stroke-opacity='.75'/%3E%3Crect x='43' y='8' width='70' height='68' rx='12' fill='url(%23c)' stroke='%23fff' stroke-opacity='.75'/%3E%3Crect x='54' y='22' width='48' height='34' rx='10' fill='url(%23c)' stroke='%23fff' stroke-opacity='.9'/%3E%3Crect x='60' y='33' width='36' height='4' rx='2' fill='%23fff' fill-opacity='.95'/%3E%3Crect x='66' y='42' width='24' height='3' rx='1.5' fill='%23fff' fill-opacity='.6'/%3E%3Crect x='50' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.85'/%3E%3Crect x='70' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='90' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='13' y='16' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.9'/%3E%3Crect x='13' y='28' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='13' y='38' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.35'/%3E%3C/svg%3E");}
 body[data-theme-level="27"]{
   --radius-lg:32px;--radius-md:20px;--radius-sm:14px;
-  --glass-fill:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.06)),rgba(14,16,70,.3);
+  --glass-fill:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.04) 60%,rgba(255,255,255,.1)),rgba(14,16,70,.16);
   --glass-fill-strong:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(24,28,100,.72);
-  --glass-edge:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08);
-  --shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08),0 24px 60px -16px rgba(6,8,36,.6);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.18),inset 0 0 26px rgba(255,255,255,.08),inset 0 -20px 30px -20px rgba(255,255,255,.24);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.75),inset 0 -1px 0 rgba(255,255,255,.18),inset 0 0 26px rgba(255,255,255,.08),inset 0 -20px 30px -20px rgba(255,255,255,.24),0 26px 54px -20px rgba(4,6,36,.65);
   --ink-dark:#0d1140;
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Be Vietnam Pro",system-ui,sans-serif;
   letter-spacing:-.005em;
@@ -26,11 +26,13 @@ body[data-theme-level="27"]{
   background-attachment:fixed;
 }
 html:has(body[data-theme-level="27"]){background:#14183f;}
+body[data-theme-level="27"]::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(circle 120px at 12% 24%,#9fb4ff 0,#4f6bff 70px,#2a2fb0 119px,transparent 120px),radial-gradient(circle 100px at 88% 12%,#f0c0ff 0,#b043ff 60px,#6a1fb8 99px,transparent 100px),radial-gradient(circle 140px at 46% 70%,#ffc2dd 0,#ff4f9a 80px,#b01a68 139px,transparent 140px),radial-gradient(circle 105px at 95% 90%,#b4fff2 0,#12d6c0 60px,#0a7f8f 104px,transparent 105px),radial-gradient(circle 75px at 4% 88%,#fff1b0 0,#ffc83d 45px,#d98a00 74px,transparent 75px);}
+body[data-theme-level="27"] .app-shell{position:relative;z-index:1;}
 
 /* ---- Khung lớn: kính mờ ---- */
 body[data-theme-level="27"] :is(.sidebar,.main-content,.theme-level-control,.wh-table-wrap,.wh-stats-card,.wh-stats-chart-card,.wh-library-side,.wh-library-card,.nghe-wh-card,.admin-row,.admin-feature-row,.admin-lock,.admin-log-row,.admin-stat-chip,.lib-detail-preview,.account-avatar){
   background:var(--glass-fill);
-  -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);
+  -webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.08);backdrop-filter:blur(14px) saturate(200%) brightness(1.08);
   border:1px solid rgba(255,255,255,.34);
   box-shadow:var(--glass-edge),0 18px 44px -16px rgba(6,8,36,.55);
 }
@@ -153,8 +155,8 @@ body[data-theme-level="27"] input[type="checkbox"]::after,body[data-theme-level=
 /* ---- Flashcard: tấm kính lớn có vệt phản chiếu ---- */
 body[data-theme-level="27"] .flashcard{
   position:relative;overflow:hidden;border-radius:40px;
-  background:linear-gradient(150deg,rgba(255,255,255,.32),rgba(255,255,255,.09) 55%,rgba(255,255,255,.18)),rgba(14,16,70,.22);
-  -webkit-backdrop-filter:blur(34px) saturate(190%);backdrop-filter:blur(34px) saturate(190%);
+  background:linear-gradient(150deg,rgba(255,255,255,.34),rgba(255,255,255,.07) 55%,rgba(255,255,255,.18)),rgba(14,16,70,.1);
+  -webkit-backdrop-filter:blur(18px) saturate(200%) brightness(1.08);backdrop-filter:blur(18px) saturate(200%) brightness(1.08);
   border:1px solid rgba(255,255,255,.55);
   box-shadow:inset 0 2px 0 rgba(255,255,255,.75),inset 0 -2px 6px rgba(255,255,255,.15),inset 0 0 40px rgba(255,255,255,.08),0 34px 70px -18px rgba(5,6,40,.7);
 }
@@ -259,12 +261,28 @@ body[data-theme-level="27"] .grammar-view mark.grammar-hit{background:rgba(255,2
 body[data-theme-level="27"] .grammar-view mark.grammar-hit.current{background:#ffd666;color:#1a1200;}
 body[data-theme-level="27"] .grammar-unit-snippet mark{background:rgba(255,214,102,.3);color:#fff;}
 
+/* ---- Kính hơn: viền rim light gradient + vệt specular ở mép trên ---- */
+body[data-theme-level="27"] :is(.main-content,.popup-panel,.modal-panel,.reminder-popup,.translate-popup){position:relative;isolation:isolate;}
+body[data-theme-level="27"] .sidebar{isolation:isolate;}
+body[data-theme-level="27"] :is(.sidebar,.main-content,.popup-panel,.modal-panel)::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:radial-gradient(120% 55% at 50% -8%,rgba(255,255,255,.34),transparent 58%);
+}
+body[data-theme-level="27"] :is(.sidebar,.main-content,.popup-panel,.modal-panel,.flashcard)::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;z-index:2;
+  background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.1) 30%,rgba(255,255,255,.04) 62%,rgba(255,255,255,.7));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+}
+body[data-theme-level="27"] :is(.sidebar,.main-content) :is(.stat-label,.section-label,.fc-read-vi,.nghe-chat-empty,.card-hint){text-shadow:0 1px 8px rgba(8,10,56,.45);}
+body[data-theme-level="27"] :is(.pill-btn,.pill-btn-outline,.block-btn,.status-btn,.fc-chip,.nghe-item-btn,.stat-box,.section-label-btn,.grammar-unit-btn,.bell-pill-btn,.settings-gear-btn,.nav-arrow){text-shadow:0 1px 8px rgba(8,10,56,.5);}
+
 /* ---- Màn hình loading + banner cập nhật ---- */
 body[data-theme-level="27"] .app-loading{background:linear-gradient(160deg,#14183f,#1c1b52 45%,#2a1650);}
 body[data-theme-level="27"] .app-loading-text{color:#fff;}
 body[data-theme-level="27"] .reminder-popup-bar-fill{background:linear-gradient(90deg,#9fb4ff,#c9d5ff);}
 body[data-theme-level="27"] .reminder-popup-bar{background:rgba(255,255,255,.2);}
 
+body[data-theme-level="27"] :is(.main-tab-btn.active,.pill-btn.active,.pill-btn-outline.active,.block-btn.active,.nghe-item-btn.active,.grammar-unit-btn.active,.wh-cat-btn.active,.wh-library-filter-btn.active,.auth-subtab-btn.active,.fc-chip.active,.admin-role-chip.on,.wh-list-item.active,.pill-btn.primary,.block-btn.primary,.dir-toggle-btn:not(#fc-autoplay-toggle),.btn-primary,.nghe-bubble-right,#fc-autoplay-toggle.active){text-shadow:none;}
 @media (prefers-reduced-transparency:reduce){
   body[data-theme-level="27"] :is(.sidebar,.main-content,.flashcard,.popup-panel,.modal-panel,.toast,.reminder-popup,.translate-popup){
     -webkit-backdrop-filter:none;backdrop-filter:none;background:#232766;
