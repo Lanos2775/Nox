@@ -1,0 +1,275 @@
+/* =====================================================================
+   PHONG CÁCH — LIQUID GLASS (kiểu Apple)  (data-theme-level="27")
+   Nền gradient nhiều màu, mọi khung là tấm kính mờ (blur + saturate) có viền sáng mảnh
+   và vệt phản chiếu phía trên; tab dạng segmented control; nút viên thuốc; chữ SF Pro.
+   Bảng màu (--accent, --panel...) lấy từ THEME_PALETTES[27] trong script.js.
+   ===================================================================== */
+.tsw[data-tsw="27"]{background-image:url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 84' preserveAspectRatio='xMidYMid slice'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2314183f'/%3E%3Cstop offset='1' stop-color='%232a1650'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23fff' stop-opacity='.6'/%3E%3Cstop offset='1' stop-color='%23fff' stop-opacity='.14'/%3E%3C/linearGradient%3E%3Cfilter id='b' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeGaussianBlur stdDeviation='9'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='120' height='84' fill='url(%23g)'/%3E%3Cg filter='url(%23b)'%3E%3Ccircle cx='14' cy='8' r='30' fill='%233f6bff'/%3E%3Ccircle cx='110' cy='12' r='26' fill='%23b043ff'/%3E%3Ccircle cx='58' cy='90' r='30' fill='%23ff4f9a'/%3E%3Ccircle cx='108' cy='80' r='18' fill='%2312d6c0'/%3E%3C/g%3E%3Crect x='7' y='8' width='30' height='68' rx='10' fill='url(%23c)' stroke='%23fff' stroke-opacity='.75'/%3E%3Crect x='43' y='8' width='70' height='68' rx='12' fill='url(%23c)' stroke='%23fff' stroke-opacity='.75'/%3E%3Crect x='54' y='22' width='48' height='34' rx='10' fill='url(%23c)' stroke='%23fff' stroke-opacity='.9'/%3E%3Crect x='60' y='33' width='36' height='4' rx='2' fill='%23fff' fill-opacity='.95'/%3E%3Crect x='66' y='42' width='24' height='3' rx='1.5' fill='%23fff' fill-opacity='.6'/%3E%3Crect x='50' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.85'/%3E%3Crect x='70' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='90' y='62' width='16' height='7' rx='3.5' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='13' y='16' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.9'/%3E%3Crect x='13' y='28' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.35'/%3E%3Crect x='13' y='38' width='18' height='6' rx='3' fill='%23fff' fill-opacity='.35'/%3E%3C/svg%3E");}
+body[data-theme-level="27"]{
+  --radius-lg:32px;--radius-md:20px;--radius-sm:14px;
+  --glass-fill:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.06)),rgba(14,16,70,.3);
+  --glass-fill-strong:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(24,28,100,.72);
+  --glass-edge:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08);
+  --shadow:inset 0 1px 0 rgba(255,255,255,.55),inset 0 -1px 0 rgba(255,255,255,.08),0 24px 60px -16px rgba(6,8,36,.6);
+  --ink-dark:#0d1140;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Be Vietnam Pro",system-ui,sans-serif;
+  letter-spacing:-.005em;
+  -webkit-font-smoothing:antialiased;
+  color:#fff;
+  background-color:#14183f;
+  background-image:
+    radial-gradient(60% 55% at 8% 0%,rgba(63,107,255,.85),transparent 70%),
+    radial-gradient(50% 50% at 100% 12%,rgba(176,67,255,.7),transparent 70%),
+    radial-gradient(55% 55% at 42% 108%,rgba(255,79,154,.6),transparent 70%),
+    radial-gradient(40% 40% at 92% 96%,rgba(18,214,192,.5),transparent 70%),
+    linear-gradient(160deg,#14183f,#1c1b52 45%,#2a1650);
+  background-attachment:fixed;
+}
+html:has(body[data-theme-level="27"]){background:#14183f;}
+
+/* ---- Khung lớn: kính mờ ---- */
+body[data-theme-level="27"] :is(.sidebar,.main-content,.theme-level-control,.wh-table-wrap,.wh-stats-card,.wh-stats-chart-card,.wh-library-side,.wh-library-card,.nghe-wh-card,.admin-row,.admin-feature-row,.admin-lock,.admin-log-row,.admin-stat-chip,.lib-detail-preview,.account-avatar){
+  background:var(--glass-fill);
+  -webkit-backdrop-filter:blur(30px) saturate(170%);backdrop-filter:blur(30px) saturate(170%);
+  border:1px solid rgba(255,255,255,.34);
+  box-shadow:var(--glass-edge),0 18px 44px -16px rgba(6,8,36,.55);
+}
+body[data-theme-level="27"] :is(.sidebar,.main-content){box-shadow:var(--shadow);}
+body[data-theme-level="27"] .sidebar{border-radius:32px;}
+body[data-theme-level="27"] .main-content{border-radius:36px;}
+body[data-theme-level="27"] :is(.wh-library-card,.nghe-wh-card,.admin-row,.admin-feature-row,.wh-stats-card,.wh-stats-chart-card){border-radius:22px;}
+body[data-theme-level="27"] .wh-library-card:hover,body[data-theme-level="27"] .nghe-wh-card:hover{border-color:rgba(255,255,255,.65);background:var(--glass-fill);}
+body[data-theme-level="27"] .account-avatar{border-radius:50%;font-weight:700;}
+body[data-theme-level="27"] :is(.account-avatar.role-free,.account-avatar.role-premium,.account-avatar.role-admin){border-color:rgba(255,255,255,.5);}
+body[data-theme-level="27"] .account-avatar.role-premium{color:#ffe08a;}
+body[data-theme-level="27"] .account-avatar.role-admin{color:#ffb3c7;}
+body[data-theme-level="27"] .account-brand-name{font-family:inherit;letter-spacing:-.01em;}
+
+/* ---- Popup / modal / toast: kính đặc hơn để chữ luôn đọc được trên lớp phủ tối ---- */
+body[data-theme-level="27"] :is(.popup-panel,.modal-panel,.reminder-popup,.translate-popup,.chat-bubble-notify,.sw-update-banner,.diary-dropdown-menu){
+  background:var(--glass-fill-strong);
+  -webkit-backdrop-filter:blur(34px) saturate(180%);backdrop-filter:blur(34px) saturate(180%);
+  border:1px solid rgba(255,255,255,.4);
+  box-shadow:var(--glass-edge),0 30px 70px -18px rgba(4,6,36,.75);
+  color:#fff;
+}
+body[data-theme-level="27"] :is(.popup-panel,.modal-panel){border-radius:32px;}
+body[data-theme-level="27"] .popup-header{letter-spacing:-.01em;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:12px;}
+body[data-theme-level="27"] .overlay:not(.translate-overlay){
+  background:rgba(8,10,44,.5);
+  -webkit-backdrop-filter:blur(10px) saturate(130%);backdrop-filter:blur(10px) saturate(130%);
+}
+body[data-theme-level="27"] .toast{
+  background:var(--glass-fill-strong);color:#fff;
+  -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);
+  border:1px solid rgba(255,255,255,.5);box-shadow:var(--glass-edge),0 14px 30px -10px rgba(5,6,40,.6);
+}
+body[data-theme-level="27"] .toast-undo-btn{border-color:rgba(255,255,255,.7);color:#fff;}
+body[data-theme-level="27"] .toast-undo-btn:hover{background:#fff;color:var(--ink-dark);}
+
+/* ---- Tab chính: segmented control ---- */
+body[data-theme-level="27"] .main-tabs{
+  background:rgba(10,12,48,.3);border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:4px;gap:2px;
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.28);
+}
+body[data-theme-level="27"] .main-tab-btn{border-radius:999px;color:rgba(255,255,255,.9);font-weight:600;transition:background .2s ease,color .2s ease,box-shadow .2s ease;}
+body[data-theme-level="27"] .main-tab-btn:hover:not(.active){background:rgba(255,255,255,.12);}
+
+/* ---- Nút: kính mỏng, viền sáng ---- */
+body[data-theme-level="27"] :is(.pill-btn,.pill-btn-outline,.block-btn,.status-btn,.dir-toggle-btn,.fc-chip,.keybind-btn,.wh-cat-btn,.auth-subtab-btn,.admin-role-chip,.nghe-input-icon-btn,.wh-topbar-label,.bell-pill-btn,.settings-gear-btn,.nav-arrow,.popup-close,.nghe-reset-btn,.grammar-icon-btn,.fc-read-btn,.fc-autoplay-btn,.fc-read-btn,.wh-sort-btn,.version-info-btn,.tp-source-chip,.wh-tag-chip,.wr-word-chip,.qt-candidate,.qt-swap-btn,.wh-row-actions button,.nghe-wh-card-delete,.wh-preview-remove,.wh-edit-alts-row button,.grammar-hit-btn,.sync-btn){
+  background:rgba(255,255,255,.13);
+  border:1px solid rgba(255,255,255,.32);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+  color:#fff;border-radius:999px;font-weight:600;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+body[data-theme-level="27"] :is(.nghe-item-btn,.stat-box,.section-label-btn,.wh-library-filter-btn,.grammar-unit-btn,.theme-special-btn,.theme-pick-card,.icon-btn-sq,.wh-list-item,.popup-list-item,.global-search-row,.wh-topbar-label){
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.38);
+  color:#fff;border-radius:18px;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+body[data-theme-level="27"] .icon-btn-sq{border-radius:14px;}
+body[data-theme-level="27"] :is(.pill-btn,.pill-btn-outline,.block-btn,.status-btn,.dir-toggle-btn,.fc-chip,.keybind-btn,.wh-cat-btn,.auth-subtab-btn,.admin-role-chip,.nghe-input-icon-btn,.bell-pill-btn,.settings-gear-btn,.nav-arrow,.popup-close,.nghe-reset-btn,.grammar-icon-btn,.fc-read-btn,.wh-sort-btn,.tp-source-chip,.wh-tag-chip,.wr-word-chip,.qt-candidate,.qt-swap-btn,.nghe-item-btn,.stat-box,.section-label-btn,.wh-library-filter-btn,.grammar-unit-btn,.theme-special-btn,.theme-pick-card,.icon-btn-sq,.wh-list-item,.popup-list-item,.global-search-row):hover:not(:disabled){
+  background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.6);color:#fff;transform:translateY(-1px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 22px -10px rgba(6,8,40,.6);
+}
+body[data-theme-level="27"] :is(.pill-btn,.pill-btn-outline,.block-btn,.status-btn,.dir-toggle-btn,.nghe-item-btn,.stat-box,.nav-arrow,.icon-btn-sq):active{transform:scale(.97);}
+body[data-theme-level="27"] .popup-close:hover{background:rgba(255,120,160,.45);border-color:rgba(255,180,200,.8);}
+body[data-theme-level="27"] .pill-btn-outline:disabled:hover{background:rgba(255,255,255,.13);transform:none;}
+
+/* ---- Trạng thái đang chọn: viên thuốc trắng chữ xanh đêm (như segmented control của iOS) ---- */
+body[data-theme-level="27"] :is(.main-tab-btn.active,.pill-btn.active,.pill-btn-outline.active,.block-btn.active,.nghe-item-btn.active,.grammar-unit-btn.active,.wh-cat-btn.active,.wh-library-filter-btn.active,.auth-subtab-btn.active,.fc-chip.active,.admin-role-chip.on,.wh-list-item.active,.tp-source-chip.active,.wh-tag-chip.active,.grammar-icon-btn.active,.fc-read-btn.active,.fc-autoplay-btn.active,.popup-list-item.selected,.qt-candidate-selected,.wr-word-chip.selected,#fc-autoplay-toggle.active,#nghe-play-all-btn.playing){
+  background:linear-gradient(180deg,#ffffff,#dfe5ff);
+  border-color:#fff;color:var(--ink-dark);
+  box-shadow:0 4px 14px rgba(0,0,0,.28),inset 0 1px 0 #fff;
+  text-shadow:none;
+}
+body[data-theme-level="27"] .main-tab-btn.active{box-shadow:0 2px 8px rgba(0,0,0,.28),inset 0 1px 0 #fff;}
+body[data-theme-level="27"] .nghe-item-btn.active span,body[data-theme-level="27"] .popup-list-item.selected{color:var(--ink-dark);}
+body[data-theme-level="27"] .popup-list-item.selected .dot{background:var(--ink-dark);}
+body[data-theme-level="27"] .grammar-unit-btn.active .grammar-unit-count{background:rgba(13,17,64,.12);color:var(--ink-dark);}
+body[data-theme-level="27"] .stat-box.active{background:linear-gradient(145deg,rgba(255,255,255,.36),rgba(255,255,255,.14));border-color:rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 8px 20px -8px rgba(8,10,50,.5);}
+/* Nút chính (accent): viên thuốc xanh dạ quang chữ tối */
+body[data-theme-level="27"] :is(.pill-btn.primary,.block-btn.primary,.dir-toggle-btn:not(#fc-autoplay-toggle),.btn-primary){
+  background:linear-gradient(180deg,#c9d5ff,#9fb4ff);color:var(--ink-dark);border-color:rgba(255,255,255,.7);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 10px 24px -8px rgba(120,150,255,.6);
+}
+body[data-theme-level="27"] :is(.pill-btn.primary,.block-btn.primary,.dir-toggle-btn:not(#fc-autoplay-toggle),.btn-primary):hover:not(:disabled){background:linear-gradient(180deg,#dbe3ff,#b3c4ff);color:var(--ink-dark);}
+/* Nút trạng thái Khó / Đang học / Đã biết */
+body[data-theme-level="27"] .status-btn.status-difficult{color:#ffc2d1;background:rgba(255,120,160,.2);border-color:rgba(255,150,180,.6);}
+body[data-theme-level="27"] .status-btn.status-learning{color:#ffe08a;background:rgba(255,214,102,.2);border-color:rgba(255,214,102,.6);}
+body[data-theme-level="27"] .status-btn.status-known{color:#9bf5cf;background:rgba(60,230,170,.2);border-color:rgba(95,240,181,.6);}
+body[data-theme-level="27"] .status-btn.status-difficult:hover,body[data-theme-level="27"] .status-btn.status-difficult.armed{background:rgba(255,120,160,.38);color:#fff;border-color:#ff9db6;}
+body[data-theme-level="27"] .status-btn.status-learning:hover,body[data-theme-level="27"] .status-btn.status-learning.armed{background:rgba(255,214,102,.36);color:#fff;border-color:#ffd666;}
+body[data-theme-level="27"] .status-btn.status-known:hover,body[data-theme-level="27"] .status-btn.status-known.armed{background:rgba(60,230,170,.36);color:#fff;border-color:#5ff0b5;}
+body[data-theme-level="27"] #wr-difficulty-toggle,body[data-theme-level="27"] #nghe-difficulty-toggle{border-radius:999px;}
+body[data-theme-level="27"] :is(#wr-difficulty-toggle,#nghe-difficulty-toggle).difficulty-easy{background:rgba(60,230,170,.2);border-color:#5ff0b5;color:#9bf5cf;}
+body[data-theme-level="27"] :is(#wr-difficulty-toggle,#nghe-difficulty-toggle).difficulty-medium{background:rgba(255,214,102,.2);border-color:#ffd666;color:#ffe08a;}
+body[data-theme-level="27"] :is(#wr-difficulty-toggle,#nghe-difficulty-toggle).difficulty-hard{background:rgba(255,120,160,.2);border-color:#ff9db6;color:#ffc2d1;}
+body[data-theme-level="27"] .stat-label{color:rgba(255,255,255,.82);font-weight:500;}
+body[data-theme-level="27"] .stat-num{font-weight:700;letter-spacing:-.02em;}
+body[data-theme-level="27"] .section-label{color:rgba(255,255,255,.8);letter-spacing:.05em;}
+
+/* ---- Ô nhập ---- */
+body[data-theme-level="27"] :is(.text-input,.qt-box,.modal-textarea,.wh-edit-textarea,.nghe-input-bar,.wh-preview-row input,.wh-preview-row textarea,.wh-preview-speaker,.admin-role-select,.grammar-select){
+  background:rgba(10,12,48,.3);color:#fff;
+  border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 3px rgba(0,0,0,.28);
+}
+body[data-theme-level="27"] .nghe-input-bar{border-radius:999px;}
+body[data-theme-level="27"] .nghe-answer-input{color:#fff;}
+body[data-theme-level="27"] :is(.text-input,.nghe-answer-input,.qt-box,textarea)::placeholder{color:rgba(255,255,255,.62);}
+body[data-theme-level="27"] .text-input:focus,body[data-theme-level="27"] .qt-input-box:focus,body[data-theme-level="27"] .wh-edit-textarea:focus{
+  outline:2px solid rgba(201,213,255,.9);outline-offset:1px;box-shadow:0 0 0 4px rgba(159,180,255,.25),inset 0 1px 3px rgba(0,0,0,.28);
+}
+body[data-theme-level="27"] :is(select,.text-input) option{background:#1c1f55;color:#fff;}
+body[data-theme-level="27"] :is(.qt-pos-badge,.qt-ipa-badge){border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff;}
+body[data-theme-level="27"] input[type="checkbox"],body[data-theme-level="27"] input[type="radio"]{border:2px solid rgba(255,255,255,.55);background:rgba(10,12,48,.3);}
+body[data-theme-level="27"] input[type="checkbox"]:checked,body[data-theme-level="27"] input[type="radio"]:checked{background:#c9d5ff;border-color:#fff;box-shadow:0 0 12px rgba(159,180,255,.7);}
+body[data-theme-level="27"] input[type="checkbox"]::after,body[data-theme-level="27"] input[type="radio"]::after{background:var(--ink-dark);}
+
+/* ---- Flashcard: tấm kính lớn có vệt phản chiếu ---- */
+body[data-theme-level="27"] .flashcard{
+  position:relative;overflow:hidden;border-radius:40px;
+  background:linear-gradient(150deg,rgba(255,255,255,.32),rgba(255,255,255,.09) 55%,rgba(255,255,255,.18)),rgba(14,16,70,.22);
+  -webkit-backdrop-filter:blur(34px) saturate(190%);backdrop-filter:blur(34px) saturate(190%);
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.75),inset 0 -2px 6px rgba(255,255,255,.15),inset 0 0 40px rgba(255,255,255,.08),0 34px 70px -18px rgba(5,6,40,.7);
+}
+body[data-theme-level="27"] .flashcard::before{
+  content:"";position:absolute;left:6%;right:6%;top:0;height:46%;
+  border-radius:0 0 60% 60% / 0 0 100% 100%;
+  background:linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,0));
+  pointer-events:none;
+}
+body[data-theme-level="27"] .flashcard > :not(.card-status-pill){position:relative;z-index:1;}
+body[data-theme-level="27"] .card-text{font-size:2.2rem;font-weight:600;letter-spacing:-.025em;line-height:1.2;text-shadow:0 2px 18px rgba(10,12,60,.45);}
+body[data-theme-level="27"] .card-hint{color:rgba(255,255,255,.82);}
+body[data-theme-level="27"] .card-status-pill{
+  z-index:2;border:1px solid currentColor;font-weight:700;box-shadow:0 0 14px currentColor;
+  background:rgba(255,214,102,.2);color:#ffe08a;
+}
+body[data-theme-level="27"] .card-status-pill.known{background:rgba(60,230,170,.2);color:#9bf5cf;}
+body[data-theme-level="27"] .card-status-pill.difficult{background:rgba(255,120,160,.2);color:#ffc2d1;}
+body[data-theme-level="27"] .flashcard-counter{color:rgba(255,255,255,.85);font-weight:600;letter-spacing:.02em;}
+body[data-theme-level="27"] .nav-arrow{width:48px;height:48px;background:linear-gradient(145deg,rgba(255,255,255,.3),rgba(255,255,255,.1));border-color:rgba(255,255,255,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 10px 22px -8px rgba(6,8,40,.55);}
+
+/* ---- Chế độ Đọc ---- */
+body[data-theme-level="27"] .fc-read-toolbar{
+  background:rgba(30,34,100,.62);
+  -webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);
+  border-bottom:1px solid rgba(255,255,255,.25);border-radius:20px 20px 0 0;padding:8px 10px 10px;
+}
+body[data-theme-level="27"] .fc-read-list{gap:8px;padding:8px 4px 8px 0;}
+body[data-theme-level="27"] .fc-read-row{
+  background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.2);border-left:3px solid transparent;border-radius:20px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
+}
+body[data-theme-level="27"] .fc-read-row:hover{background:rgba(255,255,255,.17);}
+body[data-theme-level="27"] .fc-read-row.starred{background:rgba(255,214,102,.16);border-color:rgba(255,214,102,.5);}
+body[data-theme-level="27"] .fc-read-row.st-known{border-left-color:var(--known);}
+body[data-theme-level="27"] .fc-read-row.st-difficult{border-left-color:var(--difficult);}
+body[data-theme-level="27"] .fc-read-en{font-weight:600;letter-spacing:-.01em;}
+body[data-theme-level="27"] .fc-read-num{color:rgba(255,255,255,.7);}
+body[data-theme-level="27"] .fc-read-pos,body[data-theme-level="27"] .wh-row-pos{border-color:rgba(255,255,255,.4);color:#cfdaff;}
+body[data-theme-level="27"] .fc-read-act{color:rgba(255,255,255,.8);}
+body[data-theme-level="27"] .fc-read-act:hover{background:rgba(255,255,255,.2);color:#fff;}
+
+/* ---- Viết / Nghe: bong bóng chat ---- */
+body[data-theme-level="27"] .nghe-bubble{border:1px solid rgba(255,255,255,.34);box-shadow:inset 0 1px 0 rgba(255,255,255,.4);}
+body[data-theme-level="27"] .nghe-bubble-left{
+  background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.08)),rgba(14,16,70,.3);color:#fff;
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+}
+body[data-theme-level="27"] .nghe-bubble-left.unrevealed{background:rgba(201,213,255,.22);border-color:rgba(255,255,255,.6);color:#fff;}
+body[data-theme-level="27"] .nghe-bubble-right{background:linear-gradient(180deg,#c9d5ff,#9fb4ff);color:var(--ink-dark);border-color:rgba(255,255,255,.7);}
+body[data-theme-level="27"] .nghe-bubble-right.correct{background:rgba(60,230,170,.24);color:#b7fadf;border-color:#5ff0b5;}
+body[data-theme-level="27"] .nghe-bubble-right.wrong{background:rgba(255,120,160,.24);color:#ffd0dc;border-color:#ff9db6;}
+body[data-theme-level="27"] .nghe-bubble-right.hint{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.6);}
+body[data-theme-level="27"] .nghe-avatar{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.5);}
+body[data-theme-level="27"] .nghe-chat-header{border-bottom:1px solid rgba(255,255,255,.22);}
+body[data-theme-level="27"] #wr-chat-scroll.flash-correct{box-shadow:inset 0 0 0 2px var(--known);border-radius:24px;}
+body[data-theme-level="27"] #wr-chat-scroll.flash-wrong{box-shadow:inset 0 0 0 2px var(--difficult);border-radius:24px;}
+body[data-theme-level="27"] .nghe-chat-empty,body[data-theme-level="27"] .nghe-system-msg,body[data-theme-level="27"] .nghe-pct{color:rgba(255,255,255,.8);}
+
+/* ---- Kho / bảng / thống kê / Admin ---- */
+body[data-theme-level="27"] .wh-table-wrap{border-radius:22px;}
+body[data-theme-level="27"] .wh-table-header{background:rgba(34,38,112,.88);border-bottom:1px solid rgba(255,255,255,.28);color:rgba(255,255,255,.85);}
+body[data-theme-level="27"] .wh-row{border-bottom:1px solid rgba(255,255,255,.14);}
+body[data-theme-level="27"] .wh-row:hover{background:rgba(255,255,255,.1);}
+body[data-theme-level="27"] .wh-row.drag-over-top{box-shadow:inset 0 2px 0 #c9d5ff;}
+body[data-theme-level="27"] .wh-row.drag-over-bottom{box-shadow:inset 0 -2px 0 #c9d5ff;}
+body[data-theme-level="27"] .wh-bottom-bar,body[data-theme-level="27"] .wh-legend,body[data-theme-level="27"] .settings-section,body[data-theme-level="27"] .account-info-row{border-color:rgba(255,255,255,.22);}
+body[data-theme-level="27"] .wh-bulk-bar{background:rgba(201,213,255,.18);border:1px solid rgba(255,255,255,.5);border-radius:18px;}
+body[data-theme-level="27"] .wh-preview-row{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);border-radius:16px;}
+body[data-theme-level="27"] .wh-preview-row.wh-preview-dup{background:rgba(255,214,102,.2);}
+body[data-theme-level="27"] .wh-list-title{border:1px solid rgba(255,255,255,.3);border-radius:999px;background:rgba(255,255,255,.1);}
+body[data-theme-level="27"] .wh-stats-card-bar{background:rgba(255,255,255,.18);}
+body[data-theme-level="27"] .ring-track{stroke:rgba(255,255,255,.2);}
+body[data-theme-level="27"] .ring-progress-writing{stroke:#c9d5ff;color:#c9d5ff;}
+body[data-theme-level="27"] .ring-adjust-btn{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.34);border-radius:50%;}
+body[data-theme-level="27"] .ring-adjust-btn::before{background:#fff;}
+body[data-theme-level="27"] .ring-adjust-btn.active{background:linear-gradient(180deg,#fff,#dfe5ff);}
+body[data-theme-level="27"] .ring-adjust-btn.active::before{background:var(--ink-dark);}
+body[data-theme-level="27"] .ring-goal-input{background:rgba(10,12,48,.4);border-color:#c9d5ff;color:#fff;}
+body[data-theme-level="27"] .wh-progress-bar-track{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.32);}
+body[data-theme-level="27"] .wh-progress-bar-done{background:linear-gradient(90deg,#9fb4ff,#c9d5ff);}
+body[data-theme-level="27"] .link-btn,body[data-theme-level="27"] .db-help-steps a{color:#cfdaff;}
+body[data-theme-level="27"] .db-help-steps code{background:rgba(255,255,255,.16);color:#fff;}
+body[data-theme-level="27"] .version-entry-title{color:#cfdaff;}
+body[data-theme-level="27"] .wh-tag-chip-clear{color:#ffc2d1;}
+body[data-theme-level="27"] .brand-momentum{background:rgba(255,255,255,.16);color:#fff;}
+
+/* ---- Ngữ pháp ---- */
+body[data-theme-level="27"] .grammar-header{border-bottom:1px solid rgba(255,255,255,.22);}
+body[data-theme-level="27"] .grammar-unit-count{background:rgba(255,255,255,.18);color:#fff;}
+body[data-theme-level="27"] .grammar-view{color:#fff;}
+body[data-theme-level="27"] .grammar-view h1{color:#fff;border-bottom-color:rgba(255,255,255,.4);}
+body[data-theme-level="27"] .grammar-view h2{color:#fff;border-left-color:#c9d5ff;}
+body[data-theme-level="27"] .grammar-view :is(h3,h4){color:#d7e0ff;}
+body[data-theme-level="27"] .grammar-view strong{color:#d7e0ff;}
+body[data-theme-level="27"] .grammar-view code{background:rgba(255,255,255,.16);color:#fff;}
+body[data-theme-level="27"] .grammar-view blockquote{background:rgba(255,255,255,.1);border-left-color:#c9d5ff;}
+body[data-theme-level="27"] .grammar-view :is(th,td){border-color:rgba(255,255,255,.26);}
+body[data-theme-level="27"] .grammar-view th{background:rgba(255,255,255,.16);}
+body[data-theme-level="27"] .grammar-view mark.grammar-hit{background:rgba(255,214,102,.32);color:#fff;box-shadow:0 0 0 1px #ffd666;}
+body[data-theme-level="27"] .grammar-view mark.grammar-hit.current{background:#ffd666;color:#1a1200;}
+body[data-theme-level="27"] .grammar-unit-snippet mark{background:rgba(255,214,102,.3);color:#fff;}
+
+/* ---- Màn hình loading + banner cập nhật ---- */
+body[data-theme-level="27"] .app-loading{background:linear-gradient(160deg,#14183f,#1c1b52 45%,#2a1650);}
+body[data-theme-level="27"] .app-loading-text{color:#fff;}
+body[data-theme-level="27"] .reminder-popup-bar-fill{background:linear-gradient(90deg,#9fb4ff,#c9d5ff);}
+body[data-theme-level="27"] .reminder-popup-bar{background:rgba(255,255,255,.2);}
+
+@media (prefers-reduced-transparency:reduce){
+  body[data-theme-level="27"] :is(.sidebar,.main-content,.flashcard,.popup-panel,.modal-panel,.toast,.reminder-popup,.translate-popup){
+    -webkit-backdrop-filter:none;backdrop-filter:none;background:#232766;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  body[data-theme-level="27"] *{transition:none !important;}
+}
