@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nox">
-<link rel="icon" href="icon-192.png?v=82">
-<link rel="apple-touch-icon" href="icon-192.png?v=82">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 
 <link rel="stylesheet" href="style.css">
 
@@ -27,15 +27,15 @@
 <!-- ============ MÀN HÌNH LOADING ============ -->
 <div class="app-loading" id="app-loading">
   <svg class="app-loading-icon" viewBox="0 0 176 176" xmlns="http://www.w3.org/2000/svg">
-    <rect width="176" height="176" rx="40" fill="#35373A"/>
-    <path d="M110 35.2 A57.2 57.2 0 1 0 110 140.8 A46.2 46.2 0 1 1 110 35.2 Z" fill="#E1B61B"/>
-    <circle cx="118.8" cy="48.4" r="6" fill="#E1B61B"/>
-    <circle cx="136.4" cy="70.4" r="4" fill="#E1B61B"/>
+    <rect width="176" height="176" rx="40" fill="#221c3d"/>
+    <path d="M110 35.2 A57.2 57.2 0 1 0 110 140.8 A46.2 46.2 0 1 1 110 35.2 Z" fill="#8b5cf6"/>
+    <circle cx="118.8" cy="48.4" r="6" fill="#8b5cf6"/>
+    <circle cx="136.4" cy="70.4" r="4" fill="#8b5cf6"/>
   </svg>
   <div class="app-loading-text">Nox</div>
   <div id="app-loading-rescue" style="display:none;flex-direction:column;align-items:center;gap:10px;margin-top:6px;">
-    <div style="color:#d1d3d8;font-size:13px;">Tải lâu hơn dự kiến…</div>
-    <button id="app-loading-rescue-btn" type="button" style="padding:9px 16px;border:0;border-radius:10px;background:#E1B61B;color:#1e1e1e;font-weight:600;font-size:14px;cursor:pointer;">Làm mới &amp; thử lại</button>
+    <div style="color:#c9c0ea;font-size:13px;">Tải lâu hơn dự kiến…</div>
+    <button id="app-loading-rescue-btn" type="button" style="padding:9px 16px;border:0;border-radius:10px;background:#8b5cf6;color:#fff;font-size:14px;cursor:pointer;">Làm mới &amp; thử lại</button>
   </div>
   <script>
     /* Chống kẹt màn hình loading: độc lập với script.js nên vẫn chạy kể cả khi script.js lỗi/cũ. */
@@ -105,16 +105,16 @@
     <!-- ---- Sidebar: Flashcard controls ---- -->
     <div class="sidebar-panel" data-panel="flashcard">
       <div class="stat-grid">
-        <button type="button" class="stat-box active" data-filter="all"><span class="stat-num" id="fc-stat-total">0</span><span class="stat-label">Tổng thẻ</span></button>
-        <button type="button" class="stat-box stat-learning" data-filter="learning"><span class="stat-num" id="fc-stat-learning">0</span><span class="stat-label">Đang học</span></button>
-        <button type="button" class="stat-box stat-known" data-filter="known"><span class="stat-num" id="fc-stat-known">0</span><span class="stat-label">Đã biết</span></button>
+        <button type="button" class="stat-box active" data-filter="all"><span class="stat-num" id="fc-stat-total">0</span><span class="stat-label">Tổng</span></button>
+        <button type="button" class="stat-box stat-learning" data-filter="learning"><span class="stat-num" id="fc-stat-learning">0</span><span class="stat-label">Còn</span></button>
+        <button type="button" class="stat-box stat-known" data-filter="known"><span class="stat-num" id="fc-stat-known">0</span><span class="stat-label">Dễ</span></button>
         <button type="button" class="stat-box stat-difficult" data-filter="difficult"><span class="stat-num" id="fc-stat-difficult">0</span><span class="stat-label">Khó</span></button>
       </div>
 
       <div class="panel-section">
         <div class="fc-switch-row">
           <button type="button" class="section-label-btn" id="fc-source-toggle" title="Đổi nguồn: danh sách Thẻ hoặc danh sách Từ điển">Danh sách: Thẻ</button>
-          <button type="button" class="section-label-btn" id="fc-view-toggle" title="Đổi giao diện: Đọc (cả danh sách) hoặc Lật thẻ">Giao diện: Đọc</button>
+          <button type="button" class="section-label-btn" id="fc-view-toggle" title="Đổi chế độ xem: Gõ / Đọc / Lật thẻ">Xem: Gõ</button>
         </div>
         <div class="nghe-item-list list-quickselect-scroll" id="fc-list-quickselect"></div>
       </div>
@@ -123,10 +123,10 @@
     <!-- ---- Sidebar: Writing controls ---- -->
     <div class="sidebar-panel hidden" data-panel="writing">
       <div class="stat-grid">
-        <button type="button" class="stat-box active" data-wfilter="all"><span class="stat-num" id="wr-stat-total">0</span><span class="stat-label">Tổng câu</span></button>
-        <button type="button" class="stat-box stat-learning" data-wfilter="undone"><span class="stat-num" id="wr-stat-undone">0</span><span class="stat-label">Chưa làm</span></button>
-        <button type="button" class="stat-box stat-known" data-wfilter="correct"><span class="stat-num" id="wr-stat-correct">0</span><span class="stat-label">Làm đúng</span></button>
-        <button type="button" class="stat-box stat-difficult" data-wfilter="wrong"><span class="stat-num" id="wr-stat-wrong">0</span><span class="stat-label">Làm sai</span></button>
+        <button type="button" class="stat-box active" data-wfilter="all"><span class="stat-num" id="wr-stat-total">0</span><span class="stat-label">Tổng</span></button>
+        <button type="button" class="stat-box stat-learning" data-wfilter="undone"><span class="stat-num" id="wr-stat-undone">0</span><span class="stat-label">Còn</span></button>
+        <button type="button" class="stat-box stat-known" data-wfilter="correct"><span class="stat-num" id="wr-stat-correct">0</span><span class="stat-label">Đúng</span></button>
+        <button type="button" class="stat-box stat-difficult" data-wfilter="wrong"><span class="stat-num" id="wr-stat-wrong">0</span><span class="stat-label">Sai</span></button>
       </div>
 
       <div class="panel-section">
@@ -139,8 +139,8 @@
     <div class="sidebar-panel hidden" data-panel="listening">
       <div class="panel-section">
         <div class="section-label">Chọn bài</div>
+        <div class="nghe-item-list list-quickselect-scroll" id="nghe-list-quickselect"></div>
         <div class="nghe-item-list" id="nghe-item-list"></div>
-        <button class="block-btn primary" id="nghe-choose-list" title="Chọn danh sách Nghe từ Kho">Danh sách</button>
       </div>
     </div>
 
@@ -170,26 +170,19 @@
       <div id="wh-sidebar-list-section">
         <div class="wh-lists-title-row">
           <span class="section-label" id="wh-lists-title">Thẻ</span>
-          <div class="diary-dd-wrap">
-            <button class="wh-sort-btn" id="wh-sort-btn" title="Sắp xếp danh sách">⇅</button>
-            <div class="diary-dropdown-menu hidden" id="wh-sort-menu">
-              <button type="button" data-sort="date">Theo ngày</button>
-              <button type="button" data-sort="name">Theo tên</button>
-            </div>
-          </div>
         </div>
         <div class="wh-list-grid" id="wh-list-grid"></div>
         <div class="btn-row-4">
-          <button class="icon-btn-sq" id="wh-add-list" title="Thêm danh sách">＋</button>
-          <button class="icon-btn-sq" id="wh-rename-list" title="Chỉnh sửa danh sách">✎</button>
-          <button class="icon-btn-sq" id="wh-duplicate-list" title="Nhân bản danh sách">⧉</button>
+          <button class="icon-btn-sq" id="wh-add-list" title="Thêm danh sách" aria-label="Thêm danh sách"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+          <button class="icon-btn-sq" id="wh-rename-list" title="Chỉnh sửa danh sách" aria-label="Chỉnh sửa danh sách"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+          <button class="icon-btn-sq" id="wh-duplicate-list" title="Nhân bản danh sách" aria-label="Nhân bản danh sách"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           <button class="icon-btn-sq" id="wh-delete-list" title="Xoá danh sách"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
+          <button class="icon-btn-sq" id="wh-export-open" title="Xuất / Nhập file" aria-label="Xuất / Nhập file"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v13"/><path d="m3 13 4 4 4-4"/><path d="M17 20V7"/><path d="m13 11 4-4 4 4"/></svg></button>
+          <button class="icon-btn-sq" id="wh-worksheet-btn" title="In danh sách này ra worksheet (PDF)" aria-label="In danh sách này ra worksheet (PDF)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="6" y="14" width="12" height="7" rx="1"/><path d="M6 17H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/></svg></button>
+          <button class="icon-btn-sq" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung" aria-label="Đăng danh sách này lên Thư viện chung"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></button>
+          <button class="icon-btn-sq" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã" aria-label="Chia sẻ riêng danh sách này qua mã"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/></svg></button>
+          <button class="icon-btn-sq" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ" aria-label="Nhập danh sách từ mã chia sẻ"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-3 3"/><path d="m18 5 3 3"/></svg></button>
         </div>
-        <button class="pill-btn-outline" id="wh-export-open" title="Xuất / Nhập file">Xuất/Nhập</button>
-        <button class="pill-btn-outline" id="wh-worksheet-btn" title="In danh sách này ra worksheet (từ + chỗ trống viết nghĩa, kèm đáp án)">In PDF</button>
-        <button class="pill-btn-outline" id="wh-library-upload-open" title="Đăng danh sách này lên Thư viện chung">Đăng</button>
-        <button class="pill-btn-outline" id="wh-share-open" title="Chia sẻ riêng danh sách này qua mã">Chia sẻ</button>
-        <button class="pill-btn-outline" id="wh-redeem-open" title="Nhập danh sách từ mã chia sẻ">Nhập mã</button>
       </div>
       <div id="wh-library-sidebar-section" class="hidden">
         <div class="section-label">Loại nội dung</div>
@@ -238,12 +231,38 @@
     <!-- ---- Flashcard main ---- -->
     <section class="tab-content" data-content="flashcard">
 
+      <!-- ===== Giao diện 0: GÕ (kiểu Monkeytype) ===== -->
+      <div class="fc-type-view" id="fc-type-view">
+        <div class="ty-stage" id="ty-stage">
+          <div class="ty-text" id="ty-text">
+            <div class="ty-words" id="ty-words"></div>
+            <div class="ty-caret" id="ty-caret"></div>
+          </div>
+          <div class="ty-meaning" id="ty-meaning"></div>
+        </div>
+        <input type="text" id="ty-input" class="ty-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Ô gõ">
+        <div class="ty-bar" id="ty-bar">
+          <div class="ty-group">
+            <button type="button" class="ty-opt" data-ty-lang="en" title="Gõ tiếng Anh (đúng từ 70% là hoàn thành thẻ)">Anh</button>
+            <button type="button" class="ty-opt" data-ty-lang="vi" title="Gõ tiếng Việt (chỉ luyện tốc độ, không tính hoàn thành)">Việt</button>
+          </div>
+          <div class="ty-group">
+            <button type="button" class="ty-opt" data-ty-order="seq" title="Theo thứ tự danh sách">Thứ tự</button>
+            <button type="button" class="ty-opt" data-ty-order="shuffle" title="Ngẫu nhiên">Xáo</button>
+          </div>
+          <div class="ty-group">
+            <button type="button" class="ty-opt" data-ty-toggle="meaning" title="Hiện nghĩa dưới câu đang gõ">Nghĩa</button>
+            <button type="button" class="ty-opt" data-ty-toggle="case" title="Phân biệt chữ hoa/thường">Aa</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ===== Giao diện 1: LẬT THẺ ===== -->
       <div class="fc-flip-view hidden" id="fc-flip-view">
         <div class="flashcard-stage">
           <button class="nav-arrow" id="fc-prev" data-no-click-sound>‹</button>
           <div class="flashcard" id="fc-card">
-            <span class="card-status-pill" id="fc-card-status">Đang học</span>
+            <span class="card-status-pill" id="fc-card-status">Còn</span>
             <p class="card-text" id="fc-card-text">Chọn danh sách để bắt đầu</p>
             <p class="card-hint">Nhấp hoặc nhấn Space để lật thẻ</p>
           </div>
@@ -252,8 +271,8 @@
         <div class="flashcard-counter" id="fc-counter">0 / 0</div>
         <div class="flashcard-controls">
           <button class="status-btn status-difficult" id="fc-mark-difficult">Khó</button>
-          <button class="status-btn status-learning" id="fc-mark-learning">Đang học</button>
-          <button class="status-btn status-known" id="fc-mark-known">Đã biết</button>
+          <button class="status-btn status-learning" id="fc-mark-learning">Còn</button>
+          <button class="status-btn status-known" id="fc-mark-known">Dễ</button>
           <button class="dir-toggle-btn" id="fc-dir-toggle">E - V</button>
           <button class="dir-toggle-btn" id="fc-autoplay-toggle" title="Tự động lật thẻ và chuyển thẻ theo thời gian đã cài đặt">Auto play</button>
           <button class="fc-read-btn" id="fc-play-btn" title="Đọc thẻ hiện tại (bật để tự đọc khi Auto play)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></button>
@@ -262,7 +281,7 @@
       </div>
 
       <!-- ===== Giao diện 2: ĐỌC (hiện cả danh sách) ===== -->
-      <div class="fc-read-view" id="fc-read-view">
+      <div class="fc-read-view hidden" id="fc-read-view">
         <div class="fc-read-toolbar">
           <div class="fc-read-count" id="fc-read-count">0 mục</div>
           <div class="fc-read-chips">
@@ -464,11 +483,6 @@
           </div>
         </div>
 
-        <div class="wh-legend" id="wh-legend">
-          <div class="legend-item"><span class="dot dot-learning"></span><span id="wh-legend-1">Đang học</span></div>
-          <div class="legend-item"><span class="dot dot-known"></span><span id="wh-legend-2">Đã biết</span></div>
-          <div class="legend-item"><span class="dot dot-difficult"></span><span id="wh-legend-3">Khó</span></div>
-        </div>
       </div>
     </section>
 

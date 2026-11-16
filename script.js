@@ -574,9 +574,9 @@ function allItems(cat) {
 }
 function statusLabel(cat, status) {
   if (cat === "writing") {
-    return { new: "Chưa làm", known: "Làm đúng", difficult: "Làm sai" }[status];
+    return { new: "Còn", known: "Đúng", difficult: "Sai" }[status];
   }
-  return { new: "Đang học", known: "Đã biết", difficult: "Khó" }[status];
+  return { new: "Còn", known: "Dễ", difficult: "Khó" }[status];
 }
 function shuffleArr(arr) {
   const a = arr.slice();
@@ -948,59 +948,114 @@ function termBootFx() {
   }, 240);
   pre.textContent = lines.join("\n");
 }
-/* ---- Giao diện Minimal (28): dồn cụm nút lên một hàng + chọn bài dạng dropdown (chỉ đổi vị trí DOM / thêm menu, không đổi logic) ---- */
+/* ---- Giao diện Minimal (28): dồn cụm nút lên một hàng, đưa thanh chọn danh sách xuống góc trái dưới, dropdown + lăn chuột đổi danh sách (chỉ đổi vị trí DOM / thêm menu, không đổi logic) ---- */
 var __mtMoves = [];
+var __mtDocks = [];
+var __mtObs = null;
+var MT_LIST_SEL = "#fc-list-quickselect,#wr-list-quickselect,#nghe-list-quickselect,#nghe-item-list,#wh-list-grid,#grammar-unit-list";
+var MT_MULTI_SEL = "#fc-list-quickselect,#wr-list-quickselect,#nghe-list-quickselect";
+var MT_ITEM_SEL = ".nghe-item-btn,.wh-list-item,.grammar-unit-btn";
+function mtMove(el, toParent, atStart) {
+  if (!el || !toParent || el.parentNode === toParent) return;
+  __mtMoves.push({ el: el, parent: el.parentNode, next: el.nextSibling });
+  if (atStart) toParent.insertBefore(el, toParent.firstChild); else toParent.appendChild(el);
+}
 function mtDock(on) {
-  var spec = [
-    ['.sidebar-panel[data-panel="flashcard"]', '.flashcard-controls', false],
-    ['.sidebar-panel[data-panel="flashcard"]', '.fc-read-chips', false],
-    ['.sidebar-panel[data-panel="writing"]', '.tab-content[data-content="writing"] > .nghe-chat-header', false],
-    ['.sidebar-panel[data-panel="listening"]', '.tab-content[data-content="listening"] > .nghe-chat-header', false],
-    ['.sidebar-panel[data-panel="warehouse"]', '.wh-topbar', true],
-  ];
   if (on) {
-    spec.forEach(function (s) {
-      var panel = document.querySelector(s[0]);
-      var el = document.querySelector(s[1]);
-      if (!panel || !el || el.parentNode === panel) return;
-      __mtMoves.push({ el: el, parent: el.parentNode, next: el.nextSibling });
-      if (s[2]) panel.insertBefore(el, panel.firstChild); else panel.appendChild(el);
+    var chips = document.querySelector(".sidebar-panel[data-panel=\"flashcard\"]");
+    mtMove(document.querySelector(".fc-read-chips"), chips, false);
+    mtMove(document.querySelector('.tab-content[data-content="writing"] > .nghe-chat-header'), document.querySelector('.sidebar-panel[data-panel="writing"]'), false);
+    mtMove(document.querySelector('.tab-content[data-content="listening"] > .nghe-chat-header'), document.querySelector('.sidebar-panel[data-panel="listening"]'), false);
+    mtMove(document.querySelector(".wh-topbar"), document.querySelector('.sidebar-panel[data-panel="warehouse"]'), true);
+    [
+      ['.sidebar-panel[data-panel="flashcard"]', ["#fc-list-quickselect"]],
+      ['.sidebar-panel[data-panel="writing"]', ["#wr-list-quickselect"]],
+      ['.sidebar-panel[data-panel="listening"]', ["#nghe-list-quickselect", "#nghe-item-list"]],
+      ['.sidebar-panel[data-panel="grammar"]', ["#grammar-unit-list"]],
+      ["#wh-sidebar-list-section", ["#wh-list-grid"]],
+    ].forEach(function (d) {
+      var host = document.querySelector(d[0]);
+      if (!host || host.querySelector(":scope > .mt-dock")) return;
+      var dock = document.createElement("div");
+      dock.className = "mt-dock";
+      host.appendChild(dock);
+      __mtDocks.push(dock);
+      d[1].forEach(function (sel) { mtMove(document.querySelector(sel), dock, false); });
     });
+    mtObserve();
   } else {
+    if (__mtObs) { __mtObs.disconnect(); __mtObs = null; }
     while (__mtMoves.length) {
       var m = __mtMoves.pop();
       if (m.next && m.next.parentNode === m.parent) m.parent.insertBefore(m.el, m.next); else m.parent.appendChild(m.el);
     }
+    while (__mtDocks.length) __mtDocks.pop().remove();
+    document.querySelectorAll(MT_LIST_SEL).forEach(function (b) { b.removeAttribute("data-more"); });
   }
+}
+// Hộp danh sách nhiều lựa chọn: chỉ hiện bài đầu tiên + "+n"; Ngữ pháp: chỉ hiện "Unit N"
+function mtSyncBox(box) {
+  var actives = box.querySelectorAll(".active");
+  if (actives.length > 1) box.setAttribute("data-more", String(actives.length - 1)); else box.removeAttribute("data-more");
+  if (box.id === "grammar-unit-list" && actives[0]) {
+    var t = (actives[0].textContent || "").trim();
+    actives[0].setAttribute("data-short", t.split(":")[0].replace(/\s+/g, " ").slice(0, 12));
+  }
+}
+function mtObserve() {
+  if (__mtObs) __mtObs.disconnect();
+  __mtObs = new MutationObserver(function (muts) {
+    var seen = [];
+    muts.forEach(function (m) {
+      var box = m.target.closest ? m.target.closest(MT_LIST_SEL) : null;
+      if (box && seen.indexOf(box) < 0) seen.push(box);
+    });
+    seen.forEach(mtSyncBox);
+  });
+  document.querySelectorAll(MT_LIST_SEL).forEach(function (box) {
+    __mtObs.observe(box, { childList: true, subtree: true });
+    mtSyncBox(box);
+  });
 }
 function mtApply(shown) {
   mtDock(shown === 28);
   if (shown !== 28) mtCloseMenu();
 }
 var __mtMenu = null;
-var MT_LIST_SEL = "#fc-list-quickselect,#wr-list-quickselect,#nghe-item-list,#wh-list-grid,#grammar-unit-list";
-var MT_ITEM_SEL = ".nghe-item-btn,.wh-list-item,.grammar-unit-btn";
-function mtCloseMenu() { if (__mtMenu) { __mtMenu.remove(); __mtMenu = null; } }
+function mtCloseMenu() {
+  if (__mtMenu) { __mtMenu.remove(); __mtMenu = null; if (typeof tyFocus === "function") tyFocus(); }
+}
 function mtItemLabel(btn) {
   var c = btn.cloneNode(true);
-  c.querySelectorAll(".grammar-unit-count,.wh-list-reminder-dot,.status-dot,.dot").forEach(function (n) { n.remove(); });
-  return (c.textContent || "").replace(/\s+/g, " ").trim();
+  c.querySelectorAll(".grammar-unit-count,.wh-list-reminder-dot,.status-dot,.dot,.grammar-unit-snippet").forEach(function (n) { n.remove(); });
+  return (c.textContent || "").replace(/\s+/g, " ").replace(/\s*✓$/, "").trim();
+}
+function mtClickItem(orig) {
+  window.__mtBypass = true;
+  try { orig.click(); } finally { window.__mtBypass = false; }
+}
+function mtRefreshMenu(menu) {
+  var items = Array.prototype.slice.call(menu.__box.querySelectorAll(MT_ITEM_SEL));
+  var btns = menu.querySelectorAll(".mt-menu-item");
+  items.forEach(function (it, i) { if (btns[i]) btns[i].classList.toggle("on", it.classList.contains("active")); });
 }
 function mtOpenMenu(box) {
   var items = Array.prototype.slice.call(box.querySelectorAll(MT_ITEM_SEL));
   if (!items.length) return;
+  var multi = box.matches(MT_MULTI_SEL);
   var menu = document.createElement("div");
   menu.className = "mt-menu";
   menu.__box = box;
-  items.forEach(function (orig) {
+  items.forEach(function (orig, idx) {
     var b = document.createElement("button");
     b.type = "button";
     b.className = "mt-menu-item" + (orig.classList.contains("active") ? " on" : "");
     b.textContent = mtItemLabel(orig);
     b.addEventListener("click", function () {
-      mtCloseMenu();
-      window.__mtBypass = true;
-      try { orig.click(); } finally { window.__mtBypass = false; }
+      var cur = Array.prototype.slice.call(box.querySelectorAll(MT_ITEM_SEL))[idx];
+      if (!cur) return;
+      if (multi) { mtClickItem(cur); mtRefreshMenu(menu); }
+      else { mtCloseMenu(); mtClickItem(cur); }
     });
     menu.appendChild(b);
   });
@@ -1008,8 +1063,13 @@ function mtOpenMenu(box) {
   var r = box.getBoundingClientRect();
   menu.style.minWidth = Math.max(r.width, 180) + "px";
   menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8)) + "px";
-  menu.style.top = r.bottom + 6 + "px";
-  menu.style.maxHeight = Math.max(160, window.innerHeight - r.bottom - 20) + "px";
+  if (r.top > window.innerHeight / 2) {
+    menu.style.bottom = (window.innerHeight - r.top + 6) + "px";
+    menu.style.maxHeight = Math.max(160, r.top - 20) + "px";
+  } else {
+    menu.style.top = r.bottom + 6 + "px";
+    menu.style.maxHeight = Math.max(160, window.innerHeight - r.bottom - 20) + "px";
+  }
   __mtMenu = menu;
   var on = menu.querySelector(".on");
   if (on) on.scrollIntoView({ block: "nearest" });
@@ -1025,6 +1085,34 @@ document.addEventListener("click", function (e) {
   mtCloseMenu();
   mtOpenMenu(box);
 }, true);
+// Lăn chuột trên thanh chọn danh sách: chuyển sang danh sách trước/sau
+var __mtWheelAt = 0;
+document.addEventListener("wheel", function (e) {
+  if (document.body.dataset.themeLevel !== "28") return;
+  var box = e.target.closest ? e.target.closest(MT_LIST_SEL) : null;
+  if (!box) return;
+  e.preventDefault();
+  var now = Date.now();
+  if (now - __mtWheelAt < 140 || !e.deltaY) return;
+  __mtWheelAt = now;
+  var dir = e.deltaY > 0 ? 1 : -1;
+  var items = Array.prototype.slice.call(box.querySelectorAll(MT_ITEM_SEL));
+  if (items.length < 2) return;
+  var cur = -1;
+  items.forEach(function (it, i) { if (cur < 0 && it.classList.contains("active")) cur = i; });
+  var target = cur < 0 ? (dir > 0 ? 0 : items.length - 1) : (cur + dir + items.length) % items.length;
+  mtCloseMenu();
+  mtClickItem(items[target]);
+  // Hộp nhiều lựa chọn: bấm thêm sẽ cộng dồn -> bỏ các mục cũ để chỉ còn mục vừa chuyển tới
+  for (var guard = 0; guard < 12; guard++) {
+    var now2 = Array.prototype.slice.call(box.querySelectorAll(MT_ITEM_SEL));
+    var actives = now2.filter(function (it) { return it.classList.contains("active"); });
+    if (actives.length <= 1) break;
+    var extra = actives.filter(function (it) { return now2.indexOf(it) !== target; })[0];
+    if (!extra) break;
+    mtClickItem(extra);
+  }
+}, { passive: false });
 document.addEventListener("keydown", function (e) { if (e.key === "Escape") mtCloseMenu(); });
 window.addEventListener("resize", mtCloseMenu);
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { mtDock(document.body.dataset.themeLevel === "28"); });
@@ -1379,7 +1467,7 @@ function showUndoToast(message, restoreFn, duration = 6000) {
 const fc = {
   filter: "all",
   sourceCat: "flashcard", // "flashcard" (Thẻ) hoặc "dictionary" (Từ điển) — nguồn danh sách của tab Thẻ
-  view: "read",           // "read" (đọc cả danh sách) hoặc "flip" (lật thẻ). Mặc định: Thẻ→đọc, Từ điển→lật thẻ
+  view: "type",           // "type" (gõ kiểu Monkeytype, mặc định khi mở trang) | "read" (đọc cả danh sách) | "flip" (lật thẻ)
   readFilter: "all",      // "all" | "star" — lọc ở giao diện đọc
   queue: [],
   index: 0,
@@ -1426,15 +1514,17 @@ function renderFlashcardTab() {
   document.getElementById("fc-stat-difficult").textContent = all.filter((i) => i.status === "difficult").length;
 
   document.getElementById("fc-source-toggle").textContent = "Nguồn: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ");
-  document.getElementById("fc-view-toggle").textContent = "Xem: " + (fc.view === "read" ? "Đọc" : "Lật");
+  document.getElementById("fc-view-toggle").textContent = "Xem: " + ({ type: "Gõ", read: "Đọc", flip: "Lật" }[fc.view] || "Gõ");
   fcApplyView(true);
 }
 
 // Hiện đúng giao diện (đọc / lật thẻ) và vẽ lại nội dung của nó.
 function fcApplyView(keepIndex) {
-  const flip = fc.view === "flip";
+  const v = fc.view;
+  const flip = v === "flip";
   document.getElementById("fc-flip-view").classList.toggle("hidden", !flip);
-  document.getElementById("fc-read-view").classList.toggle("hidden", flip);
+  document.getElementById("fc-read-view").classList.toggle("hidden", v !== "read");
+  document.getElementById("fc-type-view").classList.toggle("hidden", v !== "type");
   if (flip) {
     rebuildFcQueue(!!keepIndex);
     renderFcCard();
@@ -1446,7 +1536,8 @@ function fcApplyView(keepIndex) {
     }
     clearFcAutoPlayTimers();
     try { speechSynthesis.cancel(); } catch (e) { /* ignore */ }
-    renderFcRead();
+    if (v === "type") tyApply(!!keepIndex);
+    else renderFcRead();
   }
 }
 
@@ -1456,6 +1547,275 @@ function fcItemById(id) {
     if (found) return found;
   }
   return null;
+}
+
+/* ============================================================
+   GIAO DIỆN GÕ — kiểu Monkeytype (một câu / thẻ mỗi lượt)
+   - Nguồn chữ: mặt tiếng Anh hoặc tiếng Việt của các thẻ trong danh sách đang chọn (theo bộ lọc Tổng/Còn/Dễ/Khó).
+   - Gõ tiếng Anh: gõ hết câu mà đúng >= 70% ký tự thì tính hoàn thành (thẻ chuyển sang "Dễ").
+   - Gõ tiếng Việt: chỉ luyện tốc độ, không đổi trạng thái thẻ.
+   - Gõ tới ký tự cuối (kể cả sai) là tự sang câu tiếp theo; không có bảng thống kê.
+   - Dùng 1 ô input ẩn để nhận chữ -> hỗ trợ bộ gõ tiếng Việt (Telex/VNI, IME composition).
+   ============================================================ */
+const TY_PASS_RATE = 0.7;
+const ty = {
+  lang: "en", order: "seq", meaning: false, caseSens: true,
+  ids: [], pos: 0, sig: "", cur: null, chars: [], spans: [], states: [],
+  composing: false, idleTimer: null, built: false,
+};
+function tyLoadPrefs() {
+  const o = (state.settings && state.settings.ty) || {};
+  ty.lang = o.lang === "vi" ? "vi" : "en";
+  ty.order = o.order === "shuffle" ? "shuffle" : "seq";
+  ty.meaning = !!o.meaning;
+  ty.caseSens = o.caseSens !== false;
+}
+function tySavePrefs() {
+  state.settings.ty = { lang: ty.lang, order: ty.order, meaning: ty.meaning, caseSens: ty.caseSens };
+  saveState();
+}
+// Làm sạch chữ để gõ được trên bàn phím: lấy đáp án đầu (trước "|"), chọn từ đầu trong "a/b", chuẩn hoá dấu nháy/gạch.
+function tyClean(str, lang) {
+  let t = String(str || "");
+  if (lang === "en") {
+    t = t.split("|")[0];
+    t = t.replace(/(\p{L}[\p{L}'’-]*)(?:\/\p{L}[\p{L}'’-]*)+/gu, "$1");
+  }
+  t = t.replace(/[‘’‛]/g, "'").replace(/[“”„]/g, '"').replace(/[–—]/g, "-").replace(/…/g, "...").replace(/\u00a0/g, " ");
+  return t.replace(/\s+/g, " ").trim().normalize("NFC");
+}
+function tyField(item, lang) { return lang === "en" ? item.en : item.vi; }
+function tyViewVisible() {
+  return flashcardTabVisible() && fc.view === "type";
+}
+function tyEq(a, b) {
+  if (a === undefined || b === undefined) return false;
+  return ty.caseSens ? a === b : a.toLowerCase() === b.toLowerCase();
+}
+function tyShuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr;
+}
+function tyTyped() {
+  return Array.from(document.getElementById("ty-input").value.normalize("NFC"));
+}
+
+function tyUpdateBar() {
+  document.querySelectorAll("[data-ty-lang]").forEach((b) => b.classList.toggle("active", b.dataset.tyLang === ty.lang));
+  document.querySelectorAll("[data-ty-order]").forEach((b) => b.classList.toggle("active", b.dataset.tyOrder === ty.order));
+  const m = document.querySelector('[data-ty-toggle="meaning"]');
+  const c = document.querySelector('[data-ty-toggle="case"]');
+  if (m) m.classList.toggle("active", ty.meaning);
+  if (c) c.classList.toggle("active", ty.caseSens);
+}
+function tyUpdateMeaning() {
+  const el = document.getElementById("ty-meaning");
+  if (!el) return;
+  if (!ty.meaning || !ty.cur) { el.textContent = ""; return; }
+  el.textContent = ty.lang === "en" ? String(ty.cur.vi || "") : tyClean(ty.cur.en, "en");
+}
+
+// Dựng danh sách câu. startId: bắt đầu từ thẻ này (nếu còn trong danh sách).
+function tyBuildQueue(startId) {
+  const ids = fcCurrentItems().filter((i) => tyClean(tyField(i, ty.lang), ty.lang)).map((i) => i.id);
+  ty.sig = ids.slice().sort().join("|") + "#" + ty.lang;
+  ty.ids = ids;
+  if (ty.order === "shuffle") tyShuffle(ty.ids);
+  ty.pos = 0;
+  if (startId) {
+    const k = ty.ids.indexOf(startId);
+    if (k > 0) {
+      if (ty.order === "shuffle") { ty.ids.splice(k, 1); ty.ids.unshift(startId); } else ty.pos = k;
+    }
+  }
+}
+function tyNextItem() {
+  if (!ty.ids.length) return null;
+  if (ty.pos >= ty.ids.length) {
+    ty.pos = 0;
+    if (ty.order === "shuffle") tyShuffle(ty.ids);
+  }
+  return fcItemById(ty.ids[ty.pos++]);
+}
+
+function tyRender(animate) {
+  const wrap = document.getElementById("ty-words");
+  const text = document.getElementById("ty-text");
+  if (animate && wrap.childElementCount) {
+    const ghost = wrap.cloneNode(true);
+    ghost.removeAttribute("id");
+    ghost.classList.remove("ty-in");
+    ghost.classList.add("ty-ghost");
+    text.appendChild(ghost);
+    const kill = () => ghost.remove();
+    ghost.addEventListener("animationend", kill);
+    setTimeout(kill, 600);
+  }
+  wrap.innerHTML = "";
+  ty.spans = [];
+  ty.states = [];
+  const words = ty.chars.length ? ty.chars.join("").split(" ") : [];
+  words.forEach((w, wi) => {
+    const wd = document.createElement("div");
+    wd.className = "ty-w";
+    const parts = Array.from(w);
+    if (wi < words.length - 1) parts.push(" ");
+    parts.forEach((ch) => {
+      const sp = document.createElement("span");
+      sp.className = "ty-l" + (ch === " " ? " ty-sp" : "");
+      sp.textContent = ch;
+      wd.appendChild(sp);
+      ty.spans.push(sp);
+      ty.states.push("");
+    });
+    wrap.appendChild(wd);
+  });
+  wrap.classList.remove("ty-in");
+  void wrap.offsetWidth;
+  if (animate) wrap.classList.add("ty-in");
+  tyUpdateMeaning();
+  tyPlaceCaret(0, true);
+}
+
+function tyPlaceCaret(len, instant) {
+  const caret = document.getElementById("ty-caret");
+  if (!caret) return;
+  if (!ty.spans.length) { caret.style.opacity = "0"; return; }
+  caret.style.opacity = "";
+  const atEnd = len >= ty.spans.length;
+  const sp = atEnd ? ty.spans[ty.spans.length - 1] : ty.spans[len];
+  const x = sp.offsetLeft + (atEnd ? sp.offsetWidth : 0);
+  if (instant) caret.classList.add("ty-noanim");
+  caret.style.height = sp.offsetHeight + "px";
+  caret.style.transform = "translate(" + x + "px," + sp.offsetTop + "px)";
+  if (instant) {
+    void caret.offsetWidth;
+    requestAnimationFrame(() => caret.classList.remove("ty-noanim"));
+  }
+}
+function tyMarkTyping() {
+  const caret = document.getElementById("ty-caret");
+  caret.classList.add("ty-typing");
+  clearTimeout(ty.idleTimer);
+  ty.idleTimer = setTimeout(() => caret.classList.remove("ty-typing"), 700);
+}
+
+function tyUpdate() {
+  if (!ty.chars.length) return;
+  const input = document.getElementById("ty-input");
+  let typed = tyTyped();
+  const n = ty.chars.length;
+  if (typed.length > n && !ty.composing) {
+    typed = typed.slice(0, n);
+    input.value = typed.join("");
+  }
+  for (let i = 0; i < n; i++) {
+    const st = i < typed.length ? (tyEq(typed[i], ty.chars[i]) ? "ok" : "bad") : "";
+    if (ty.states[i] !== st) {
+      ty.states[i] = st;
+      ty.spans[i].classList.toggle("ok", st === "ok");
+      ty.spans[i].classList.toggle("bad", st === "bad");
+    }
+  }
+  tyPlaceCaret(Math.min(typed.length, n));
+  tyMarkTyping();
+  if (typed.length >= n && !ty.composing) tyComplete(typed);
+}
+
+function tyComplete(typed) {
+  const n = ty.chars.length;
+  let ok = 0;
+  for (let i = 0; i < n; i++) if (tyEq(typed[i], ty.chars[i])) ok++;
+  const item = ty.cur;
+  if (item && ty.lang === "en" && ok / n >= TY_PASS_RATE) {
+    if (item.status !== "known") item.status = "known";
+    logStudyAction("flashcard");
+    saveState();
+    fcRefreshStats();
+  }
+  tyAdvance(true);
+}
+function tyAdvance(animate) {
+  const input = document.getElementById("ty-input");
+  input.value = "";
+  const item = tyNextItem();
+  ty.cur = item;
+  ty.chars = item ? Array.from(tyClean(tyField(item, ty.lang), ty.lang)) : [];
+  tyRender(animate);
+}
+
+function tyApply(keep, startId) {
+  tyLoadPrefs();
+  tyBind();
+  tyUpdateBar();
+  const ids = fcCurrentItems().filter((i) => tyClean(tyField(i, ty.lang), ty.lang)).map((i) => i.id);
+  const sig = ids.slice().sort().join("|") + "#" + ty.lang;
+  if (keep && ty.cur && sig === ty.sig) {
+    tyUpdateMeaning();
+    tyPlaceCaret(Math.min(tyTyped().length, ty.chars.length), true);
+  } else {
+    tyBuildQueue(startId || (keep && ty.cur ? ty.cur.id : null));
+    tyAdvance(false);
+  }
+  tyFocus();
+}
+function tyFocus() {
+  if (!tyViewVisible() || anyOverlayOpen()) return;
+  const el = document.getElementById("ty-input");
+  if (document.activeElement !== el) el.focus({ preventScroll: true });
+}
+
+function tyBind() {
+  if (ty.built) return;
+  ty.built = true;
+  const input = document.getElementById("ty-input");
+  const view = document.getElementById("fc-type-view");
+  input.addEventListener("input", tyUpdate);
+  input.addEventListener("compositionstart", () => { ty.composing = true; });
+  input.addEventListener("compositionend", () => { ty.composing = false; tyUpdate(); });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+  input.addEventListener("focus", () => view.classList.remove("ty-unfocused"));
+  input.addEventListener("blur", () => view.classList.add("ty-unfocused"));
+  view.classList.add("ty-unfocused");
+  document.getElementById("ty-stage").addEventListener("mousedown", (e) => { e.preventDefault(); tyFocus(); });
+  document.addEventListener("keydown", (e) => {
+    if (!tyViewVisible() || anyOverlayOpen() || isTypingTarget()) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key.length === 1 || e.key === "Backspace" || e.key === "Process") tyFocus();
+  });
+  document.querySelectorAll("[data-ty-lang]").forEach((b) => b.addEventListener("click", () => {
+    if (ty.lang === b.dataset.tyLang) return;
+    ty.lang = b.dataset.tyLang; tySavePrefs(); tyApply(false, ty.cur && ty.cur.id);
+  }));
+  document.querySelectorAll("[data-ty-order]").forEach((b) => b.addEventListener("click", () => {
+    if (ty.order === b.dataset.tyOrder) return;
+    ty.order = b.dataset.tyOrder; tySavePrefs(); tyApply(false, ty.cur && ty.cur.id);
+  }));
+  document.querySelector('[data-ty-toggle="meaning"]').addEventListener("click", () => {
+    ty.meaning = !ty.meaning; tySavePrefs(); tyUpdateBar(); tyUpdateMeaning(); tyPlaceCaret(Math.min(tyTyped().length, ty.chars.length), true); tyFocus();
+  });
+  document.querySelector('[data-ty-toggle="case"]').addEventListener("click", () => {
+    ty.caseSens = !ty.caseSens; tySavePrefs(); tyUpdateBar(); ty.states = ty.states.map(() => "x"); tyUpdate(); tyFocus();
+  });
+  // nút bấm không được cướp focus của ô gõ
+  document.getElementById("ty-bar").addEventListener("mousedown", (e) => e.preventDefault());
+  window.addEventListener("resize", () => { if (tyViewVisible()) tyPlaceCaret(Math.min(tyTyped().length, ty.chars.length), true); });
+  if (document.fonts) {
+    document.fonts.addEventListener && document.fonts.addEventListener("loadingdone", () => { if (tyViewVisible()) tyPlaceCaret(Math.min(tyTyped().length, ty.chars.length), true); });
+  }
+}
+
+// Chỉ cập nhật 4 số thống kê của tab Thẻ (không vẽ lại giao diện, để không làm gián đoạn lúc gõ)
+function fcRefreshStats() {
+  const key = fcSelKey();
+  const all = itemsFromLists(fc.sourceCat, state.selected[key] || []);
+  document.getElementById("fc-stat-total").textContent = all.length;
+  document.getElementById("fc-stat-learning").textContent = all.filter((i) => i.status === "new").length;
+  document.getElementById("fc-stat-known").textContent = all.filter((i) => i.status === "known").length;
+  document.getElementById("fc-stat-difficult").textContent = all.filter((i) => i.status === "difficult").length;
 }
 
 /* ============================================================
@@ -1555,15 +1915,15 @@ document.getElementById("fc-read-vi-toggle").addEventListener("click", () => {
 // Nút bên bảng điều khiển: đổi nguồn (Thẻ ⇄ Từ điển) và đổi giao diện (Đọc ⇄ Lật thẻ)
 document.getElementById("fc-source-toggle").addEventListener("click", () => {
   fc.sourceCat = fc.sourceCat === "dictionary" ? "flashcard" : "dictionary";
-  // Mặc định: Từ điển → lật thẻ, Thẻ → đọc
-  fc.view = fc.sourceCat === "dictionary" ? "flip" : "read";
+  // Đang ở chế độ Gõ thì giữ nguyên; còn lại: Từ điển → lật thẻ, Thẻ → đọc
+  if (fc.view !== "type") fc.view = fc.sourceCat === "dictionary" ? "flip" : "read";
   fc.index = 0;
   fc.showingBack = false;
   fc.readFilter = "all";
   renderFlashcardTab();
 });
 document.getElementById("fc-view-toggle").addEventListener("click", () => {
-  fc.view = fc.view === "read" ? "flip" : "read";
+  fc.view = { type: "read", read: "flip", flip: "type" }[fc.view] || "type";
   fc.showingBack = false;
   renderFlashcardTab();
 });
@@ -3618,7 +3978,9 @@ function tpGatherSources() {
   if (sel) out.push({ id: "sel", label: "Chữ đang bôi đen", text: sel });
   else if (tp.open && tp.selMemory) out.push({ id: "sel", label: "Chữ vừa bôi đen", text: tp.selMemory });
   const tab = tpCurrentTab();
-  if (tab === "flashcard" && fc.view === "flip") {
+  if (tab === "flashcard" && fc.view === "type" && ty.cur) {
+    out.push({ id: "ty-cur", label: "Câu đang gõ", text: ty.chars.join("") });
+  } else if (tab === "flashcard" && fc.view === "flip") {
     const item = fc.queue.length ? fcItemById(fc.queue[Math.min(fc.index, fc.queue.length - 1)]) : null;
     if (item) {
       const front = fc.direction === "e-v" ? item.en : item.vi;
@@ -4465,11 +4827,11 @@ updateNgheDifficultyBtn();
 
 function renderNgheTab() {
   ensureSelected("listening");
+  renderListQuickSelect("listening", "nghe-list-quickselect", renderNgheTab, false);
   renderNgheSidebar();
   renderNgheChat();
 }
 
-document.getElementById("nghe-choose-list").addEventListener("click", () => openListPicker("listening"));
 
 /* ============================================================
    TAB 3: NGỮ PHÁP
@@ -5055,7 +5417,6 @@ function renderWarehouseTab() {
   document.getElementById("wh-current-list-title").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-tag-filter-row").classList.toggle("hidden", true);
   document.getElementById("wh-toolbar").classList.toggle("hidden", isSpecial);
-  document.getElementById("wh-legend").classList.toggle("hidden", isSpecial);
   document.getElementById("wh-bottom-bar").classList.toggle("hidden", isSpecial);
   // Luôn ẩn hết các khung con trước — chỉ khung đúng với wh.cat hiện tại mới
   // được hiện lại bên dưới. Tránh trường hợp 1 khung bị "kẹt" hiện ra khi
@@ -5126,18 +5487,6 @@ function renderWarehouseTab() {
   document.getElementById("wh-reminder-toggle").classList.toggle("active", state.reminder.enabled);
   document.getElementById("wh-reminder-read-toggle").classList.toggle("hidden", !canRemind);
   document.getElementById("wh-reminder-read-toggle").classList.toggle("active", state.reminder.autoRead);
-
-  if (!isListening) {
-    const legendMap = {
-      flashcard: ["Đang học", "Đã biết", "Khó"],
-      writing: ["Chưa làm", "Làm đúng", "Làm sai"],
-      dictionary: ["Đang học", "Đã biết", "Khó"],
-    };
-    const [l1, l2, l3] = legendMap[wh.cat];
-    document.getElementById("wh-legend-1").textContent = l1;
-    document.getElementById("wh-legend-2").textContent = l2;
-    document.getElementById("wh-legend-3").textContent = l3;
-  }
 
   document.getElementById("wh-current-list-title").textContent = activeList ? activeList.name : "—";
   if (isListening) {
@@ -7091,6 +7440,13 @@ function fireReminderMobileNotification(item) {
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
   {
+    version: "2.45",
+    changes: [
+      "Tab Thẻ: thêm chế độ xem \"Gõ\" kiểu Monkeytype (mặc định khi mở trang) — gõ tiếng Anh hoặc tiếng Việt, hết câu tự sang câu tiếp. Gõ Anh đúng từ 70% thì thẻ chuyển sang \"Dễ\"; gõ Việt chỉ luyện tốc độ",
+      "Giao diện Minimal: thanh chọn danh sách xuống góc trái dưới, lăn chuột trên thanh để đổi danh sách; Nghe dùng chọn danh sách như Thẻ/Viết; Kho gom các nút thành thanh icon, bỏ nút sắp xếp và chú thích; rút gọn nhãn (Tổng/Còn/Dễ/Đúng/Sai); bỏ các dòng chữ nhắc nhở",
+    ],
+  },
+  {
     version: "2.44",
     changes: [
       "Giao diện Minimal: chọn bài dạng dropdown (chỉ hiện bài đang chọn, bấm để đổi), gom toàn bộ cụm nút lên một hàng để không phải cuộn",
@@ -7663,28 +8019,6 @@ function closeAllDiaryDropdowns() {
 }
 document.addEventListener("click", (e) => {
   if (!e.target.closest(".diary-dd-wrap")) closeAllDiaryDropdowns();
-});
-
-/* Kho: sort danh sách dropdown (Theo ngày / Theo tên) */
-document.getElementById("wh-sort-btn").addEventListener("click", (e) => {
-  e.stopPropagation();
-  const menu = document.getElementById("wh-sort-menu");
-  const wasHidden = menu.classList.contains("hidden");
-  closeAllDiaryDropdowns();
-  menu.classList.toggle("hidden", !wasHidden);
-});
-document.querySelectorAll("#wh-sort-menu [data-sort]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const list = getCategory(wh.cat);
-    if (btn.dataset.sort === "date") {
-      list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-    } else {
-      list.sort((a, b) => a.name.localeCompare(b.name, "vi"));
-    }
-    saveState();
-    renderWarehouseTab();
-    document.getElementById("wh-sort-menu").classList.add("hidden");
-  });
 });
 
 /* ============================================================
