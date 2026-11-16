@@ -51,13 +51,13 @@ input,textarea{font-family:inherit;}
   position:fixed;inset:0;z-index:9999;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:14px;
-  background:#221c3d;
+  background:#35373A;
   transition:opacity .35s ease, visibility .35s ease;
 }
 .app-loading.hidden{opacity:0;visibility:hidden;pointer-events:none;}
 .app-loading-icon{width:84px;height:84px;animation:app-loading-pulse 1.4s ease-in-out infinite;}
 .app-loading-text{
-  font-size:19px;font-weight:600;letter-spacing:3px;color:#e8e2fa;
+  font-size:19px;font-weight:600;letter-spacing:3px;color:#E1B61B;
 }
 @keyframes app-loading-pulse{
   0%,100%{transform:scale(1);opacity:1;}
