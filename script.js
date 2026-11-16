@@ -948,6 +948,87 @@ function termBootFx() {
   }, 240);
   pre.textContent = lines.join("\n");
 }
+/* ---- Giao diện Minimal (28): dồn cụm nút lên một hàng + chọn bài dạng dropdown (chỉ đổi vị trí DOM / thêm menu, không đổi logic) ---- */
+var __mtMoves = [];
+function mtDock(on) {
+  var spec = [
+    ['.sidebar-panel[data-panel="flashcard"]', '.flashcard-controls', false],
+    ['.sidebar-panel[data-panel="flashcard"]', '.fc-read-chips', false],
+    ['.sidebar-panel[data-panel="writing"]', '.tab-content[data-content="writing"] > .nghe-chat-header', false],
+    ['.sidebar-panel[data-panel="listening"]', '.tab-content[data-content="listening"] > .nghe-chat-header', false],
+    ['.sidebar-panel[data-panel="warehouse"]', '.wh-topbar', true],
+  ];
+  if (on) {
+    spec.forEach(function (s) {
+      var panel = document.querySelector(s[0]);
+      var el = document.querySelector(s[1]);
+      if (!panel || !el || el.parentNode === panel) return;
+      __mtMoves.push({ el: el, parent: el.parentNode, next: el.nextSibling });
+      if (s[2]) panel.insertBefore(el, panel.firstChild); else panel.appendChild(el);
+    });
+  } else {
+    while (__mtMoves.length) {
+      var m = __mtMoves.pop();
+      if (m.next && m.next.parentNode === m.parent) m.parent.insertBefore(m.el, m.next); else m.parent.appendChild(m.el);
+    }
+  }
+}
+function mtApply(shown) {
+  mtDock(shown === 28);
+  if (shown !== 28) mtCloseMenu();
+}
+var __mtMenu = null;
+var MT_LIST_SEL = "#fc-list-quickselect,#wr-list-quickselect,#nghe-item-list,#wh-list-grid,#grammar-unit-list";
+var MT_ITEM_SEL = ".nghe-item-btn,.wh-list-item,.grammar-unit-btn";
+function mtCloseMenu() { if (__mtMenu) { __mtMenu.remove(); __mtMenu = null; } }
+function mtItemLabel(btn) {
+  var c = btn.cloneNode(true);
+  c.querySelectorAll(".grammar-unit-count,.wh-list-reminder-dot,.status-dot,.dot").forEach(function (n) { n.remove(); });
+  return (c.textContent || "").replace(/\s+/g, " ").trim();
+}
+function mtOpenMenu(box) {
+  var items = Array.prototype.slice.call(box.querySelectorAll(MT_ITEM_SEL));
+  if (!items.length) return;
+  var menu = document.createElement("div");
+  menu.className = "mt-menu";
+  menu.__box = box;
+  items.forEach(function (orig) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "mt-menu-item" + (orig.classList.contains("active") ? " on" : "");
+    b.textContent = mtItemLabel(orig);
+    b.addEventListener("click", function () {
+      mtCloseMenu();
+      window.__mtBypass = true;
+      try { orig.click(); } finally { window.__mtBypass = false; }
+    });
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu);
+  var r = box.getBoundingClientRect();
+  menu.style.minWidth = Math.max(r.width, 180) + "px";
+  menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8)) + "px";
+  menu.style.top = r.bottom + 6 + "px";
+  menu.style.maxHeight = Math.max(160, window.innerHeight - r.bottom - 20) + "px";
+  __mtMenu = menu;
+  var on = menu.querySelector(".on");
+  if (on) on.scrollIntoView({ block: "nearest" });
+}
+document.addEventListener("click", function (e) {
+  if (document.body.dataset.themeLevel !== "28" || window.__mtBypass) return;
+  if (__mtMenu && __mtMenu.contains(e.target)) return;
+  var box = e.target.closest ? e.target.closest(MT_LIST_SEL) : null;
+  if (!box || (e.target.closest && e.target.closest(".wh-list-reminder-dot"))) { mtCloseMenu(); return; }
+  e.stopPropagation();
+  e.preventDefault();
+  if (__mtMenu && __mtMenu.__box === box) { mtCloseMenu(); return; }
+  mtCloseMenu();
+  mtOpenMenu(box);
+}, true);
+document.addEventListener("keydown", function (e) { if (e.key === "Escape") mtCloseMenu(); });
+window.addEventListener("resize", mtCloseMenu);
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { mtDock(document.body.dataset.themeLevel === "28"); });
+
 function applyThemeLevel(level, persist = true) {
   level = normThemeLevel(level);
   if (persist) {
@@ -973,6 +1054,7 @@ function applyThemeLevel(level, persist = true) {
   document.querySelectorAll(".theme-dot").forEach((d) => d.classList.toggle("active", parseInt(d.dataset.level, 10) === shown));
   applyThemeLocks();
   updateSpecialThemeUI(shown);
+  mtApply(shown);
 }
 // Đánh dấu thẻ giao diện đặc biệt bị khoá (gọi lại khi tải xong cấu hình / đổi tài khoản)
 function applyThemeLocks() {
@@ -1343,8 +1425,8 @@ function renderFlashcardTab() {
   document.getElementById("fc-stat-known").textContent = all.filter((i) => i.status === "known").length;
   document.getElementById("fc-stat-difficult").textContent = all.filter((i) => i.status === "difficult").length;
 
-  document.getElementById("fc-source-toggle").textContent = "Danh sách: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ");
-  document.getElementById("fc-view-toggle").textContent = "Giao diện: " + (fc.view === "read" ? "Đọc" : "Lật thẻ");
+  document.getElementById("fc-source-toggle").textContent = "Nguồn: " + (fc.sourceCat === "dictionary" ? "Từ điển" : "Thẻ");
+  document.getElementById("fc-view-toggle").textContent = "Xem: " + (fc.view === "read" ? "Đọc" : "Lật");
   fcApplyView(true);
 }
 
@@ -2086,7 +2168,7 @@ function rebuildWrQueue(keep) {
 function updateWrSourceToggleBtn() {
   const btn = document.getElementById("wr-source-toggle");
   if (!btn) return;
-  btn.textContent = "Danh sách: " + (wr.sourceCat === "flashcard" ? "Thẻ" : "Viết");
+  btn.textContent = "Nguồn: " + (wr.sourceCat === "flashcard" ? "Thẻ" : "Viết");
 }
 document.getElementById("wr-source-toggle").addEventListener("click", () => {
   wr.sourceCat = wr.sourceCat === "flashcard" ? "writing" : "flashcard";
@@ -2673,7 +2755,7 @@ document.getElementById("wr-answer-input").addEventListener("keydown", (e) => {
   }
 });
 
-const WR_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Trung bình", hard: "Độ khó: Khó" };
+const WR_DIFFICULTY_LABELS = { easy: "Dễ", medium: "Vừa", hard: "Khó" };
 const WR_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
 function updateWrDifficultyBtn() {
   const btn = document.getElementById("wr-difficulty-toggle");
@@ -3905,7 +3987,7 @@ function ngheGradeLine(typed, target) {
 const NGHE_DIFFICULTY_GAIN = { easy: 5, medium: 15, hard: 35 };
 const NGHE_DIFFICULTY_PENALTY = { easy: 2, medium: 6, hard: 14 };
 const NGHE_REPLAY_LIMIT = { easy: Infinity, medium: 3, hard: 1 };
-const NGHE_DIFFICULTY_LABELS = { easy: "Độ khó: Dễ", medium: "Độ khó: Trung bình", hard: "Độ khó: Khó" };
+const NGHE_DIFFICULTY_LABELS = { easy: "Dễ", medium: "Vừa", hard: "Khó" };
 const NGHE_DIFFICULTY_CYCLE = { easy: "medium", medium: "hard", hard: "easy" };
 
 const nghe = {
@@ -7008,6 +7090,13 @@ function fireReminderMobileNotification(item) {
 
 /* ---- Phiên bản & cập nhật ---- */
 const NOX_CHANGELOG = [
+  {
+    version: "2.44",
+    changes: [
+      "Giao diện Minimal: chọn bài dạng dropdown (chỉ hiện bài đang chọn, bấm để đổi), gom toàn bộ cụm nút lên một hàng để không phải cuộn",
+      "Rút gọn tên các nút dài (Nguồn/Xem/độ khó, Xuất/Nhập, In PDF, Đăng, Chia sẻ, Nhập mã…); bỏ khung vàng lồng trong thanh chat",
+    ],
+  },
   {
     version: "2.43",
     changes: [
