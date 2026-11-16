@@ -1561,7 +1561,7 @@ const TY_PASS_RATE = 0.7;
 const ty = {
   lang: "en", order: "seq", meaning: false, caseSens: true,
   ids: [], pos: 0, sig: "", cur: null, chars: [], spans: [], states: [],
-  composing: false, idleTimer: null, built: false,
+  composing: false, compLen: 0, idleTimer: null, built: false,
 };
 function tyLoadPrefs() {
   const o = (state.settings && state.settings.ty) || {};
@@ -1712,12 +1712,16 @@ function tyUpdate() {
     typed = typed.slice(0, n);
     input.value = typed.join("");
   }
+  // Phần chữ bộ gõ đang soạn (Telex/VNI) chưa chốt -> hiện trung tính, không chấm đúng/sai để khỏi nháy đỏ
+  const compStart = ty.composing ? Math.max(0, typed.length - ty.compLen) : typed.length;
   for (let i = 0; i < n; i++) {
-    const st = i < typed.length ? (tyEq(typed[i], ty.chars[i]) ? "ok" : "bad") : "";
+    let st = "";
+    if (i < typed.length) st = ty.composing && i >= compStart ? "comp" : (tyEq(typed[i], ty.chars[i]) ? "ok" : "bad");
     if (ty.states[i] !== st) {
       ty.states[i] = st;
       ty.spans[i].classList.toggle("ok", st === "ok");
       ty.spans[i].classList.toggle("bad", st === "bad");
+      ty.spans[i].classList.toggle("comp", st === "comp");
     }
   }
   tyPlaceCaret(Math.min(typed.length, n));
@@ -1773,12 +1777,13 @@ function tyBind() {
   ty.built = true;
   const input = document.getElementById("ty-input");
   const view = document.getElementById("fc-type-view");
-  input.addEventListener("input", tyUpdate);
-  input.addEventListener("compositionstart", () => { ty.composing = true; });
-  input.addEventListener("compositionend", () => { ty.composing = false; tyUpdate(); });
+  input.addEventListener("input", (e) => { if (e.isComposing === false) { ty.composing = false; ty.compLen = 0; } tyUpdate(); });
+  input.addEventListener("compositionstart", () => { ty.composing = true; ty.compLen = 0; });
+  input.addEventListener("compositionupdate", (e) => { ty.composing = true; ty.compLen = Array.from(String(e.data || "").normalize("NFC")).length; });
+  input.addEventListener("compositionend", () => { ty.composing = false; ty.compLen = 0; tyUpdate(); });
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
   input.addEventListener("focus", () => view.classList.remove("ty-unfocused"));
-  input.addEventListener("blur", () => view.classList.add("ty-unfocused"));
+  input.addEventListener("blur", () => { ty.composing = false; ty.compLen = 0; view.classList.add("ty-unfocused"); });
   view.classList.add("ty-unfocused");
   document.getElementById("ty-stage").addEventListener("mousedown", (e) => { e.preventDefault(); tyFocus(); });
   document.addEventListener("keydown", (e) => {
