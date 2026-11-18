@@ -1567,7 +1567,7 @@ function tyLoadPrefs() {
   const o = (state.settings && state.settings.ty) || {};
   ty.lang = o.lang === "vi" ? "vi" : "en";
   ty.order = o.order === "shuffle" ? "shuffle" : "seq";
-  ty.meaning = !!o.meaning;
+  ty.meaning = o.meaning !== false; // mặc định bật: hiện nghĩa (ngôn ngữ còn lại) dưới câu đang gõ
   ty.caseSens = o.caseSens !== false;
 }
 function tySavePrefs() {
@@ -1657,6 +1657,7 @@ function tyRender(animate) {
   wrap.innerHTML = "";
   ty.spans = [];
   ty.states = [];
+  ty.shown = [];
   const words = ty.chars.length ? ty.chars.join("").split(" ") : [];
   words.forEach((w, wi) => {
     const wd = document.createElement("div");
@@ -1670,6 +1671,7 @@ function tyRender(animate) {
       wd.appendChild(sp);
       ty.spans.push(sp);
       ty.states.push("");
+      ty.shown.push(ch);
     });
     wrap.appendChild(wd);
   });
@@ -1717,12 +1719,23 @@ function tyUpdate() {
   for (let i = 0; i < n; i++) {
     let st = "";
     if (i < typed.length) st = ty.composing && i >= compStart ? "comp" : (tyEq(typed[i], ty.chars[i]) ? "ok" : "bad");
+    // Chữ hiển thị tại vị trí: đúng -> chữ mẫu; sai / đang soạn -> chính ký tự vừa gõ (gõ "Cko" thì hiện đúng "k", "o" màu đỏ)
+    let shown = ty.chars[i];
+    if ((st === "bad" || st === "comp") && i < typed.length) shown = typed[i];
+    const isSpaceTyped = i < typed.length && /\s/.test(typed[i]) && ty.chars[i] !== " ";
+    const el = ty.spans[i];
+    if (ty.shown[i] !== shown) {
+      ty.shown[i] = shown;
+      el.textContent = /\s/.test(shown) ? "\u00a0" : shown;
+      if (shown === " " && ty.chars[i] === " ") el.textContent = " ";
+    }
     if (ty.states[i] !== st) {
       ty.states[i] = st;
-      ty.spans[i].classList.toggle("ok", st === "ok");
-      ty.spans[i].classList.toggle("bad", st === "bad");
-      ty.spans[i].classList.toggle("comp", st === "comp");
+      el.classList.toggle("ok", st === "ok");
+      el.classList.toggle("bad", st === "bad");
+      el.classList.toggle("comp", st === "comp");
     }
+    el.classList.toggle("ty-miss", st === "bad" && (isSpaceTyped || ty.chars[i] === " "));
   }
   tyPlaceCaret(Math.min(typed.length, n));
   tyMarkTyping();
@@ -1803,7 +1816,7 @@ function tyBind() {
     ty.meaning = !ty.meaning; tySavePrefs(); tyUpdateBar(); tyUpdateMeaning(); tyPlaceCaret(Math.min(tyTyped().length, ty.chars.length), true); tyFocus();
   });
   document.querySelector('[data-ty-toggle="case"]').addEventListener("click", () => {
-    ty.caseSens = !ty.caseSens; tySavePrefs(); tyUpdateBar(); ty.states = ty.states.map(() => "x"); tyUpdate(); tyFocus();
+    ty.caseSens = !ty.caseSens; tySavePrefs(); tyUpdateBar(); ty.states = ty.states.map(() => "x"); ty.shown = ty.shown.map(() => "\u0000"); tyUpdate(); tyFocus();
   });
   // nút bấm không được cướp focus của ô gõ
   document.getElementById("ty-bar").addEventListener("mousedown", (e) => e.preventDefault());
